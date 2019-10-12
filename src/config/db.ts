@@ -6,7 +6,7 @@ import { MONGODB_URI } from "../util/secrets";
 const mongoUrl = MONGODB_URI;
 mongoose.Promise = bluebird;
 
-mongoose.connect(mongoUrl, { useNewUrlParser: true} ).then(
+mongoose.connect(mongoUrl, { useNewUrlParser: true,useUnifiedTopology:true} ).then(
     () => { 
         console.log("Connected to mongo");
     },

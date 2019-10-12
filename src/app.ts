@@ -45,21 +45,42 @@ app.use(express.static(path.join(__dirname, "public"), { maxAge: 31557600000 }))
 // routes as middlewares
 app.use("/auth", cors(), auth);
 
-app.get("/", (req,res) => {
-    res.json({message:"Looking for something??"});
+app.get("/", (req, res) => {
+    res.json({ message: "Looking for something??" });
 });
 // middleware for errors
-app.use((req: Request, res: Response, next: NextFunction) => {
-    const error = new Error("Not found");
-    next(error);
-});
+// app.use((req: Request, res: Response, next: NextFunction) => {
+//     const error = new Error("Not found");
+//     next(error);
+// });
+function clientErrorHandler(err: Error, req: Request, res: Response, next: NextFunction) {
+    if (req.xhr) {
+        res.status(500).send({ error: "Something failed!" });
+    } else {
+        next(err);
+    }
+}
 
-app.use((error: Error, req: Request, res: Response) => {
-    res.status(404).json({
-        error: {
-            message: error.message
-        }
-    });
-});
+function logErrors(err: Error, req: Request, res: Response, next: NextFunction) {
+    console.error(err.stack);
+    next(err);
+}
 
+function errorHandler(err: Error, req: Request, res: Response, next: NextFunction) {
+    if (res.headersSent) {
+        return next(err);
+    }
+    res.status(500);
+    res.json({ error: err });
+}
+
+function fourofour(req: Request, res: Response) {
+    res.status(404).send("Sorry can't find that!");
+}
+
+app.use(logErrors);
+app.use(clientErrorHandler);
+
+app.use(errorHandler);
+app.use(fourofour);
 export default app;

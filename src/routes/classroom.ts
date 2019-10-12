@@ -1,14 +1,14 @@
-// import express from "express";
-// import classroomController from "../controllers/classroom";
-// import {check} from "../middleware/check_Auth";
+import express from "express";
+import {createClassRoom} from "../controllers/classroom";
+import {check} from "../middleware/check_Auth";
 
-// const router = express.Router();
+const router = express.Router();
 
 // // return all active classrooms in particular location
 // router.get("/l/:location", classroomController.getClassroomFromLocation);
 
 // //  create a new classroom
-// router.post("/create", check, classroomController.createClassRoom);
+router.post("/create", check, createClassRoom);
 
 // // get details about a particular class
 // router.get("/view/:id", classroomController.getDetails);
