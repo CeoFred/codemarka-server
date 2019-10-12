@@ -45,7 +45,9 @@ app.use(express.static(path.join(__dirname, "public"), { maxAge: 31557600000 }))
 // routes as middlewares
 app.use("/auth", cors(), auth);
 
-
+app.get("/", (req,res) => {
+    res.json({message:"Looking for something??"});
+});
 // middleware for errors
 app.use((req: Request, res: Response, next: NextFunction) => {
     const error = new Error("Not found");
