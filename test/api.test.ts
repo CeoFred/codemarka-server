@@ -1,9 +1,9 @@
 import request from "supertest";
 import app from "../src/app";
 
-describe("POST /auth/user/signup", () => {
-    it("should return 200 OK", () => {
-        return request(app).post("/auth/user/signup")
+describe("GET /", () => {
+    it("should return 200 ", () => {
+        return request(app).get("/")
             .expect(200);
     });
 });
