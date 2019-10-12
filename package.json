@@ -6,7 +6,10 @@
     "type": "git",
     "url": "https://github.com/CeoFred/colab"
   },
-  "author": "Johnson Awah Alfred",
+  "engines": {
+    "node": "12.8.1"
+  },
+  "author": "codemon",
   "license": "MIT",
   "scripts": {
     "start": "npm run serve",
