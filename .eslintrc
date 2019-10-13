@@ -9,7 +9,7 @@
     "semi": ["error", "always"],
     "quotes": ["error", "double"],
     "@typescript-eslint/explicit-function-return-type": [
-      "never",
+      1,
       {
         "allowExpressions": true,
         "allowTypedFunctionExpressions": true,
