@@ -4,39 +4,30 @@ import { body, validationResult } from "express-validator";
 
 const created = 1;
 
-export const createClassRoom = (req: Request, res: Response) => {
+export const createClassRoom = (req: Request, res: Response): any => {
 
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
         return res.status(403).json({ errors: errors.array() });
     }
 
-    const { autostart, name, size, topic, startTime, startDate, description, location, visibility, createdBy } = req.body;
-    // status 1 means ceated,but has not started
-    const invitationURL = "http://localhost:3000/classroom/";
-
+    const { autostart, name, size, topic, startTime, startDate, description, location, visibility } = req.body;
+    
     // get user id and compare with json decoded token sent
-    const userid = req.body.data.userId;
+    const userid: string = req.decoded.userId;
 
-    if (userid !== createdBy) {
-        res.status(403).json({ err: "User token sent does not match" });
-    }
 
     const newclassroom = new Classroom({
         name,
         size,
         topic,
-        // tslint:disable-next-line: object-literal-sort-keys
         startTime,
         startDate,
         description,
         location,
         visibility,
-        createdBy,
         status: created,
         autostart,
-        invitationURL
-
     });
     newclassroom.save().then((data: { _id: any}) => {
         // create editors for class
@@ -71,7 +62,8 @@ export const getClassroomFromLocation = (req: Request, res: Response) => {
 
 export const verifyClassroom = (req: Request, res: Response) => {
     console.log(req);
-}
+};
+
 exports.endClassPermanently = (req: Request, res: Response) => {
     const id = req.params.classroomid;
     Classroom.deleteOne({ _id: id }).exec()

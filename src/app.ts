@@ -10,6 +10,8 @@ import "./config/db";
 // Controllers (route handlers)
 
 import auth from "./routes/auth";
+import classroom from "./routes/classroom";
+
 import { NextFunction, Request, Response } from "express";
 
 // Create Express server
@@ -42,20 +44,23 @@ app.use(cors());
 app.use(lusca.xframe("SAMEORIGIN"));
 app.use(lusca.xssProtection(true));
 app.use(express.static(path.join(__dirname, "public"), { maxAge: 31557600000 }));
+
 // routes as middlewares
 app.use("/auth", cors(), auth);
+app.use("/classroom", classroom);
+
 
 app.get("/", (req, res) => {
     res.json({ message: "Looking for something??" });
 });
+
+
+
 // middleware for errors
-// app.use((req: Request, res: Response, next: NextFunction) => {
-//     const error = new Error("Not found");
-//     next(error);
-// });
+
 function clientErrorHandler(err: Error, req: Request, res: Response, next: NextFunction) {
     if (req.xhr) {
-        res.status(500).send({ error: "Something failed!" });
+        res.status(500).json({ error: "Something failed!" });
     } else {
         next(err);
     }
@@ -75,7 +80,7 @@ function errorHandler(err: Error, req: Request, res: Response, next: NextFunctio
 }
 
 function fourofour(req: Request, res: Response) {
-    res.status(404).send("Sorry can't find that!");
+    res.status(404).json({ status: "failed", error: "Sorry can't find that!" });
 }
 
 app.use(logErrors);
