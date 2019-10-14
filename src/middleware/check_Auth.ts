@@ -11,8 +11,8 @@ export const check = (req: any, res: Response, next: NextFunction)  => {
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
 
-        req.usertoken = jwt.decode(token);
-        req.decoded = decoded;
+        req.body.usertoken = jwt.decode(token);
+        req.body.decoded = decoded;
     } catch (err) {
         return res.status(404).json({
             message: "Auth Failed"

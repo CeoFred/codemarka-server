@@ -14,7 +14,7 @@ export const createClassRoom = (req: Request, res: Response): any => {
     const { autostart, name, size, topic, startTime, startDate, description, location, visibility } = req.body;
     
     // get user id and compare with json decoded token sent
-    const userid: string = req.decoded.userId;
+    const userid: string = req.body.decoded.userId;
 
 
     const newclassroom = new Classroom({
