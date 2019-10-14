@@ -26,7 +26,6 @@ class Server {
                 this.app.get("env")
             );
             console.log("  Press CTRL-C to stop\n");
-            console.log(`Node envireonment ${process.env.NODE_ENV}`);
         });
     }
 }

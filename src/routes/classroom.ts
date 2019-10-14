@@ -1,5 +1,5 @@
 import express from "express";
-import {createClassRoom} from "../controllers/classroom";
+import {createClassRoom,verifyClassroom} from "../controllers/classroom";
 import {check} from "../middleware/check_Auth";
 
 const router = express.Router();
@@ -11,7 +11,8 @@ const router = express.Router();
 router.post("/create", check, createClassRoom);
 
 // // get details about a particular class
-// router.get("/view/:id", classroomController.getDetails);
+router.post("/verify/", verifyClassroom);
+
 
 // // invite someone via mail to a class
 // router.post("/invite/:classroomid", check);

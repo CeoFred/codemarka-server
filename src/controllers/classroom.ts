@@ -68,6 +68,10 @@ export const getClassroomFromLocation = (req: Request, res: Response) => {
     Classroom.find({ location }).exec().then((data: object) => res.json({ data })).catch((err: any) => res.status(404).json(err));
 };
 
+
+export const verifyClassroom = (req: Request, res: Response) => {
+    console.log(req);
+}
 exports.endClassPermanently = (req: Request, res: Response) => {
     const id = req.params.classroomid;
     Classroom.deleteOne({ _id: id }).exec()
