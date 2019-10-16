@@ -32,23 +32,23 @@ export const createClassRoom = (req: Request, res: Response, next: NextFunction)
     });
     newclassroom.save().then((data: { _id: any}) => {
         // create editors for class
-       const dire: string =  `${__dirname}/../../main/classrooms/${data._id}/`
+        const dire =  `${__dirname}/../../main/classrooms/${data._id}/`;
         fs.mkdir(dire,(err) => {
             if(!err){
                 console.log(`Directory created as ${data._id}`);
-                fs.writeFile(`${dire}/index.js`,'// javascrit code here',(err) => {
-                    if(err) next(err)
-                })
-                fs.writeFile(`${dire}/index.html`,'// HTML code here',(err) => {
-                    if(err) next(err)
-                })
-                fs.writeFile(`${dire}/style.css`,'// Styleshteet here',(err) => {
-                    if(err) next(err)
-                })  
+                fs.writeFile(`${dire}/index.js`,"// javascrit code here",(err) => {
+                    if(err) next(err);
+                });
+                fs.writeFile(`${dire}/index.html`,"// HTML code here",(err) => {
+                    if(err) next(err);
+                });
+                fs.writeFile(`${dire}/style.css`,"// Styleshteet here",(err) => {
+                    if(err) next(err);
+                });  
             }else{
-               return next(err);
+                return next(err);
             }
-        })
+        });
         res.status(201).json({ status: "created", data });
 
     }).catch((err: any) => next(err.message));
