@@ -1,40 +1,57 @@
 import {Classroom} from "../models/classroom";
-import {  Request, Response } from "express";
+import {  Request, Response,NextFunction } from "express";
 import { body, validationResult } from "express-validator";
+import fs from "fs";
+import path from "path";
 
 const created = 1;
+const creating = 2;
 
-export const createClassRoom = (req: Request, res: Response): any => {
+export const createClassRoom = (req: Request, res: Response, next: NextFunction): any => {
 
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
         return res.status(403).json({ errors: errors.array() });
     }
 
-    const { autostart, name, size, topic, startTime, startDate, description, location, visibility } = req.body;
+    const { name, topic, startTime, startDate, description, clsasType, classVisibility } = req.body;
     
     // get user id and compare with json decoded token sent
-    const userid: string = req.body.decoded.userId;
-
+    const userid: string = req.body.decoded.userid;
 
     const newclassroom = new Classroom({
         name,
-        size,
         topic,
+        description,
+        classVisibility,
+        clsasType,
         startTime,
         startDate,
-        description,
-        location,
-        visibility,
-        status: created,
-        autostart,
+        status: creating,
+        owner:userid
     });
     newclassroom.save().then((data: { _id: any}) => {
         // create editors for class
-
+       const dire: string =  `${__dirname}/../../main/classrooms/${data._id}/`
+        fs.mkdir(dire,(err) => {
+            if(!err){
+                console.log(`Directory created as ${data._id}`);
+                fs.writeFile(`${dire}/index.js`,'// javascrit code here',(err) => {
+                    if(err) next(err)
+                })
+                fs.writeFile(`${dire}/index.html`,'// HTML code here',(err) => {
+                    if(err) next(err)
+                })
+                fs.writeFile(`${dire}/style.css`,'// Styleshteet here',(err) => {
+                    if(err) next(err)
+                })  
+            }else{
+               return next(err);
+            }
+        })
         res.status(201).json({ status: "created", data });
 
-    }).catch((err: any) => res.status(501).json({ error: err, type: "mongo" }));
+    }).catch((err: any) => next(err.message));
 
 };
 

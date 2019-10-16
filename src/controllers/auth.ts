@@ -86,7 +86,7 @@ export const postLogin = (req: Request, res: Response, next: NextFunction) => {
                         email: userFound.email,
                         accountType: userFound.accountType,
                         username: userFound.username,
-                        avatar: userFound.gravatar(50)
+                        userid: userFound._id
                     };
                     signToken(dataToSign, res, next);
                 } else {
