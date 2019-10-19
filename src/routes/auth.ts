@@ -7,7 +7,7 @@ const router = express.Router();
 router.patch("/user/password/update", validate("passwordUpdate"),postUpdatePassword);
 
 //login a user
-router.post("/user/login",validate("login"), postLogin);
+router.post("/user/signin",validate("login"), postLogin);
 
 //signup a user
 router.post("/user/signup",validate("signup"), postSignup);

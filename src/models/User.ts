@@ -17,6 +17,9 @@ export type UserDocument = mongoose.Document & {
     username: string;
     comparePassword: comparePasswordFunction;
     addToken: addToken;
+    status: boolean;
+    isConfirmed: boolean;
+    confirmOTP: number;
     gravatar: (size: number) => string;
 };
 
@@ -37,6 +40,14 @@ const userSchema = new mongoose.Schema({
         unique:true,
         type: String
     },
+    status: {
+        default: true,
+        type: Boolean
+    },
+    isConfired: {
+        default: true,
+        type: Boolean
+    },
     firstName: String,
     gender: String,
     location: String,
@@ -45,6 +56,9 @@ const userSchema = new mongoose.Schema({
     accountType: {
         default: "regular",
         type: String
+    },
+    confirmOTP: {
+        type: Number
     }
 }, { timestamps: true });
 

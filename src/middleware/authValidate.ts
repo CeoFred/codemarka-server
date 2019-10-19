@@ -1,24 +1,36 @@
-import {  check,sanitize,body } from "express-validator";
+import {  check,sanitize,body,sanitizeBody } from "express-validator";
+import { User} from "../models/User";
+// import * as apiResponse from '../helpers/apiResponse';
 const returnSignupValidation = () => {
     return [ 
-        check("username").exists(),
-        check("email", "Email is not valid").isEmail(),
-        check("password", "Password must be at least 4 characters long").isLength({ min: 4 }).exists(),
-        body("email","Email Does not exist").exists(),
-        body("password").not().isEmpty().trim().escape(),
-        body("username").not().isEmpty().trim().escape(),
         // eslint-disable-next-line @typescript-eslint/camelcase
-        sanitize("email").normalizeEmail({ gmail_remove_dots: false })
+        sanitize("email").normalizeEmail({ gmail_remove_dots: false }),
+        body("username").isLength({ min: 1 }).trim().withMessage("A username must be specified.")
+            .isAlphanumeric().withMessage("User name has non-alphanumeric characters."),
+	
+        body("email").isLength({ min: 1 }).trim().withMessage("Email must be specified.")
+            .isEmail().withMessage("Email must be a valid email address.").custom((value) => {
+                return User.findOne({email : value}).then((user) => {
+                    if (user) {
+                        return Promise.reject("E-mail already in use");
+                    }
+                });
+            }),
+        body("password").isLength({ min: 6 }).trim().withMessage("Password must be 6 characters or greater."),
+        // Sanitize fields.
+        sanitizeBody("username").escape(),
+        sanitizeBody("email").escape(),
+        sanitizeBody("password").escape(),
     ];
 };
 
 const returnLoginValidation = () => {
     return [ 
-        check("email", "Email is not valid").isEmail().exists(),
-        check("password", "Password must be at least 4 characters long").isLength({ min: 4 }).exists(),
-        body("password").not().isEmpty().trim().escape(),
-        // eslint-disable-next-line @typescript-eslint/camelcase
-        sanitize("email").normalizeEmail({ gmail_remove_dots: false })
+        body("email").isLength({ min: 1 }).trim().withMessage("Email must be specified.")
+            .isEmail().withMessage("Email must be a valid email address."),
+        body("password").isLength({ min: 1 }).trim().withMessage("Password must be specified."),
+        sanitizeBody("email").escape(),
+        sanitizeBody("password").escape()
     ];
 };
 

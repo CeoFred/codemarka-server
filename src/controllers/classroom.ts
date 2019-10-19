@@ -1,6 +1,9 @@
 import {Classroom} from "../models/classroom";
 import {  Request, Response,NextFunction } from "express";
-import { body, validationResult } from "express-validator";
+import { validationResult } from "express-validator";
+import {randomNumber} from "../helpers/utility";
+import {successResponse,successResponseWithData} from "../helpers/apiResponse";
+import {classWeb} from "../models/classWebFiles";
 import fs from "fs";
 import path from "path";
 
@@ -31,25 +34,35 @@ export const createClassRoom = (req: Request, res: Response, next: NextFunction)
         owner:userid
     });
     newclassroom.save().then((data: { _id: any}) => {
+        const jsfile = randomNumber(15);
+        const htmlfile = randomNumber(15);
+        const cssfile = randomNumber(15);
+
         // create editors for class
         const dire =  `${__dirname}/../../main/classrooms/${data._id}/`;
         fs.mkdir(dire,(err) => {
-            if(!err){
+          
+            if (!err) {
                 console.log(`Directory created as ${data._id}`);
-                fs.writeFile(`${dire}/index.js`,"// javascrit code here",(err) => {
+                fs.writeFile(`${dire}/${jsfile}.js`,"const message = 'Goodluck'",(err) => {
                     if(err) next(err);
                 });
-                fs.writeFile(`${dire}/index.html`,"// HTML code here",(err) => {
+                fs.writeFile(`${dire}/${htmlfile}.html`,"// HTML code here",(err) => {
                     if(err) next(err);
                 });
-                fs.writeFile(`${dire}/style.css`,"// Styleshteet here",(err) => {
+                fs.writeFile(`${dire}/${cssfile}.css`," *{ }",(err) => {
                     if(err) next(err);
                 });  
-            }else{
+
+            } else {
                 return next(err);
             }
         });
-        res.status(201).json({ status: "created", data });
+        new classWeb({classroomId: data._id,js:jsfile,css: cssfile, html: htmlfile}).save().then((fdata) => {
+            successResponseWithData(res,"success",data);
+        }).catch(err => {
+            return next(err);
+        });
 
     }).catch((err: any) => next(err.message));
 
