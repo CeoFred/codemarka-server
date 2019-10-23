@@ -3,14 +3,14 @@ import jwt from "jsonwebtoken";
 
 export const check = (req: any, res: Response, next: NextFunction)  => {
     let token;
-    console.log(req.headers)
+    console.log(req.headers);
     if (req.body.token) {
         token = req.body.token;
     } else if (req.headers.authorization) {
         token = req.headers.authorization.split(" ")[1];
     }
     try {
-        console.log(token)
+        console.log(token);
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
         req.body.usertoken = jwt.decode(token);

@@ -64,7 +64,7 @@ export const postLogin = (req: Request, res: Response, next: NextFunction) => {
                                     const secret = process.env.JWT_SECRET;
                                     //Generated JWT token with Payload and secret.
                                     userData.token = jwt.sign(jwtPayload, secret, jwtData);
-                                    console.log(userData.token)
+                                    console.log(userData.token);
                                     return apiResponse.successResponseWithData(res,"Login Success.", userData);
                                 }else {
                                     return apiResponse.unauthorizedResponse(res, "Account is not active. Please contact admin.");
