@@ -88,7 +88,13 @@ export const postLogin = (req: Request, res: Response, next: NextFunction) => {
 export const postSignup = (req: Request, res: Response, next: NextFunction) => {
   
     try {
-        if(checkError(res, req)){
+        
+        const errors = validationResult(req);
+
+        if (!errors.isEmpty()) {
+            // return res.status(422).json(failed(errors.array()));
+            return apiResponse.ErrorResponse(res,errors.array())
+        }else{
             const { email, password, username } = req.body;
             
             	// generate OTP for confirmation
@@ -142,7 +148,13 @@ export const postSignup = (req: Request, res: Response, next: NextFunction) => {
  * Update profile information.
  */
 export const postUpdateProfile = (req: Request, res: Response, next: NextFunction) => {
-    checkError(res, req);
+    
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+        // return res.status(422).json(failed(errors.array()));
+        return apiResponse.ErrorResponse(res,errors.array())
+    }
     User.findById(req.body.user.id, (err, user: UserDocument) => {
         if (err) { return next(err); }
         user.email = req.body.email || "";
@@ -163,7 +175,13 @@ export const postUpdateProfile = (req: Request, res: Response, next: NextFunctio
  * Update current password.
  */
 export const postUpdatePassword = (req: Request, res: Response, next: NextFunction) => {
-    checkError(res, req);
+    
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+        // return res.status(422).json(failed(errors.array()));
+        return apiResponse.ErrorResponse(res,errors.array())
+    }
     User.findById(req.body.user.id, (err, user: UserDocument) => {
         if (err) { return next(err); }
         user.password = req.body.password;
