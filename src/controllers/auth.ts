@@ -19,27 +19,18 @@ const options = { algorithm: "HS256", noTimestamp: false, audience: "users", iss
  * POST /login
  * Sign in using email and password.
  */
-const checkError = (res: Response, req: Request) => {
-    const errors = validationResult(req);
 
-    if (!errors.isEmpty()) {
-        return res.status(422).json(failed(errors.array()));
-    }
-    return true;
-
-};
-
-const signToken = (dataToSign: object, res: Response, next: NextFunction) => {
-    jwt.sign(dataToSign, process.env.JWT_SECRET_KEY, options, (err, token) => {
-        if (err) { return next(err); }
-        res.status(200).json(successData({ token }));
-    });
-};
 export const postLogin = (req: Request, res: Response, next: NextFunction) => {
 
     try {
   
-        if(checkError(res, req)){
+        const errors = validationResult(req);
+
+        if (!errors.isEmpty()) {
+            // return res.status(422).json(failed(errors.array()));
+            return apiResponse.ErrorResponse(res,errors.array())
+        }
+        else {
 
             const { email, password } = req.body;
             User.findOne({email}).then((user) => {
