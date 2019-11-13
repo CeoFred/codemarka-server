@@ -28,7 +28,7 @@ export const postLogin = (req: Request, res: Response, next: NextFunction) => {
 
         if (!errors.isEmpty()) {
             // return res.status(422).json(failed(errors.array()));
-            return apiResponse.ErrorResponse(res,errors.array())
+            return apiResponse.ErrorResponse(res,errors.array());
         }
         else {
 
@@ -93,7 +93,7 @@ export const postSignup = (req: Request, res: Response, next: NextFunction) => {
 
         if (!errors.isEmpty()) {
             // return res.status(422).json(failed(errors.array()));
-            return apiResponse.ErrorResponse(res,errors.array())
+            return apiResponse.ErrorResponse(res,errors.array());
         }else{
             const { email, password, username } = req.body;
             
@@ -110,6 +110,7 @@ export const postSignup = (req: Request, res: Response, next: NextFunction) => {
                     status:1
                 }
             );
+
             // Html email body
             // let html = "<p>Please Confirm your Account.</p><p>OTP: "+otp+"</p>";
             // Send confirmation email
@@ -120,6 +121,7 @@ export const postSignup = (req: Request, res: Response, next: NextFunction) => {
             // 	html
             // ).then(function(){
             // Save user.
+
             user.save(function (err) {
                 if (err) { return apiResponse.ErrorResponse(res, err); }
                 let userData = {
@@ -129,10 +131,11 @@ export const postSignup = (req: Request, res: Response, next: NextFunction) => {
                 };
                 return apiResponse.successResponseWithData(res,"Registration Success.", userData);
             });
+
             // }).catch(err => {
             // 	console.log(err);
             // 	return apiResponse.ErrorResponse(res,err);
-            // }) ;
+            // });
         }
 
     } catch (error) {
@@ -153,7 +156,7 @@ export const postUpdateProfile = (req: Request, res: Response, next: NextFunctio
 
     if (!errors.isEmpty()) {
         // return res.status(422).json(failed(errors.array()));
-        return apiResponse.ErrorResponse(res,errors.array())
+        return apiResponse.ErrorResponse(res,errors.array());
     }
     User.findById(req.body.user.id, (err, user: UserDocument) => {
         if (err) { return next(err); }
@@ -180,7 +183,7 @@ export const postUpdatePassword = (req: Request, res: Response, next: NextFuncti
 
     if (!errors.isEmpty()) {
         // return res.status(422).json(failed(errors.array()));
-        return apiResponse.ErrorResponse(res,errors.array())
+        return apiResponse.ErrorResponse(res,errors.array());
     }
     User.findById(req.body.user.id, (err, user: UserDocument) => {
         if (err) { return next(err); }
