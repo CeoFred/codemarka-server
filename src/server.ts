@@ -41,33 +41,34 @@ app.use(errorHandler());
 const server = new Server(app);
 server.start();
 
+let connections: any[] = [];
+
 setInterval(() => http.getConnections(
     (err: any, connections: any) => console.log(`${connections} connections currently open`)
 ), 1000);
 
-process.on('SIGTERM', shutDown);
-process.on('SIGINT', shutDown);
-
-let connections:any[] = [];
-
-http.on('connection', (connection: object|any) => {
-    connections.push(connection);
-    connection.on('close', () => connections = connections.filter(curr => curr !== connection));
-});
-
 function shutDown() {
-    console.log('Received kill signal, shutting down gracefully');
+    console.log("Received kill signal, shutting down gracefully");
     http.close(() => {
-        console.log('Closed out remaining connections');
+        console.log("Closed out remaining connections");
         process.exit(0);
     });
 
     setTimeout(() => {
-        console.error('Could not close connections in time, forcefully shutting down');
+        console.error("Could not close connections in time, forcefully shutting down");
         process.exit(1);
     }, 10000);
 
     connections.forEach(curr => curr.end());
     setTimeout(() => connections.forEach(curr => curr.destroy()), 5000);
 }
+process.on("SIGTERM", shutDown);
+process.on("SIGINT", shutDown);
+
+
+http.on("connection", (connection: object|any) => {
+    connections.push(connection);
+    connection.on("close", () => connections = connections.filter(curr => curr !== connection));
+});
+
 export default server;
