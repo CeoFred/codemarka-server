@@ -117,18 +117,19 @@ export const postSignup = (req: Request, res: Response, next: NextFunction) => {
                 let userData = {
                     _id: user._id,
                     username: user.username,
-                    email: user.email
+                    email: user.email,
+                    token:""
                 };
                 
-                                    //Prepare JWT token for authentication
-                                    const jwtPayload = userData;
-                                    const jwtData = {
-                                        expiresIn: process.env.JWT_TIMEOUT_DURATION,
-                                    };
+                //Prepare JWT token for authentication
+                const jwtPayload = userData;
+                const jwtData = {
+                    expiresIn: process.env.JWT_TIMEOUT_DURATION,
+                };
 
-                                    const secret = process.env.JWT_SECRET;
-                                    //Generated JWT token with Payload and secret.
-                                    userData.token = jwt.sign(jwtPayload, secret, jwtData);
+                const secret = process.env.JWT_SECRET;
+                //Generated JWT token with Payload and secret.
+                userData.token = jwt.sign(jwtPayload, secret, jwtData);
                 return apiResponse.successResponseWithData(res,"Registration Success.", userData);
             });
 

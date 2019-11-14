@@ -25,8 +25,8 @@ const returnSignupValidation = () => {
                 if (user) {
                     return Promise.reject("Username already taken");
                 }
-            })
-        })
+            });
+        }),
         sanitizeBody("email").escape(),
         sanitizeBody("password").escape(),
     ];
