@@ -19,6 +19,14 @@ const returnSignupValidation = () => {
         body("password").isLength({ min: 6 }).trim().withMessage("Password must be 6 characters or greater."),
         // Sanitize fields.
         sanitizeBody("username").escape(),
+
+        body("username").custom(value => {
+            return User.findOne({username: value}).then(user => {
+                if (user) {
+                    return Promise.reject("Username already taken");
+                }
+            })
+        })
         sanitizeBody("email").escape(),
         sanitizeBody("password").escape(),
     ];

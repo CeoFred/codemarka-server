@@ -99,7 +99,7 @@ export const postSignup = (req: Request, res: Response, next: NextFunction) => {
             
             	// generate OTP for confirmation
             let otp = randomNumber(4);
-            // Create User object with escaped and trimmed data
+        
             var user = new User(
                 {
                     username,
@@ -111,31 +111,27 @@ export const postSignup = (req: Request, res: Response, next: NextFunction) => {
                 }
             );
 
-            // Html email body
-            // let html = "<p>Please Confirm your Account.</p><p>OTP: "+otp+"</p>";
-            // Send confirmation email
-            // mailer(
-            // 	constants.confirmEmails.from, 
-            // 	req.body.email,
-            // 	"Confirm Account",
-            // 	html
-            // ).then(function(){
-            // Save user.
 
             user.save(function (err) {
                 if (err) { return apiResponse.ErrorResponse(res, err); }
                 let userData = {
                     _id: user._id,
-                    firstName: user.username,
+                    username: user.username,
                     email: user.email
                 };
+                
+                                    //Prepare JWT token for authentication
+                                    const jwtPayload = userData;
+                                    const jwtData = {
+                                        expiresIn: process.env.JWT_TIMEOUT_DURATION,
+                                    };
+
+                                    const secret = process.env.JWT_SECRET;
+                                    //Generated JWT token with Payload and secret.
+                                    userData.token = jwt.sign(jwtPayload, secret, jwtData);
                 return apiResponse.successResponseWithData(res,"Registration Success.", userData);
             });
 
-            // }).catch(err => {
-            // 	console.log(err);
-            // 	return apiResponse.ErrorResponse(res,err);
-            // });
         }
 
     } catch (error) {
