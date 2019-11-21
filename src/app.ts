@@ -1,5 +1,5 @@
 import express from "express";
-import compression from "compression";  // compresses requests
+import compression from "compression"; 
 import bodyParser from "body-parser";
 import lusca from "lusca";
 import path from "path";
@@ -7,12 +7,12 @@ import methodOverride from "method-override";
 import cors from "cors";
 import "./config/db";
 
-// Controllers (route handlers)
 
 import auth from "./routes/auth";
 import classroom from "./routes/classroom";
 
 import { NextFunction, Request, Response } from "express";
+
 
 // Create Express server
 const app = express();

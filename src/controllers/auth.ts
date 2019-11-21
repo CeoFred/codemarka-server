@@ -135,6 +135,7 @@ export const postSignup = (req: Request, res: Response, next: NextFunction) => {
 
         }
 
+        
     } catch (error) {
 
         return apiResponse.ErrorResponse(res, error);
