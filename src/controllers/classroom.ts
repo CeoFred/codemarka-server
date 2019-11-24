@@ -1,11 +1,13 @@
-import {Classroom} from "../models/classroom";
+import fs from "fs";
+import path from "path";
 import {  Request, Response,NextFunction } from "express";
 import { validationResult } from "express-validator";
+
+import {Classroom} from "../models/classroom";
 import {randomNumber} from "../helpers/utility";
 import {successResponse,successResponseWithData} from "../helpers/apiResponse";
 import {classWeb} from "../models/classWebFiles";
-import fs from "fs";
-import path from "path";
+import * as apiResponse from "../helpers/apiResponse";
 
 const created = 1;
 const creating = 2;
@@ -89,8 +91,15 @@ export const getClassroomFromLocation = (req: Request, res: Response) => {
 };
 
 
-export const verifyClassroom = (req: Request, res: Response) => {
-    console.log(req);
+export const verifyClassroom = (req: Request, res: Response ,next: NextFunction) => {
+
+    const {classroom_id} = req.body;
+    Classroom.findOne({id:classroom_id}).then(d => {
+       
+        return d ? apiResponse.successResponseWithData(res,d) : apiResponse.ErrorResponse(res,"class failed verification")
+    }).catch(e => {
+        return next(e)
+    })
 };
 
 exports.endClassPermanently = (req: Request, res: Response) => {

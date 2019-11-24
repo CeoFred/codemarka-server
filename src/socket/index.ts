@@ -3,37 +3,40 @@ import {chat} from "./config";
 export default  (server: any) => {
     const io = require("socket.io")(server, chat);
     const clients: any[] = [];
-    let classMessage = [{from:"fred",msg:"Hi"},{from:"okpe",msg:"wadup"}];
+    let classMessage = [];
  
-    console.log(clients);
     const nsp = io.of("/classrooms");
+ 
     nsp.on("connection", function (socket: any) {
-        console.log(`New socket connection to \\classroom with id ${socket.id}`);
+ 
+        console.log(`New socket connection to classroom`);
     
         // register current client  
         clients[socket.id] = socket.client;
+
         interface JoinObj  {
-            username: string;
+            user: string;
             classroom_id: string;
         }
-        socket.on("aRequestToAddUser", (data: JoinObj) => {
-
-            socket.username = data.username;
+        // event when someone joins a class
+        socket.on("join", (data: JoinObj) => {
+            
+            socket.user = data.user;
             socket.room = data.classroom_id;
+
             socket.join(data.classroom_id,() => {
-                for (const key in socket.rooms) {
+                 for (const key in socket.rooms) {
                     if (socket.rooms.hasOwnProperty(key)) {
                         const element = socket.rooms[key];
                         console.log(`${key} - ${element}`);
                     }
                 }
             });  
-            //send prevous message to socket
+
+            //send prevous message to client
             socket.emit("updateMsg","SERVER",classMessage);
             // broadcast to existing sockets that someone joined
-            socket.broadcast.to(data.classroom_id).emit("someoneJoined","SERVER",data.username+ " has connected to this room");
-
-            console.log(`joined ${data.classroom_id}`);
+            nsp.to(data.classroom_id).emit("someoneJoined","server",data.user+ " joined",data.user);
       
         });
   
@@ -50,16 +53,19 @@ export default  (server: any) => {
                     }
                 }
             });
-            socket.broadcast.to(socket.room).emit("updatechat_left","SERVER",socket.username + " has left this room");
+            socket.broadcast.to(socket.room).emit("updatechat_left","SERVER",socket.user + " has left this room");
       
         });
   
-        // socket.on('new message', data => {
-        //   console.log(data);
-        //   socket.broadcast
-        //   .to(data.classroom_id)
-        //   .emit('receive message', data)
-        // });
+        
+        socket.on('newMessage', data => {
+
+          console.log(`New message - ${data.message}, in ${data.class}`);
+          
+          nsp.to(data.class).emit("nM", data);
+       
+        });
+
 
         socket.on("disconnect",function(){
             delete clients[socket.id];
