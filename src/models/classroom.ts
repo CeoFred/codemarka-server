@@ -41,7 +41,13 @@ const classroomSchema = new mongoose.Schema({
     status: {
         default: "3",
         type: Number
-    }
+    },
+    numberInClass: {
+        default:0,
+        type: Number
+    },
+    messages: [Object]
+    ,
 }, { timestamps: true });
 
 

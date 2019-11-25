@@ -1,15 +1,17 @@
 import {chat} from "./config";
 
+import { Classroom } from "../models/classroom";
+
 export default  (server: any) => {
     const io = require("socket.io")(server, chat);
     const clients: any[] = [];
-    let classMessage = [];
+    let classMessage: any[] = [];
  
     const nsp = io.of("/classrooms");
  
     nsp.on("connection", function (socket: any) {
  
-        console.log(`New socket connection to classroom`);
+        console.log("New socket connection to classroom");
     
         // register current client  
         clients[socket.id] = socket.client;
@@ -25,16 +27,24 @@ export default  (server: any) => {
             socket.room = data.classroom_id;
 
             socket.join(data.classroom_id,() => {
-                 for (const key in socket.rooms) {
+                for (const key in socket.rooms) {
                     if (socket.rooms.hasOwnProperty(key)) {
                         const element = socket.rooms[key];
                         console.log(`${key} - ${element}`);
                     }
                 }
-            });  
+            }); 
 
+            Classroom.findOne({_id: data.classroom_id,status:2}).then((d: Classroom) => {
+                if(d){
+                    socket.emit("updateMsg","server",d.messages);
+                }else {
+                    socket.emit("classroomError",null)
+                }
+            }).catch(e => { 
+                     console.log(e)
+            });
             //send prevous message to client
-            socket.emit("updateMsg","SERVER",classMessage);
             // broadcast to existing sockets that someone joined
             nsp.to(data.classroom_id).emit("someoneJoined","server",data.user+ " joined",data.user);
       
@@ -56,13 +66,25 @@ export default  (server: any) => {
             socket.broadcast.to(socket.room).emit("updatechat_left","SERVER",socket.user + " has left this room");
       
         });
-  
+        interface NewMessageInterface {
+            message: string;
+            class: string;
+        }
         
-        socket.on('newMessage', data => {
+          socket.on("newMessage", (data: NewMessageInterface) =>  {
 
-          console.log(`New message - ${data.message}, in ${data.class}`);
-          
-          nsp.to(data.class).emit("nM", data);
+            Classroom.findByIdAndUpdate({_id:data.class,status:2},
+    {$push: {messages: {by:data.user,msg:data.message}}},
+    {safe: true, upsert: true},
+    function(err, doc) {
+        if(err){
+        console.log(err);
+        }else{
+        //do stuff
+        }
+    }
+);
+            nsp.to(data.class).emit("nM", data);
        
         });
 

@@ -93,13 +93,16 @@ export const getClassroomFromLocation = (req: Request, res: Response) => {
 
 export const verifyClassroom = (req: Request, res: Response ,next: NextFunction) => {
 
-    const {classroom_id} = req.body;
-    Classroom.findOne({id:classroom_id}).then(d => {
-       
-        return d ? apiResponse.successResponseWithData(res,d) : apiResponse.ErrorResponse(res,"class failed verification")
+    const {classroomId} = req.body;
+    Classroom.findOne({id:classroomId}).then(d => {
+        if(d){
+            return apiResponse.successResponseWithData(res,"success",d);
+        }else {
+            return apiResponse.ErrorResponse(res,"class verification failed");
+        }
     }).catch(e => {
-        return next(e)
-    })
+        return next(e);
+    });
 };
 
 exports.endClassPermanently = (req: Request, res: Response) => {
