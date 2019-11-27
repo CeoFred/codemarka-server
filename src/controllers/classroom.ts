@@ -39,10 +39,14 @@ export const createClassRoom = (req: Request, res: Response, next: NextFunction)
         const htmlfile = randomNumber(15);
         const cssfile = randomNumber(15);
 
+
         // create editors for class
-        const dire =  `${__dirname}/../../main/classrooms/${data._id}/`;
+        const dire =  `${__dirname}/../classroomFiles/${data._id}/`;
+        if(!fs.existsSync(dire)){
+        
         fs.mkdir(dire,(err) => {
-          
+            
+
             if (!err) {
                 console.log(`Directory created as ${data._id}`);
                 fs.writeFile(`${dire}/${jsfile}.js`,"const message = 'Goodluck'",(err) => {
@@ -64,6 +68,7 @@ export const createClassRoom = (req: Request, res: Response, next: NextFunction)
         }).catch(err => {
             return next(err);
         });
+    }
 
     }).catch((err: any) => next(err.message));
 

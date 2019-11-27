@@ -26,16 +26,20 @@ export default (server: express.Application) => {
             socket.room = data.classroom_id;
 
             socket.join(data.classroom_id, () => {
-                for (const key in socket.rooms) {
-                    if (socket.rooms.hasOwnProperty(key)) {
-                        const element = socket.rooms[key];
-                        console.log(`${key} - ${element}`);
-                    }
-                }
+
+                // for (const key in socket.rooms) {
+                //     if (socket.rooms.hasOwnProperty(key)) {
+                //         const element = socket.rooms[key];
+                //         console.log(`${key} - ${element}`);
+                //     }
+                // }
+                nsp.to(data.classroom_id).emit("someoneJoined", "server", data.user + " joined", data.user);
+
             });
 
             Classroom.findOne({ _id: data.classroom_id, status: 2 }).then((d: any) => {
                 if (d) {
+                    console.log(d);
                     socket.emit("updateMsg", "server", d.messages);
                 } else {
                     socket.emit("classroomError", null);
@@ -45,7 +49,6 @@ export default (server: express.Application) => {
             });
             //send prevous message to client
             // broadcast to existing sockets that someone joined
-            nsp.to(data.classroom_id).emit("someoneJoined", "server", data.user + " joined", data.user);
 
         });
 
@@ -81,8 +84,11 @@ export default (server: express.Application) => {
                         console.log(err);
                     } else {
                         //do stuff
-                        nsp.to(data.class).emit("nM", doc);
-                    
+                    nsp.to(data.class).emit("nM", 
+                    {user: data.user,
+                    message: data.message});
+               
+                       
                     }
                 }
             );
