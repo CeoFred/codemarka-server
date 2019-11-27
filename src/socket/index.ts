@@ -84,9 +84,9 @@ export default (server: express.Application) => {
                         console.log(err);
                     } else {
                         //do stuff
-                    nsp.to(data.class).emit("nM", 
-                    {user: data.user,
-                    message: data.message});
+                        nsp.to(data.class).emit("nM", 
+                            {user: data.user,
+                                message: data.message});
                
                        
                     }

@@ -44,31 +44,33 @@ export const createClassRoom = (req: Request, res: Response, next: NextFunction)
         const dire =  `${__dirname}/../classroomFiles/${data._id}/`;
         if(!fs.existsSync(dire)){
         
-        fs.mkdir(dire,(err) => {
+            fs.mkdir(dire, { recursive: true } ,(err) => {
             
 
-            if (!err) {
-                console.log(`Directory created as ${data._id}`);
-                fs.writeFile(`${dire}/${jsfile}.js`,"const message = 'Goodluck'",(err) => {
-                    if(err) next(err);
-                });
-                fs.writeFile(`${dire}/${htmlfile}.html`,"// HTML code here",(err) => {
-                    if(err) next(err);
-                });
-                fs.writeFile(`${dire}/${cssfile}.css`," *{ }",(err) => {
-                    if(err) next(err);
-                });  
+                if (!err) {
+                    console.log(`Directory created - ${dire}`);
+                    fs.writeFile(`${dire}/${jsfile}.js`,"const message = 'Goodluck'",(err) => {
+                        if(err) next(err);
+                    });
+                    fs.writeFile(`${dire}/${htmlfile}.html`,"// HTML code here",(err) => {
+                        if(err) next(err);
+                    });
+                    fs.writeFile(`${dire}/${cssfile}.css`," *{ }",(err) => {
+                        if(err) next(err);
+                    }); 
+                } else {
 
-            } else {
+                    return next(err);
+                }
+            });
+            new classWeb({classroomId: data._id,js:jsfile,css: cssfile, html: htmlfile}).save().then((fdata) => {
+                
+                successResponseWithData(res,"success",data);
+
+            }).catch(err => {
                 return next(err);
-            }
-        });
-        new classWeb({classroomId: data._id,js:jsfile,css: cssfile, html: htmlfile}).save().then((fdata) => {
-            successResponseWithData(res,"success",data);
-        }).catch(err => {
-            return next(err);
-        });
-    }
+            });
+        }
 
     }).catch((err: any) => next(err.message));
 
