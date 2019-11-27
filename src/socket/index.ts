@@ -2,6 +2,7 @@ import { chat } from "./config";
 import express from "express";
 
 import { Classroom } from "../models/classroom";
+import { User } from "../models/User";
 
 export default (server: express.Application) => {
     const io = require("socket.io")(server, chat);
@@ -76,22 +77,33 @@ export default (server: express.Application) => {
 
         socket.on("newMessage", (data: NewMessageInterface) => {
 
-            Classroom.findByIdAndUpdate({ _id: data.class, status: 2 },
-                { $push: { messages: { by: data.user, msg: data.message } } },
-                { upsert: true },
-                function (err, doc: object) {
-                    if (err) {
-                        console.log(err);
-                    } else {
-                        //do stuff
-                        nsp.to(data.class).emit("nM", 
-                            {user: data.user,
-                                message: data.message});
-               
-                       
-                    }
+            User.findOne({ _id: data.user }).then(u => {
+                if (u) {
+                    Classroom.findByIdAndUpdate({ _id: data.class, status: 2 },
+                        { $push: { messages: { name: u.username, by: data.user, msg: data.message } } },
+                        { upsert: true },
+                        function (err, doc: object) {
+                            if (err) {
+                                console.log(err);
+                            } else {
+                                //do stuff
+                                nsp.to(data.class).emit("nM",
+                                    {
+                                        user: data.user,
+                                        message: data.message,
+                                        name: u.username
+                                    });
+
+
+                            }
+                        }
+                    );
+
                 }
-            );
+
+            })
+
+
 
         });
 
