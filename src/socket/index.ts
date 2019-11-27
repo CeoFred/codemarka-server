@@ -101,7 +101,7 @@ export default (server: express.Application) => {
 
                 }
 
-            })
+            });
 
 
 

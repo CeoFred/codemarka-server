@@ -1,11 +1,11 @@
-import {postDeleteAccount, postLogin, postSignup, postUpdatePassword,postUpdateProfile,refreshToken} from "../controllers/auth";
+import {postDeleteAccount, postLogin, tokenVerify, postSignup, postUpdatePassword,postUpdateProfile,refreshToken} from "../controllers/auth";
 import express from "express";
 import {validate} from "../middleware/authValidate";
 
 const router = express.Router();
 // update password
 router.patch("/user/password/update", validate("passwordUpdate"),postUpdatePassword);
-
+tokenVerify
 //login a user
 router.post("/user/signin",validate("login"), postLogin);
 
@@ -18,8 +18,8 @@ router.delete("/user/delete/:userId", postDeleteAccount);
 // refresh jwt token
 router.post("/user/token/refresh", refreshToken);
 
-// destroy token
-
+// verify token
+router.post("/user/token/verify", tokenVerify );
 // update user profile
 router.patch("/user/profile/update", postUpdateProfile);
 

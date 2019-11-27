@@ -7,7 +7,7 @@ import { validationResult } from "express-validator";
 import { failed, successData, successMessage } from "../helpers/response";
 import { randomNumber } from "../helpers/utility";
 // import {send as mailer } from '../helpers/mailer';
-import {constants} from "../helpers/constants";
+// import {constants} from "../helpers/constants";
 
 import jwt from "jsonwebtoken";
 
@@ -19,6 +19,38 @@ const options = { algorithm: "HS256", noTimestamp: false, audience: "users", iss
  * POST /login
  * Sign in using email and password.
  */
+
+ export const tokenVerify = (req: Request, res: Response, next: NextFunction) => {
+    
+    const t = req.body.token;
+    const u_i = req.body.user;
+
+    jwt.verify(t, process.env.JWT_SECRET, (er: jwt.JsonWebTokenError, dcd: any) => {
+
+        if(er){
+            if(er.message === 'jwt not active'){
+             return apiResponse.ErrorResponse(res,'token expired');
+            }
+            return apiResponse.ErrorResponse(res, er);
+        } else {
+            
+                User.findOne({_id:dcd._id}).then(ud => {
+                
+                    if (u_i == ud._id) {
+
+                        return apiResponse.successResponseWithData(res,"Token verification success",ud);
+
+                    }else {
+                        return apiResponse.ErrorResponse(res,{u_s: u_i,d: ud });
+                    }
+
+                }).catch(er => {
+                    return next(er);
+            });
+
+        }
+    })
+ }
 
 export const postLogin = (req: Request, res: Response, next: NextFunction) => {
 
@@ -44,6 +76,7 @@ export const postLogin = (req: Request, res: Response, next: NextFunction) => {
                                 if(user.status) {
                                     let userData = {
                                         _id: user._id,
+                                        username: user.username,
                                         token:""
                                     };
                                     //Prepare JWT token for authentication
@@ -55,7 +88,6 @@ export const postLogin = (req: Request, res: Response, next: NextFunction) => {
                                     const secret = process.env.JWT_SECRET;
                                     //Generated JWT token with Payload and secret.
                                     userData.token = jwt.sign(jwtPayload, secret, jwtData);
-                                    console.log(userData.token);
                                     return apiResponse.successResponseWithData(res,"Login Success.", userData);
                                 }else {
                                     return apiResponse.unauthorizedResponse(res, "Account is not active. Please contact admin.");
