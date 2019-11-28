@@ -35,9 +35,13 @@ export const tokenVerify = (req: Request, res: Response, next: NextFunction) => 
         } else {
             
             User.findOne({_id:dcd._id}).then(ud => {
-                
-                if (uI == ud._id) {
 
+                if (ud === null){
+                    return apiResponse.ErrorResponse(res,"No User Found");
+                }
+
+                if (ud && uI == ud._id) {
+                            
                     return apiResponse.successResponseWithData(res,"Token verification success",ud);
 
                 }else {
