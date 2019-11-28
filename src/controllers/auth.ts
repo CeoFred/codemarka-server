@@ -23,7 +23,7 @@ const options = { algorithm: "HS256", noTimestamp: false, audience: "users", iss
 export const tokenVerify = (req: Request, res: Response, next: NextFunction) => {
     
     const t = req.body.token;
-    const u_i = req.body.user;
+    const uI = req.body.user;
 
     jwt.verify(t, process.env.JWT_SECRET, (er: jwt.JsonWebTokenError, dcd: any) => {
 
@@ -36,12 +36,12 @@ export const tokenVerify = (req: Request, res: Response, next: NextFunction) => 
             
             User.findOne({_id:dcd._id}).then(ud => {
                 
-                if (u_i == ud._id) {
+                if (uI == ud._id) {
 
                     return apiResponse.successResponseWithData(res,"Token verification success",ud);
 
                 }else {
-                    return apiResponse.ErrorResponse(res,{u_s: u_i,d: ud });
+                    return apiResponse.ErrorResponse(res,"failed");
                 }
 
             }).catch(er => {

@@ -34,20 +34,20 @@ export default (server: express.Application) => {
                     console.log(d);
                     socket.emit("updateMsg",{by: "server",msgs: d.messages, type: "oldMsgUpdate"});
                     
-            socket.join(data.classroom_id, () => {
+                    socket.join(data.classroom_id, () => {
 
-                nsp.to(data.classroom_id).emit("someoneJoined",
-                 {
-                 by: "server",
-                 msg: data.userId + " joined",
-                 for: data.userId,
-                 name: data.username,
-                 type: 'sJoin'
-                });
+                        nsp.to(data.classroom_id).emit("someoneJoined",
+                            {
+                                by: "server",
+                                msg: data.userId + " joined",
+                                for: data.userId,
+                                name: data.username,
+                                type: "sJoin"
+                            });
 
-            });
+                    });
                 } else {
-                    console.log('classroom not found');
+                    console.log("classroom not found");
                     socket.emit("classroomError", null);
                 }
             }).catch(e => {
