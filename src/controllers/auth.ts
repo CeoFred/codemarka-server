@@ -20,7 +20,7 @@ const options = { algorithm: "HS256", noTimestamp: false, audience: "users", iss
  * Sign in using email and password.
  */
 
- export const tokenVerify = (req: Request, res: Response, next: NextFunction) => {
+export const tokenVerify = (req: Request, res: Response, next: NextFunction) => {
     
     const t = req.body.token;
     const u_i = req.body.user;
@@ -28,29 +28,29 @@ const options = { algorithm: "HS256", noTimestamp: false, audience: "users", iss
     jwt.verify(t, process.env.JWT_SECRET, (er: jwt.JsonWebTokenError, dcd: any) => {
 
         if(er){
-            if(er.message === 'jwt not active'){
-             return apiResponse.ErrorResponse(res,'token expired');
+            if(er.message === "jwt not active"){
+                return apiResponse.ErrorResponse(res,"token expired");
             }
             return apiResponse.ErrorResponse(res, er);
         } else {
             
-                User.findOne({_id:dcd._id}).then(ud => {
+            User.findOne({_id:dcd._id}).then(ud => {
                 
-                    if (u_i == ud._id) {
+                if (u_i == ud._id) {
 
-                        return apiResponse.successResponseWithData(res,"Token verification success",ud);
+                    return apiResponse.successResponseWithData(res,"Token verification success",ud);
 
-                    }else {
-                        return apiResponse.ErrorResponse(res,{u_s: u_i,d: ud });
-                    }
+                }else {
+                    return apiResponse.ErrorResponse(res,{u_s: u_i,d: ud });
+                }
 
-                }).catch(er => {
-                    return next(er);
+            }).catch(er => {
+                return next(er);
             });
 
         }
-    })
- }
+    });
+};
 
 export const postLogin = (req: Request, res: Response, next: NextFunction) => {
 

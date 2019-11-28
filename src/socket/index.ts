@@ -17,32 +17,37 @@ export default (server: express.Application) => {
         clients[socket.id] = socket.client;
 
         interface JoinObj {
-            user: string;
+            userId: string;
             classroom_id: string;
+            username: string;
         }
         // event when someone joins a class
         socket.on("join", (data: JoinObj) => {
 
-            socket.user = data.user;
+            socket.user = data.userId;
             socket.room = data.classroom_id;
+            socket.username = data.username;
 
-            socket.join(data.classroom_id, () => {
-
-                // for (const key in socket.rooms) {
-                //     if (socket.rooms.hasOwnProperty(key)) {
-                //         const element = socket.rooms[key];
-                //         console.log(`${key} - ${element}`);
-                //     }
-                // }
-                nsp.to(data.classroom_id).emit("someoneJoined", "server", data.user + " joined", data.user);
-
-            });
 
             Classroom.findOne({ _id: data.classroom_id, status: 2 }).then((d: any) => {
                 if (d) {
                     console.log(d);
-                    socket.emit("updateMsg", "server", d.messages);
+                    socket.emit("updateMsg",{by: "server",msgs: d.messages, type: "oldMsgUpdate"});
+                    
+            socket.join(data.classroom_id, () => {
+
+                nsp.to(data.classroom_id).emit("someoneJoined",
+                 {
+                 by: "server",
+                 msg: data.userId + " joined",
+                 for: data.userId,
+                 name: data.username,
+                 type: 'sJoin'
+                });
+
+            });
                 } else {
+                    console.log('classroom not found');
                     socket.emit("classroomError", null);
                 }
             }).catch(e => {
@@ -89,8 +94,8 @@ export default (server: express.Application) => {
                                 //do stuff
                                 nsp.to(data.class).emit("nM",
                                     {
-                                        user: data.user,
-                                        message: data.message,
+                                        by: data.user,
+                                        msg: data.message,
                                         name: u.username
                                     });
 

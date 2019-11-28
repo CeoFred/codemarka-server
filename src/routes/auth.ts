@@ -5,7 +5,7 @@ import {validate} from "../middleware/authValidate";
 const router = express.Router();
 // update password
 router.patch("/user/password/update", validate("passwordUpdate"),postUpdatePassword);
-tokenVerify
+tokenVerify;
 //login a user
 router.post("/user/signin",validate("login"), postLogin);
 
