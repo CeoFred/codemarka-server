@@ -25,10 +25,6 @@ export default (server: express.Application) => {
             username: string;
         }
 
-        interface fileInterface {
-            id: string;
-            content: string;
-        }
         // event when someone joins a class
         socket.on("join", (data: JoinObj) => {
 
@@ -55,8 +51,8 @@ export default (server: express.Application) => {
 
                         classWeb.findOne({ classroomId: data.classroom_id }).then((d: any) => {
                             if (!d && d === null) {
-                                socket.emit("classroomFilesError", 'Files not found');
-                                console.log('Web files not found');
+                                socket.emit("classroomFilesError", "Files not found");
+                                console.log("Web files not found");
                             } else {
 
                                 const cssfileId = d.css;
@@ -64,7 +60,7 @@ export default (server: express.Application) => {
                                 const htmlFileId = d.html;
 
                                 if(!cssfileId || !jsFileId || !htmlFileId){
-                                    socket.emit("classroomFilesError",'File ID not found');
+                                    socket.emit("classroomFilesError","File ID not found");
                                 }
 
                                 const classFilesDir = `${__dirname}/../classroomFiles/${data.classroom_id}/`;
@@ -73,47 +69,47 @@ export default (server: express.Application) => {
 
                                     if(err){
                                         console.log(err);
-                                        socket.emit("classroomFilesError",'File Directory Not Found');
+                                        socket.emit("classroomFilesError","File Directory Not Found");
                                     }
                                     else {
-                                let htmlFilePath : string, cssFilePath : string, jsFilePath: string;
-                                let htmlFileContent : any , cssFileContent : any, jsFileContent: any;
+                                        let htmlFilePath: string, cssFilePath: string, jsFilePath: string;
+                                        let htmlFileContent: any , cssFileContent: any, jsFileContent: any;
                                         // Loop through files inclassroom files
-                                files.forEach( element => {
+                                        files.forEach( element => {
 
-                                        // read each file in classroom folder
-                                 if (element.name.includes('css')) {
-                                     cssFilePath = `${classFilesDir}/${element.name}`;
-                                     cssFileContent = fs.readFileSync(cssFilePath,'utf8');
-                                 }
+                                            // read each file in classroom folder
+                                            if (element.name.includes("css")) {
+                                                cssFilePath = `${classFilesDir}/${element.name}`;
+                                                cssFileContent = fs.readFileSync(cssFilePath,"utf8");
+                                            }
 
-                                 if (element.name.includes('js')) {
-                                    jsFilePath = `${classFilesDir}/${element.name}`;
-                                    jsFileContent = fs.readFileSync(jsFilePath,'utf8');
+                                            if (element.name.includes("js")) {
+                                                jsFilePath = `${classFilesDir}/${element.name}`;
+                                                jsFileContent = fs.readFileSync(jsFilePath,"utf8");
 
-                                }
+                                            }
 
-                                if (element.name.includes('html')) {
-                                    htmlFilePath = `${classFilesDir}/${element.name}`;
-                                    htmlFileContent = fs.readFileSync(htmlFilePath,'utf8');
+                                            if (element.name.includes("html")) {
+                                                htmlFilePath = `${classFilesDir}/${element.name}`;
+                                                htmlFileContent = fs.readFileSync(htmlFilePath,"utf8");
 
-                                }                                
+                                            }                                
                                         });
                                         const ht = {
                                             id : htmlFileId,
                                             content : htmlFileContent
-                                        }
+                                        };
                                         const cs = {
                                             id : cssfileId,
                                             content : cssFileContent
-                                        }
-                                    socket.emit("class_files",cs,ht);
-                                }
+                                        };
+                                        socket.emit("class_files",cs,ht);
+                                    }
                                 
-                                })
+                                });
 
                             }
-                        })
+                        });
                     });
                 } else {
                     console.log("classroom not found");
@@ -177,7 +173,7 @@ export default (server: express.Application) => {
             });
         });
 
-        interface editorChangedInterface {
+        interface EditorChangedInterface {
             class: string;
             user: string;
             content: string;
@@ -185,33 +181,33 @@ export default (server: express.Application) => {
             id: string;
         }
         
-        socket.on("editorChanged", (data: editorChangedInterface) => {
+        socket.on("editorChanged", (data: EditorChangedInterface) => {
             
             const classFilesDir = `${__dirname}/../classroomFiles/${data.class}/`;
           
             fs.readdir(classFilesDir,{withFileTypes:true},(err,files) => {
                 if(err){
-                    socket.emit("classroomFilesError",'File Directory Not Found');
+                    socket.emit("classroomFilesError","File Directory Not Found");
                     console.error(err);
                 }
                 else {
 
                     files.forEach(element => {
                         if (element.name.includes(data.file) && element.name === `${data.id}.${data.file}`) {
-                         fs.writeFile(`${classFilesDir}${element.name}`,data.content,(err) => {
-                             if(err) console.error(err);
-                             socket.emit("class_files_updated",{
-                                 ...data
-                             });
+                            fs.writeFile(`${classFilesDir}${element.name}`,data.content,(err) => {
+                                if(err) console.error(err);
+                                socket.emit("class_files_updated",{
+                                    ...data
+                                });
                             
-                         })   
+                            });   
                         } 
 
 
                     });
                 }
-            })
-        })
+            });
+        });
 
 
         socket.on("disconnect", function () {
