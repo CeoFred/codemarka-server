@@ -162,8 +162,6 @@ export default (server: express.Application) => {
                                         msg: data.message,
                                         name: u.username
                                     });
-
-
                             }
                         }
                     );
@@ -196,14 +194,12 @@ export default (server: express.Application) => {
                         if (element.name.includes(data.file) && element.name === `${data.id}.${data.file}`) {
                             fs.writeFile(`${classFilesDir}${element.name}`,data.content,(err) => {
                                 if(err) console.error(err);
-                                socket.emit("class_files_updated",{
+                                nsp.emit("class_files_updated",{
                                     ...data
                                 });
                             
                             });   
-                        } 
-
-
+                        }
                     });
                 }
             });
