@@ -24,6 +24,7 @@ export default (server: express.Application) => {
             classroom_id: string;
             username: string;
         }
+        let classfiles : any[] = [];
 
         // event when someone joins a class
         socket.on("join", (data: JoinObj) => {
@@ -76,7 +77,7 @@ export default (server: express.Application) => {
                                         let htmlFileContent: any , cssFileContent: any, jsFileContent: any;
                                         // Loop through files inclassroom files
                                         files.forEach( element => {
-
+                                            classfiles.push(element);
                                             // read each file in classroom folder
                                             if (element.name.includes("css")) {
                                                 cssFilePath = `${classFilesDir}/${element.name}`;
@@ -179,32 +180,25 @@ export default (server: express.Application) => {
             id: string;
         }
         
-        socket.on("editorChanged", (data: EditorChangedInterface) => {
-            
+        socket.on("editorChanged", (data: EditorChangedInterface) => {            
             const classFilesDir = `${__dirname}/../classroomFiles/${data.class}/`;
-          
-            fs.readdir(classFilesDir,{withFileTypes:true},(err,files) => {
-                if(err){
-                    socket.emit("classroomFilesError","File Directory Not Found");
-                    console.error(err);
-                }
-                else {
 
-                    files.forEach(element => {
+                    classfiles.forEach(element => {
                         if (element.name.includes(data.file) && element.name === `${data.id}.${data.file}`) {
-                            fs.writeFile(`${classFilesDir}${element.name}`,data.content,(err) => {
-                                if(err) console.error(err);
+                        fs.writeFile(`${classFilesDir}${element.name}`,data.content,(err) => {
+                            if(!err){
                                 nsp.emit("class_files_updated",{
                                     ...data
                                 });
+                                console.log(`${element.name} updated`);
+                            } else {
+                                console.error(err);
+                            }
+                        })                               
                             
-                            });   
                         }
-                    });
-                }
-            });
-        });
-
+                    });   
+                });
 
         socket.on("disconnect", function () {
             delete clients[socket.id];
