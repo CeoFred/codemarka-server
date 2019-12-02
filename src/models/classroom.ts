@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 
 export type ClassroomDocument = mongoose.Document & {
-    
+    owner: string;
 };
 
 
@@ -46,7 +46,25 @@ const classroomSchema = new mongoose.Schema({
         default:0,
         type: Number
     },
-    messages: [Object]
+    messages: [Object],
+    visits: {
+        default:0,
+        type: Number
+    },
+    likes : {
+        default:0,
+        type: Number
+    },
+    location: {
+        required: false,
+        default: "Nigeria",
+        type: "String"
+    },
+    shortUrl:{
+        required: false,
+        type: String,
+        default:"https://tinyclab.herokuapp.com"
+    }
     ,
 }, { timestamps: true });
 

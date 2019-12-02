@@ -24,7 +24,7 @@ export default (server: express.Application) => {
             classroom_id: string;
             username: string;
         }
-        let classfiles : any[] = [];
+        let classfiles: any[] = [];
 
         // event when someone joins a class
         socket.on("join", (data: JoinObj) => {
@@ -183,22 +183,22 @@ export default (server: express.Application) => {
         socket.on("editorChanged", (data: EditorChangedInterface) => {            
             const classFilesDir = `${__dirname}/../classroomFiles/${data.class}/`;
 
-                    classfiles.forEach(element => {
-                        if (element.name.includes(data.file) && element.name === `${data.id}.${data.file}`) {
-                        fs.writeFile(`${classFilesDir}${element.name}`,data.content,(err) => {
-                            if(!err){
-                                nsp.emit("class_files_updated",{
-                                    ...data
-                                });
-                                console.log(`${element.name} updated`);
-                            } else {
-                                console.error(err);
-                            }
-                        })                               
-                            
+            classfiles.forEach(element => {
+                if (element.name.includes(data.file) && element.name === `${data.id}.${data.file}`) {
+                    fs.writeFile(`${classFilesDir}${element.name}`,data.content,(err) => {
+                        if(!err){
+                            nsp.emit("class_files_updated",{
+                                ...data
+                            });
+                            console.log(`${element.name} updated`);
+                        } else {
+                            console.error(err);
                         }
-                    });   
-                });
+                    });                               
+                            
+                }
+            });   
+        });
 
         socket.on("disconnect", function () {
             delete clients[socket.id];

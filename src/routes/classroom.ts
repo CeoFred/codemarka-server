@@ -1,5 +1,5 @@
 import express from "express";
-import {createClassRoom,verifyClassroom} from "../controllers/classroom";
+import {shortenClassLinks, createClassRoom,verifyClassroom, getTrending, verifyUserClassroom, getUserClassrooms} from "../controllers/classroom";
 import {check} from "../middleware/check_Auth";
 
 const router = express.Router();
@@ -13,12 +13,14 @@ router.post("/create", check, createClassRoom);
 // // get details about a particular class
 router.post("/verify/", verifyClassroom);
 
+router.get("/verify/:userid/:classid",verifyUserClassroom);
 
+router.get("/user/:userid",check, getUserClassrooms);
 // // invite someone via mail to a class
-// router.post("/invite/:classroomid", check);
+router.put("/shorten/:classid", check, shortenClassLinks);
 
 // // here we check if user is eligible to join a classroom
-// router.get("/join/:classroomid", check);
+router.get("/trending/", getTrending);
 
 // // set permissions
 // router.post("/permissions/set/:classroomid", check);

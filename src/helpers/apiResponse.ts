@@ -1,6 +1,6 @@
 import { Response } from "express";
 
-export const successResponse = function (res: Response, msg: string | object) {
+export const successResponse = function (res: Response, msg: string | object | number): object {
     var data = {
         status: 1,
         message: msg
@@ -8,7 +8,7 @@ export const successResponse = function (res: Response, msg: string | object) {
     return res.status(200).json(data);
 };
 
-export const successResponseWithData = function (res: Response, msg: string | object, data: string | object) {
+export const successResponseWithData = function (res: Response, msg: string | object, data: string | object | number): object {
     var resData = {
         status: 1,
         message: msg,
@@ -17,7 +17,7 @@ export const successResponseWithData = function (res: Response, msg: string | ob
     return res.status(200).json(resData);
 };
 
-export const ErrorResponse = function (res: Response, msg: string | object) {
+export const ErrorResponse = function (res: Response, msg: string | object): object {
     var data = {
         status: 0,
         message: msg,
@@ -25,7 +25,7 @@ export const ErrorResponse = function (res: Response, msg: string | object) {
     return res.status(500).json(data);
 };
 
-export const notFoundResponse = function (res: Response, msg: string | object) {
+export const notFoundResponse = function (res: Response, msg: string | object): object {
     var data = {
         status: 0,
         message: msg,
@@ -33,7 +33,7 @@ export const notFoundResponse = function (res: Response, msg: string | object) {
     return res.status(404).json(data);
 };
 
-export const validationErrorWithData = function (res: Response, msg: string | object, data: string | object) {
+export const validationErrorWithData = function (res: Response, msg: string | object, data: string | object): object {
     var resData = {
         status: 0,
         message: msg,
@@ -42,7 +42,7 @@ export const validationErrorWithData = function (res: Response, msg: string | ob
     return res.status(400).json(resData);
 };
 
-export const unauthorizedResponse = function (res: Response, msg: string | object) {
+export const unauthorizedResponse = function (res: Response, msg: string | object): object {
     var data = {
         status: 0,
         message: msg,
