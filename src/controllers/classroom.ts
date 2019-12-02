@@ -143,7 +143,7 @@ export const getTrending = (req: Request, res: Response): any => {
 };
 
 const generateShortUrl = (): string => {
-    return  `https://tinyclab.herokuapp.com/${randomNumber(6)}`;
+    return  `https://tinycloab.herokuapp.com/${randomNumber(6)}`;
 };
 // shorten classroom links
 export const shortenClassLinks = (req: Request, res: Response, next: NextFunction): any => {

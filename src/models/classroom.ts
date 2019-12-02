@@ -63,7 +63,7 @@ const classroomSchema = new mongoose.Schema({
     shortUrl:{
         required: false,
         type: String,
-        default:"https://tinyclab.herokuapp.com"
+        default:"https://tinycolab.herokuapp.com"
     }
     ,
 }, { timestamps: true });
