@@ -96,25 +96,51 @@ export const createClassRoom = (req: Request, res: Response, next: NextFunction)
 
 // };
 
-// export const getClassroomFromLocation = (req: Request, res: Response) => {
-//     const location = req.params.location;
-//     // res.json({location})
-//     Classroom.find({ location }).exec().then((data: object) => res.json({ data })).catch((err: any) => res.status(404).json(err));
-// };
+export const getClassroomFromLocation = (req: Request, res: Response) => {
+    const location = req.params.location;
+    Classroom.find({ location }).exec().then((data: object) => res.json({ data })).catch((err: any) => res.status(404).json(err));
+};
 
+export const findClassRoom = (req: Request, res: Response): any => {
+    const {q} = req.params;
+    console.log(q);
+    if(q && q.trim() !== ''){
+    const reqexQ = new RegExp(q,'i');
+        Classroom.find({name:reqexQ},'name location',(err,d: ClassroomDocument) => {
+            console.log(d);
+            console.log(err);
+            if(d && err === null && d.status !== 3){
+                return apiResponse.successResponseWithData(res,"Successs",d);
+            } else {
+                return apiResponse.ErrorResponse(res,'Opps!');
+            }
+        });
+    }
+}
 
 export const verifyClassroom = (req: Request, res: Response ,next: NextFunction): any => {
 
-    const {classroomId} = req.body;
-    Classroom.findOneAndUpdate({_id:classroomId},{$inc: {visits: 1}}).then(d => {
-        if(d){
-            return apiResponse.successResponseWithData(res,"success",d);
-        }else {
-            return apiResponse.ErrorResponse(res,"class verification failed");
-        }
-    }).catch(e => {
-        return next(e);
-    });
+    const {classroom} = req.body;
+    const dire =  `${__dirname}/../classroomFiles/${classroom}/`;
+
+    
+    if(fs.existsSync(dire)){
+        Classroom.findOneAndUpdate({_id:classroom},{$inc: {visits: 1}}).then(d => {
+            if(d && d.status === 2){
+                return apiResponse.successResponseWithData(res,"success",d);
+            }else if(d && d.status === 1){
+                return apiResponse.ErrorResponse(res,"Class has not started!");
+            } else {
+                return apiResponse.ErrorResponse(res,"Class has ended!");            
+            }
+        }).catch(e => {
+            return next(e);
+        });    
+    } else {
+        return apiResponse.ErrorResponse(res,"Class Files Not Found");
+
+    }
+    
 };
 
 exports.endClassPermanently = (req: Request, res: Response) => {

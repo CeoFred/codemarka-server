@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 
 export type ClassroomDocument = mongoose.Document & {
     owner: string;
+    status: number;
 };
 
 
@@ -39,7 +40,7 @@ const classroomSchema = new mongoose.Schema({
         required: true
     },
     status: {
-        default: "3",
+        default: 3,
         type: Number
     },
     numberInClass: {
