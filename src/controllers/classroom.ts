@@ -19,7 +19,7 @@ export const createClassRoom = (req: Request, res: Response, next: NextFunction)
         return res.status(403).json({ errors: errors.array() });
     }
 
-    const { name, topic, startTime, startDate, description, clsasType, classVisibility } = req.body;
+    const { name, topic, startTime, startDate, description, classType, visibility } = req.body;
     // get user id and compare with json decoded token sent
     const userid: string = req.body.decoded._id;
 
@@ -27,8 +27,8 @@ export const createClassRoom = (req: Request, res: Response, next: NextFunction)
         name,
         topic,
         description,
-        classVisibility,
-        clsasType,
+        classVisibility:visibility,
+        classType,
         startTime,
         startDate,
         status: creating,
@@ -38,7 +38,6 @@ export const createClassRoom = (req: Request, res: Response, next: NextFunction)
         const jsfile = randomNumber(15);
         const htmlfile = randomNumber(15);
         const cssfile = randomNumber(15);
-
 
         // create editors for class
         const dire =  `${__dirname}/../classroomFiles/${data._id}/`;
@@ -52,7 +51,6 @@ export const createClassRoom = (req: Request, res: Response, next: NextFunction)
             
 
                 if (!err) {
-                    console.log(`Directory created - ${dire}`);
                     
                     fs.copyFile(jsSource,`${dire}/${jsfile}.js`,(err) => {
                         if(err) next(err);
@@ -103,26 +101,25 @@ export const getClassroomFromLocation = (req: Request, res: Response) => {
 
 export const findClassRoom = (req: Request, res: Response): any => {
     const {q} = req.params;
-    console.log(q);
-    if(q && q.trim() !== ''){
-    const reqexQ = new RegExp(q,'i');
-        Classroom.find({name:reqexQ},'name location',(err,d: ClassroomDocument) => {
-            console.log(d);
-            console.log(err);
+    if(q && q.trim() !== ""){
+        const reqexQ = new RegExp(q,"i");
+        Classroom.find({name:reqexQ},"name location",(err,d: ClassroomDocument) => {
             if(d && err === null && d.status !== 3){
                 return apiResponse.successResponseWithData(res,"Successs",d);
             } else {
-                return apiResponse.ErrorResponse(res,'Opps!');
+                return apiResponse.ErrorResponse(res,"Opps!");
             }
         });
     }
-}
+};
 
 export const verifyClassroom = (req: Request, res: Response ,next: NextFunction): any => {
 
     const {classroom} = req.body;
     const dire =  `${__dirname}/../classroomFiles/${classroom}/`;
-
+    if(classroom && classroom.trim().lenght < 24){
+        return apiResponse.ErrorResponse(res,"Invalid classroom id");
+    }
     
     if(fs.existsSync(dire)){
         Classroom.findOneAndUpdate({_id:classroom},{$inc: {visits: 1}}).then(d => {

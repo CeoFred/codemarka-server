@@ -32,7 +32,7 @@ export default (server: express.Application) => {
             socket.user = data.userId;
             socket.room = data.classroom_id;
             socket.username = data.username;
-
+            console.log(data);
 
             Classroom.findOne({ _id: data.classroom_id, status: 2 }).then((d: any) => {
                 if (d) {
@@ -40,7 +40,7 @@ export default (server: express.Application) => {
                     socket.emit("updateMsg", { by: "server", msgs: d.messages, type: "oldMsgUpdate" });
 
                     socket.join(data.classroom_id, () => {
-
+                        console.log(nsp)
                         nsp.to(data.classroom_id).emit("someoneJoined",
                             {
                                 by: "server",
@@ -123,20 +123,25 @@ export default (server: express.Application) => {
 
 
 
-        socket.on("leave", () => {
+        socket.on("leave", (data: JoinObj) => {
             // socket.leave(data.classroom_id)
             console.log("left", socket.room);
-
+            if(data.classroom_id === socket.room){
+                socket.leave(socket.room, () => {
+                    nsp.to(socket.room).emit("updatechat_left", {
+                        by: "server",
+                        msg: data.userId + " left",
+                        for: data.userId,
+                        name: data.username,
+                        type: "sLeft"
+                    });    
+                });
+            } else {
+                socket.emit("leave_error","Room mismatch");
+            }
             // socket.broadcast.to(data.classroom_id).emit('left', {from:'server',msg:`someone left`});
-            socket.leave(socket.room, () => {
-                for (const key in socket.rooms) {
-                    if (socket.rooms.hasOwnProperty(key)) {
-                        const element = socket.rooms[key];
-                        console.log(`${key} - ${element}`);
-                    }
-                }
-            });
-            socket.broadcast.to(socket.room).emit("updatechat_left", "SERVER", socket.user + " has left this room");
+            
+            
 
         });
         interface NewMessageInterface {
@@ -146,7 +151,7 @@ export default (server: express.Application) => {
         }
 
         socket.on("newMessage", (data: NewMessageInterface) => {
-
+            console.log(data);
             User.findOne({ _id: data.user }).then(u => {
                 if (u) {
                     Classroom.findByIdAndUpdate({ _id: data.class, status: 2 },
@@ -203,7 +208,14 @@ export default (server: express.Application) => {
         socket.on("disconnect", function () {
             delete clients[socket.id];
             socket.leave(socket.room);
-            console.log(`${socket.id} disconnected`);
+            nsp.to(socket.room).emit("updatechat_left", {
+                        by: "server",
+                        msg: socket.userId + " left",
+                        for: socket.userId,
+                        name: socket.username,
+                        type: "sLeft"
+                    });  
+            console.log(`${socket.username} disconnected`);
         });
     });
 

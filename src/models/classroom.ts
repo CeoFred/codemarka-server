@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 export type ClassroomDocument = mongoose.Document & {
     owner: string;
     status: number;
+    classVisibility: string;
 };
 
 
@@ -33,7 +34,9 @@ const classroomSchema = new mongoose.Schema({
         type: String
     },
     classVisibility: {
-        type: String
+        type: String,
+        required: true,
+        default:"Public"
     },
     startTime:{
         type: String,
