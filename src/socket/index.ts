@@ -1,6 +1,8 @@
 import { chat } from "./config";
 import express from "express";
 import fs from "fs";
+import moment from "moment";
+import uuidv4 from "uuid/v4";
 
 import { Classroom } from "../models/classroom";
 import { classWeb } from "../models/classWebFiles";
@@ -32,7 +34,6 @@ export default (server: express.Application) => {
             socket.user = data.userId;
             socket.room = data.classroom_id;
             socket.username = data.username;
-            console.log(data);
 
             Classroom.findOne({ _id: data.classroom_id, status: 2 }).then((d: any) => {
                 if (d) {
@@ -40,14 +41,15 @@ export default (server: express.Application) => {
                     socket.emit("updateMsg", { by: "server", msgs: d.messages, type: "oldMsgUpdate" });
 
                     socket.join(data.classroom_id, () => {
-                        console.log(nsp)
                         nsp.to(data.classroom_id).emit("someoneJoined",
                             {
                                 by: "server",
                                 msg: data.userId + " joined",
                                 for: data.userId,
                                 name: data.username,
-                                type: "sJoin"
+                                type: "sJoin",
+                                timeSent: moment().format('LT'),
+                                msgId: uuidv4()
                             });
 
                         classWeb.findOne({ classroomId: data.classroom_id }).then((d: any) => {
@@ -133,7 +135,9 @@ export default (server: express.Application) => {
                         msg: data.userId + " left",
                         for: data.userId,
                         name: data.username,
-                        type: "sLeft"
+                        type: "sLeft",
+                        timeSent: moment().format('LT'),
+                         msgId: uuidv4()
                     });    
                 });
             } else {
@@ -155,7 +159,8 @@ export default (server: express.Application) => {
             User.findOne({ _id: data.user }).then(u => {
                 if (u) {
                     Classroom.findByIdAndUpdate({ _id: data.class, status: 2 },
-                        { $push: { messages: { name: u.username, by: data.user, msg: data.message } } },
+                        { $push: { messages: { timeSent: moment().format('LT'),
+                                        msgId: uuidv4(),name: u.username, by: data.user, msg: data.message } } },
                         { upsert: true },
                         function (err, doc: object) {
                             if (err) {
@@ -166,7 +171,9 @@ export default (server: express.Application) => {
                                     {
                                         by: data.user,
                                         msg: data.message,
-                                        name: u.username
+                                        name: u.username,
+                                        timeSent: moment().format('LT'),
+                                        msgId: uuidv4()
                                     });
                             }
                         }
@@ -209,12 +216,12 @@ export default (server: express.Application) => {
             delete clients[socket.id];
             socket.leave(socket.room);
             nsp.to(socket.room).emit("updatechat_left", {
-                        by: "server",
-                        msg: socket.userId + " left",
-                        for: socket.userId,
-                        name: socket.username,
-                        type: "sLeft"
-                    });  
+                by: "server",
+                msg: socket.userId + " left",
+                for: socket.userId,
+                name: socket.username,
+                type: "sLeft"
+            });  
             console.log(`${socket.username} disconnected`);
         });
     });
