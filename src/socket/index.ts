@@ -48,10 +48,13 @@ export default (server: express.Application) => {
                                 for: data.userId,
                                 name: data.username,
                                 type: "sJoin",
-                                timeSent: moment().format('LT'),
                                 msgId: uuidv4()
                             });
-
+                        Classroom.findOneAndUpdate({ _id: data.classroom_id }, { $inc: { numberInClass: 1 } }, (err, doc) => {
+                            if (err) {
+                                socket.emit("classRoomError", "failed to update");
+                            }
+                        });
                         classWeb.findOne({ classroomId: data.classroom_id }).then((d: any) => {
                             if (!d && d === null) {
                                 socket.emit("classroomFilesError", "Files not found");
@@ -62,53 +65,53 @@ export default (server: express.Application) => {
                                 const jsFileId = d.js;
                                 const htmlFileId = d.html;
 
-                                if(!cssfileId || !jsFileId || !htmlFileId){
-                                    socket.emit("classroomFilesError","File ID not found");
+                                if (!cssfileId || !jsFileId || !htmlFileId) {
+                                    socket.emit("classroomFilesError", "File ID not found");
                                 }
 
                                 const classFilesDir = `${__dirname}/../classroomFiles/${data.classroom_id}/`;
 
-                                fs.readdir(classFilesDir,{withFileTypes:true},(err,files) => {
+                                fs.readdir(classFilesDir, { withFileTypes: true }, (err, files) => {
 
-                                    if(err){
+                                    if (err) {
                                         console.log(err);
-                                        socket.emit("classroomFilesError","File Directory Not Found");
+                                        socket.emit("classroomFilesError", "File Directory Not Found");
                                     }
                                     else {
                                         let htmlFilePath: string, cssFilePath: string, jsFilePath: string;
-                                        let htmlFileContent: any , cssFileContent: any, jsFileContent: any;
+                                        let htmlFileContent: any, cssFileContent: any, jsFileContent: any;
                                         // Loop through files inclassroom files
-                                        files.forEach( element => {
+                                        files.forEach(element => {
                                             classfiles.push(element);
                                             // read each file in classroom folder
                                             if (element.name.includes("css")) {
                                                 cssFilePath = `${classFilesDir}/${element.name}`;
-                                                cssFileContent = fs.readFileSync(cssFilePath,"utf8");
+                                                cssFileContent = fs.readFileSync(cssFilePath, "utf8");
                                             }
 
                                             if (element.name.includes("js")) {
                                                 jsFilePath = `${classFilesDir}/${element.name}`;
-                                                jsFileContent = fs.readFileSync(jsFilePath,"utf8");
+                                                jsFileContent = fs.readFileSync(jsFilePath, "utf8");
 
                                             }
 
                                             if (element.name.includes("html")) {
                                                 htmlFilePath = `${classFilesDir}/${element.name}`;
-                                                htmlFileContent = fs.readFileSync(htmlFilePath,"utf8");
+                                                htmlFileContent = fs.readFileSync(htmlFilePath, "utf8");
 
-                                            }                                
+                                            }
                                         });
                                         const ht = {
-                                            id : htmlFileId,
-                                            content : htmlFileContent
+                                            id: htmlFileId,
+                                            content: htmlFileContent
                                         };
                                         const cs = {
-                                            id : cssfileId,
-                                            content : cssFileContent
+                                            id: cssfileId,
+                                            content: cssFileContent
                                         };
-                                        socket.emit("class_files",cs,ht);
+                                        socket.emit("class_files", cs, ht);
                                     }
-                                
+
                                 });
 
                             }
@@ -128,7 +131,7 @@ export default (server: express.Application) => {
         socket.on("leave", (data: JoinObj) => {
             // socket.leave(data.classroom_id)
             console.log("left", socket.room);
-            if(data.classroom_id === socket.room){
+            if (data.classroom_id === socket.room) {
                 socket.leave(socket.room, () => {
                     nsp.to(socket.room).emit("updatechat_left", {
                         by: "server",
@@ -136,16 +139,16 @@ export default (server: express.Application) => {
                         for: data.userId,
                         name: data.username,
                         type: "sLeft",
-                        timeSent: moment().format('LT'),
-                         msgId: uuidv4()
-                    });    
+                        timeSent: moment().format("LT"),
+                        msgId: uuidv4()
+                    });
                 });
             } else {
-                socket.emit("leave_error","Room mismatch");
+                socket.emit("leave_error", "Room mismatch");
             }
             // socket.broadcast.to(data.classroom_id).emit('left', {from:'server',msg:`someone left`});
-            
-            
+
+
 
         });
         interface NewMessageInterface {
@@ -158,9 +161,16 @@ export default (server: express.Application) => {
             console.log(data);
             User.findOne({ _id: data.user }).then(u => {
                 if (u) {
+                    const msgId = uuidv4();
                     Classroom.findByIdAndUpdate({ _id: data.class, status: 2 },
-                        { $push: { messages: { timeSent: moment().format('LT'),
-                                        msgId: uuidv4(),name: u.username, by: data.user, msg: data.message } } },
+                        {
+                            $push: {
+                                messages: {
+                                    timeSent: moment().format("LT"),
+                                    msgId, name: u.username, by: data.user, msg: data.message
+                                }
+                            }
+                        },
                         { upsert: true },
                         function (err, doc: object) {
                             if (err) {
@@ -172,8 +182,8 @@ export default (server: express.Application) => {
                                         by: data.user,
                                         msg: data.message,
                                         name: u.username,
-                                        timeSent: moment().format('LT'),
-                                        msgId: uuidv4()
+                                        timeSent: moment().format("LT"),
+                                        msgId
                                     });
                             }
                         }
@@ -191,25 +201,25 @@ export default (server: express.Application) => {
             file: string;
             id: string;
         }
-        
-        socket.on("editorChanged", (data: EditorChangedInterface) => {            
+
+        socket.on("editorChanged", (data: EditorChangedInterface) => {
             const classFilesDir = `${__dirname}/../classroomFiles/${data.class}/`;
 
             classfiles.forEach(element => {
                 if (element.name.includes(data.file) && element.name === `${data.id}.${data.file}`) {
-                    fs.writeFile(`${classFilesDir}${element.name}`,data.content,(err) => {
-                        if(!err){
-                            nsp.emit("class_files_updated",{
+                    fs.writeFile(`${classFilesDir}${element.name}`, data.content, (err) => {
+                        if (!err) {
+                            nsp.emit("class_files_updated", {
                                 ...data
                             });
                             console.log(`${element.name} updated`);
                         } else {
                             console.error(err);
                         }
-                    });                               
-                            
+                    });
+
                 }
-            });   
+            });
         });
 
         socket.on("disconnect", function () {
@@ -220,8 +230,15 @@ export default (server: express.Application) => {
                 msg: socket.userId + " left",
                 for: socket.userId,
                 name: socket.username,
-                type: "sLeft"
-            });  
+                type: "sLeft",
+                timeSent: moment().format("LT"),
+                msgId: uuidv4()
+            });
+            Classroom.findOneAndUpdate({ _id: socket.room }, { $dec: { numberInClass: 1 } }, (err, doc) => {
+                if (err) {
+                    socket.emit("classRoomError", "failed to update");
+                }
+            });
             console.log(`${socket.username} disconnected`);
         });
     });

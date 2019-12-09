@@ -25,6 +25,7 @@ const classroomSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    subAdmins : [Object],
     classType:{
         type: String,
         default:"Basic web App"
