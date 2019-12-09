@@ -4,6 +4,7 @@ export type ClassroomDocument = mongoose.Document & {
     owner: string;
     status: number;
     classVisibility: string;
+    students: [Object];
 };
 
 
@@ -69,7 +70,8 @@ const classroomSchema = new mongoose.Schema({
         required: false,
         type: String,
         default:"https://tinycolab.herokuapp.com"
-    }
+    },
+    students: [Object]
     ,
 }, { timestamps: true });
 

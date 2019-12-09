@@ -4,7 +4,7 @@ import fs from "fs";
 import moment from "moment";
 import uuidv4 from "uuid/v4";
 
-import { Classroom } from "../models/classroom";
+import { Classroom, ClassroomDocument } from "../models/classroom";
 import { classWeb } from "../models/classWebFiles";
 
 import { User } from "../models/User";
@@ -34,96 +34,119 @@ export default (server: express.Application) => {
             socket.user = data.userId;
             socket.room = data.classroom_id;
             socket.username = data.username;
+            socket.userModel;
+            // find user and update
+            User.findOne({ _id: data.userId }).then(user => {
+                let studentObj;
 
-            Classroom.findOne({ _id: data.classroom_id, status: 2 }).then((d: any) => {
-                if (d) {
-                    // console.log(d);
-                    socket.emit("updateMsg", { by: "server", msgs: d.messages, type: "oldMsgUpdate" });
+                if (user && user !== null) {
 
-                    socket.join(data.classroom_id, () => {
-                        nsp.to(data.classroom_id).emit("someoneJoined",
-                            {
-                                by: "server",
-                                msg: data.userId + " joined",
-                                for: data.userId,
-                                name: data.username,
-                                type: "sJoin",
-                                msgId: uuidv4()
-                            });
-                        Classroom.findOneAndUpdate({ _id: data.classroom_id }, { $inc: { numberInClass: 1 } }, (err, doc) => {
-                            if (err) {
-                                socket.emit("classRoomError", "failed to update");
-                            }
-                        });
-                        classWeb.findOne({ classroomId: data.classroom_id }).then((d: any) => {
-                            if (!d && d === null) {
-                                socket.emit("classroomFilesError", "Files not found");
-                                console.log("Web files not found");
-                            } else {
+                    studentObj = {
+                        _id: user._id,
+                        username: user.username
+                    };
 
-                                const cssfileId = d.css;
-                                const jsFileId = d.js;
-                                const htmlFileId = d.html;
+                    Classroom.findOneAndUpdate({ _id: data.classroom_id, status: 2 },
+                        {
+                            $push:
+                                { students: studentObj },
+                            $inc: { numberInClass: 1 }
+                        },
+                        { new: true }).then((d: any) => {
+                            if (d) {
+                                console.log(d.students);
+                                console.log(d.numberInClass);
+                                socket.emit("updateMsg", { by: "server", msgs: d.messages, type: "oldMsgUpdate" });
 
-                                if (!cssfileId || !jsFileId || !htmlFileId) {
-                                    socket.emit("classroomFilesError", "File ID not found");
-                                }
-
-                                const classFilesDir = `${__dirname}/../classroomFiles/${data.classroom_id}/`;
-
-                                fs.readdir(classFilesDir, { withFileTypes: true }, (err, files) => {
-
-                                    if (err) {
-                                        console.log(err);
-                                        socket.emit("classroomFilesError", "File Directory Not Found");
-                                    }
-                                    else {
-                                        let htmlFilePath: string, cssFilePath: string, jsFilePath: string;
-                                        let htmlFileContent: any, cssFileContent: any, jsFileContent: any;
-                                        // Loop through files inclassroom files
-                                        files.forEach(element => {
-                                            classfiles.push(element);
-                                            // read each file in classroom folder
-                                            if (element.name.includes("css")) {
-                                                cssFilePath = `${classFilesDir}/${element.name}`;
-                                                cssFileContent = fs.readFileSync(cssFilePath, "utf8");
-                                            }
-
-                                            if (element.name.includes("js")) {
-                                                jsFilePath = `${classFilesDir}/${element.name}`;
-                                                jsFileContent = fs.readFileSync(jsFilePath, "utf8");
-
-                                            }
-
-                                            if (element.name.includes("html")) {
-                                                htmlFilePath = `${classFilesDir}/${element.name}`;
-                                                htmlFileContent = fs.readFileSync(htmlFilePath, "utf8");
-
-                                            }
+                                socket.join(data.classroom_id, () => {
+                                    nsp.to(data.classroom_id).emit("someoneJoined",
+                                        {
+                                            by: "server",
+                                            msg: data.userId + " joined",
+                                            for: data.userId,
+                                            name: data.username,
+                                            type: "sJoin",
+                                            msgId: uuidv4()
                                         });
-                                        const ht = {
-                                            id: htmlFileId,
-                                            content: htmlFileContent
-                                        };
-                                        const cs = {
-                                            id: cssfileId,
-                                            content: cssFileContent
-                                        };
-                                        socket.emit("class_files", cs, ht);
-                                    }
+                                    
+                                    classWeb.findOne({ classroomId: data.classroom_id }).then((d: any) => {
+                                        if (!d && d === null) {
+                                            socket.emit("classroomFilesError", "Files not found");
+                                            console.log("Web files not found");
+                                        } else {
 
+                                            const cssfileId = d.css;
+                                            const jsFileId = d.js;
+                                            const htmlFileId = d.html;
+
+                                            if (!cssfileId || !jsFileId || !htmlFileId) {
+                                                socket.emit("classroomFilesError", "File ID not found");
+                                            }
+
+                                            const classFilesDir = `${__dirname}/../classroomFiles/${data.classroom_id}/`;
+
+                                            fs.readdir(classFilesDir, { withFileTypes: true }, (err, files) => {
+
+                                                if (err) {
+                                                    console.log(err);
+                                                    socket.emit("classroomFilesError", "File Directory Not Found");
+                                                }
+                                                else {
+                                                    let htmlFilePath: string, cssFilePath: string, jsFilePath: string;
+                                                    let htmlFileContent: any, cssFileContent: any, jsFileContent: any;
+                                                    // Loop through files inclassroom files
+                                                    files.forEach(element => {
+                                                        classfiles.push(element);
+                                                        // read each file in classroom folder
+                                                        if (element.name.includes("css")) {
+                                                            cssFilePath = `${classFilesDir}/${element.name}`;
+                                                            cssFileContent = fs.readFileSync(cssFilePath, "utf8");
+                                                        }
+
+                                                        if (element.name.includes("js")) {
+                                                            jsFilePath = `${classFilesDir}/${element.name}`;
+                                                            jsFileContent = fs.readFileSync(jsFilePath, "utf8");
+
+                                                        }
+
+                                                        if (element.name.includes("html")) {
+                                                            htmlFilePath = `${classFilesDir}/${element.name}`;
+                                                            htmlFileContent = fs.readFileSync(htmlFilePath, "utf8");
+
+                                                        }
+                                                    });
+                                                    const ht = {
+                                                        id: htmlFileId,
+                                                        content: htmlFileContent
+                                                    };
+                                                    const cs = {
+                                                        id: cssfileId,
+                                                        content: cssFileContent
+                                                    };
+                                                    socket.emit("class_files", cs, ht);
+                                                }
+
+                                            });
+
+                                        }
+                                    });
                                 });
-
+                            } else {
+                                console.log("classroom not found");
+                                socket.emit("classroomError", null);
                             }
+                        }).catch(e => {
+                            console.log(e);
                         });
-                    });
-                } else {
-                    console.log("classroom not found");
-                    socket.emit("classroomError", null);
                 }
-            }).catch(e => {
-                console.log(e);
+            }).catch(err => {
+
+                socket.emit("ErrorFetchingUser");
+
             });
+
+
+
         });
 
 
@@ -142,13 +165,31 @@ export default (server: express.Application) => {
                         timeSent: moment().format("LT"),
                         msgId: uuidv4()
                     });
+
+                    Classroom.findById(data.classroom_id, (err, room: ClassroomDocument) => {
+
+                        if (err) {
+
+                        } else if (room && room !== null) {
+                            // find user in student field array
+                            room.students.forEach((user: { _id: string }, i) => {
+                                if (user._id === data.userId) {
+
+                                    let newclassusers = room.students.splice(i, 1)
+                                    Classroom.findOneAndUpdate({ _id: data.classroom_id },
+                                         {$inc: { numberInClass: -1 }, students: newclassusers }, (err, doc) => {
+                                        if (err) console.log('error');
+                                        console.log('class users updated');
+                                    });
+                                }
+                            })
+                        }
+
+                    });
                 });
             } else {
                 socket.emit("leave_error", "Room mismatch");
             }
-            // socket.broadcast.to(data.classroom_id).emit('left', {from:'server',msg:`someone left`});
-
-
 
         });
         interface NewMessageInterface {
@@ -158,7 +199,6 @@ export default (server: express.Application) => {
         }
 
         socket.on("newMessage", (data: NewMessageInterface) => {
-            console.log(data);
             User.findOne({ _id: data.user }).then(u => {
                 if (u) {
                     const msgId = uuidv4();
@@ -225,23 +265,40 @@ export default (server: express.Application) => {
         socket.on("disconnect", function () {
             delete clients[socket.id];
             socket.leave(socket.room);
+
             nsp.to(socket.room).emit("updatechat_left", {
                 by: "server",
-                msg: socket.userId + " left",
-                for: socket.userId,
+                msg: socket.username + " left",
+                for: socket.user,
                 name: socket.username,
                 type: "sLeft",
                 timeSent: moment().format("LT"),
                 msgId: uuidv4()
             });
-            Classroom.findOneAndUpdate({ _id: socket.room }, { $dec: { numberInClass: 1 } }, (err, doc) => {
+
+            Classroom.findById(socket.room, (err, room: ClassroomDocument) => {
+
                 if (err) {
-                    socket.emit("classRoomError", "failed to update");
+
+                } else if (room && room !== null) {
+                    // find user in student field array
+                    room.students.forEach((user: { _id: any }, i) => {
+                        if (user._id == socket.user) {
+                            let newclassusers: any[];
+
+                            newclassusers = room.students.filter((s: any,i) => {
+                                return s._id != socket.user
+                            });
+                            
+                            Classroom.findOneAndUpdate({ _id: socket.room }, {$inc: { numberInClass: -1 }, students: newclassusers },{new:true}, (err, doc) => {
+                                if (err) console.log('error');
+                            }); 
+                        }
+                    })
                 }
+
             });
             console.log(`${socket.username} disconnected`);
         });
     });
-
-
 };
