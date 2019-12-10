@@ -184,7 +184,7 @@ export const classroomPreview = (req: Request, res: Response) => {
                         const js = {
                             id: jsFileId,
                             content: jsFileContent
-                        }
+                        };
                         
                         res.render("preview", { cs, ht, js, classroomid });
 
@@ -198,7 +198,7 @@ export const classroomPreview = (req: Request, res: Response) => {
     } catch (e) {
 
     }
-}
+};
 
 export const verifyClassroom = (req: Request, res: Response, next: NextFunction): any => {
 

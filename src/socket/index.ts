@@ -126,7 +126,7 @@ export default (server: express.Application) => {
                                                 const js = {
                                                     id: jsFileId,
                                                     content: jsFileContent
-                                                }
+                                                };
                                                 socket.emit("class_files", cs, ht, js);
                                             }
 
