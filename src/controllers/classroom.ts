@@ -1,12 +1,12 @@
 import fs from "fs";
 // import path from "path";
-import {  Request, Response,NextFunction } from "express";
+import { Request, Response, NextFunction } from "express";
 import { validationResult } from "express-validator";
 
-import {Classroom, ClassroomDocument} from "../models/classroom";
-import {randomNumber} from "../helpers/utility";
-import {successResponseWithData} from "../helpers/apiResponse";
-import {classWeb} from "../models/classWebFiles";
+import { Classroom, ClassroomDocument } from "../models/classroom";
+import { randomNumber } from "../helpers/utility";
+import { successResponseWithData } from "../helpers/apiResponse";
+import { classWeb } from "../models/classWebFiles";
 import * as apiResponse from "../helpers/apiResponse";
 
 // const created = 1;
@@ -27,48 +27,48 @@ export const createClassRoom = (req: Request, res: Response, next: NextFunction)
         name,
         topic,
         description,
-        classVisibility:visibility,
+        classVisibility: visibility,
         classType,
         startTime,
         startDate,
         status: creating,
-        owner:userid
+        owner: userid
     });
-    newclassroom.save().then((data: { _id: any}) => {
+    newclassroom.save().then((data: { _id: any }) => {
         const jsfile = randomNumber(15);
         const htmlfile = randomNumber(15);
         const cssfile = randomNumber(15);
 
         // create editors for class
-        const dire =  `${__dirname}/../classroomFiles/${data._id}/`;
+        const dire = `${__dirname}/../../main/classrooms/${data._id}/`;
         const jsSource = `${__dirname}/../../main/boilerplates/basic--web--app/index.js`;
         const cssSource = `${__dirname}/../../main/boilerplates/basic--web--app/index.css`;
         const htmlSource = `${__dirname}/../../main/boilerplates/basic--web--app/index.html`;
 
-        if(!fs.existsSync(dire)){
-        
-            fs.mkdir(dire, { recursive: true } ,(err) => {
-            
+        if (!fs.existsSync(dire)) {
+
+            fs.mkdir(dire, { recursive: true }, (err) => {
+
 
                 if (!err) {
-                    
-                    fs.copyFile(jsSource,`${dire}/${jsfile}.js`,(err) => {
-                        if(err) next(err);
+
+                    fs.copyFile(jsSource, `${dire}/${jsfile}.js`, (err) => {
+                        if (err) next(err);
                     });
-                    fs.copyFile(htmlSource,`${dire}/${htmlfile}.html`,(err) => {
-                        if(err) next(err);
+                    fs.copyFile(htmlSource, `${dire}/${htmlfile}.html`, (err) => {
+                        if (err) next(err);
                     });
-                    fs.copyFile(cssSource,`${dire}/${cssfile}.css`,(err) => {
-                        if(err) next(err);
-                    }); 
+                    fs.copyFile(cssSource, `${dire}/${cssfile}.css`, (err) => {
+                        if (err) next(err);
+                    });
                 } else {
 
                     return next(err);
                 }
             });
-            new classWeb({classroomId: data._id,js:jsfile,css: cssfile, html: htmlfile}).save().then((fdata) => {
-                
-                successResponseWithData(res,"success",data);
+            new classWeb({ classroomId: data._id, js: jsfile, css: cssfile, html: htmlfile }).save().then((fdata) => {
+
+                successResponseWithData(res, "success", data);
 
             }).catch(err => {
                 return next(err);
@@ -100,44 +100,131 @@ export const getClassroomFromLocation = (req: Request, res: Response) => {
 };
 
 export const findClassRoom = (req: Request, res: Response): any => {
-    const {q} = req.params;
-    if(q && q.trim() !== ""){
-        const reqexQ = new RegExp(q,"i");
-        Classroom.find({name:reqexQ},"name location",(err,d: ClassroomDocument) => {
-            if(d && err === null && d.status !== 3){
-                return apiResponse.successResponseWithData(res,"Successs",d);
+    const { q } = req.params;
+    if (q && q.trim() !== "") {
+        const reqexQ = new RegExp(q, "i");
+        Classroom.find({ name: reqexQ }, "name location", (err, d: ClassroomDocument) => {
+            if (d && err === null && d.status !== 3) {
+                return apiResponse.successResponseWithData(res, "Successs", d);
             } else {
-                return apiResponse.ErrorResponse(res,"Opps!");
+                return apiResponse.ErrorResponse(res, "Opps!");
             }
         });
     }
 };
 
-export const verifyClassroom = (req: Request, res: Response ,next: NextFunction): any => {
 
-    const {classroom} = req.body;
-    const dire =  `${__dirname}/../classroomFiles/${classroom}/`;
-    if(classroom && classroom.trim().lenght < 24){
-        return apiResponse.ErrorResponse(res,"Invalid classroom id");
+export const classroomPreview = (req: Request, res: Response) => {
+    const { userid, classroomid } = req.params;
+
+    const dire = `${__dirname}/../../main/classrooms/${classroomid}/`;
+
+    // todo -- track who previews files
+
+    if (classroomid && classroomid.trim().length < 24) {
+        return apiResponse.ErrorResponse(res, "Invalid classroom id");
     }
-    
-    if(fs.existsSync(dire)){
-        Classroom.findOneAndUpdate({_id:classroom},{$inc: {visits: 1}}).then(d => {
-            if(d && d.status === 2){
-                return apiResponse.successResponseWithData(res,"success",d);
-            }else if(d && d.status === 1){
-                return apiResponse.ErrorResponse(res,"Class has not started!");
+
+    try {
+
+        classWeb.findOne({ classroomId: classroomid }).then((d: any) => {
+
+            if (!d && d === null) {
+                return res.json({ "message": "classroomFilesError" });
+                console.log("Web files not found");
             } else {
-                return apiResponse.ErrorResponse(res,"Class has ended!");            
+
+                const cssfileId = d.css;
+                const jsFileId = d.js;
+                const htmlFileId = d.html;
+
+                if (!cssfileId || !jsFileId || !htmlFileId) {
+                    return res.json("classroomFilesError");
+                }
+
+
+                fs.readdir(dire, { withFileTypes: true }, (err, files) => {
+
+                    if (err) {
+                        console.log(err);
+                        return res.json("classroomFilesError");
+                    }
+                    else {
+                        let htmlFilePath: string, cssFilePath: string, jsFilePath: string;
+                        let htmlFileContent: any, cssFileContent: any, jsFileContent: any;
+                        // Loop through files inclassroom files
+                        files.forEach(element => {
+
+                            // read each file in classroom folder
+                            if (element.name.includes("css")) {
+                                cssFilePath = `${dire}/${element.name}`;
+                                cssFileContent = fs.readFileSync(cssFilePath, "utf8");
+                            }
+
+                            if (element.name.includes("js")) {
+                                jsFilePath = `${dire}/${element.name}`;
+                                jsFileContent = fs.readFileSync(jsFilePath, "utf8");
+
+                            }
+
+                            if (element.name.includes("html")) {
+                                htmlFilePath = `${dire}/${element.name}`;
+                                htmlFileContent = fs.readFileSync(htmlFilePath, "utf8");
+
+                            }
+                        });
+                        const ht = {
+                            id: htmlFileId,
+                            content: htmlFileContent
+                        };
+                        const cs = {
+                            id: cssfileId,
+                            content: cssFileContent
+                        };
+                        const js = {
+                            id: jsFileId,
+                            content: jsFileContent
+                        }
+                        
+                        res.render("preview", { cs, ht, js, classroomid });
+
+                    }
+
+                });
+
+            }
+        });
+
+    } catch (e) {
+
+    }
+}
+
+export const verifyClassroom = (req: Request, res: Response, next: NextFunction): any => {
+
+    const { classroom } = req.body;
+    const dire = `${__dirname}/../../main/classrooms/${classroom}/`;
+    if (classroom && classroom.trim().length < 24) {
+        return apiResponse.ErrorResponse(res, "Invalid classroom id");
+    }
+
+    if (fs.existsSync(dire)) {
+        Classroom.findOneAndUpdate({ _id: classroom }, { $inc: { visits: 1 } }).then(d => {
+            if (d && d.status === 2) {
+                return apiResponse.successResponseWithData(res, "success", d);
+            } else if (d && d.status === 1) {
+                return apiResponse.ErrorResponse(res, "Class has not started!");
+            } else {
+                return apiResponse.ErrorResponse(res, "Class has ended!");
             }
         }).catch(e => {
             return next(e);
-        });    
+        });
     } else {
-        return apiResponse.ErrorResponse(res,"Class Files Not Found");
+        return apiResponse.ErrorResponse(res, "Class Files Not Found");
 
     }
-    
+
 };
 
 exports.endClassPermanently = (req: Request, res: Response) => {
@@ -157,30 +244,30 @@ exports.endClassPermanently = (req: Request, res: Response) => {
 };
 
 export const getTrending = (req: Request, res: Response): any => {
-    Classroom.find({status:2,classVisibility:"Public"}).sort({visits:-1}).then(d => {
-        return apiResponse.successResponseWithData(res,"Success",d);
+    Classroom.find({ status: 2, classVisibility: "Public" }).sort({ visits: -1 }).then(d => {
+        return apiResponse.successResponseWithData(res, "Success", d);
 
     }).catch(e => {
-        return apiResponse.ErrorResponse(res,e);
+        return apiResponse.ErrorResponse(res, e);
     });
 };
 
 const generateShortUrl = (): string => {
-    return  `https://tinycloab.herokuapp.com/${randomNumber(6)}`;
+    return `https://tinycloab.herokuapp.com/${randomNumber(6)}`;
 };
 // shorten classroom links
 export const shortenClassLinks = (req: Request, res: Response, next: NextFunction): any => {
-    const {classid} = req.params;
+    const { classid } = req.params;
     const shortly = generateShortUrl();
-    if(classid && classid.trim() !== "" && classid.length > 23){
-        Classroom.findOneAndUpdate({_id:classid},{$set:{shortUrl: shortly}},{new:true},(err,doc) => {
-            if(err){
+    if (classid && classid.trim() !== "" && classid.length > 23) {
+        Classroom.findOneAndUpdate({ _id: classid }, { $set: { shortUrl: shortly } }, { new: true }, (err, doc) => {
+            if (err) {
                 return next(err);
             }
-            if(doc && doc !== null){
-                return apiResponse.successResponseWithData(res,"success",shortly);
+            if (doc && doc !== null) {
+                return apiResponse.successResponseWithData(res, "success", shortly);
             } else {
-                return apiResponse.ErrorResponse(res,null);
+                return apiResponse.ErrorResponse(res, null);
             }
         });
     } else {
@@ -190,44 +277,44 @@ export const shortenClassLinks = (req: Request, res: Response, next: NextFunctio
 
 // verify if a classroom belongs to a user
 export const verifyUserClassroom = (req: Request, res: Response, next: NextFunction): any => {
-    const {classid, userid} = req.params;
-    
-    if(classid && classid.trim() !== ""
-     && userid && userid.trim() !== "" 
-     && classid.length > 23
-     && userid.length > 23){
-        Classroom.findById(classid,(err,doc: ClassroomDocument) => {
-            if(err){
+    const { classid, userid } = req.params;
+
+    if (classid && classid.trim() !== ""
+        && userid && userid.trim() !== ""
+        && classid.length > 23
+        && userid.length > 23) {
+        Classroom.findById(classid, (err, doc: ClassroomDocument) => {
+            if (err) {
                 return next(err);
-            } 
-            if(doc && doc !== null){
-                if(doc.owner === userid){
-                    return apiResponse.successResponse(res,"sucess verifying");
+            }
+            if (doc && doc !== null) {
+                if (doc.owner === userid) {
+                    return apiResponse.successResponse(res, "sucess verifying");
                 } else {
-                    return apiResponse.unauthorizedResponse(res,"failed verification");
+                    return apiResponse.unauthorizedResponse(res, "failed verification");
                 }
             } else {
-                return apiResponse.ErrorResponse(res,doc);
+                return apiResponse.ErrorResponse(res, doc);
             }
         });
     } else {
-        return apiResponse.ErrorResponse(res,"Missing or invalid request parameters");
+        return apiResponse.ErrorResponse(res, "Missing or invalid request parameters");
     }
 
 };
 
 // fetch all classroom by user
-export const getUserClassrooms = (req: Request, res: Response,next: NextFunction): any => {
+export const getUserClassrooms = (req: Request, res: Response, next: NextFunction): any => {
     const { userid } = req.params;
 
-    Classroom.find(({owner:userid}),"classType numberInClass status visits likes topic description location",(err: Error,doc: ClassroomDocument) => {
-        if(err){
+    Classroom.find(({ owner: userid }), "classType numberInClass status visits likes topic description location", (err: Error, doc: ClassroomDocument) => {
+        if (err) {
             return next(err);
         }
-        if(doc && doc !== null){
-            return apiResponse.successResponseWithData(res,"success",doc);
+        if (doc && doc !== null) {
+            return apiResponse.successResponseWithData(res, "success", doc);
         } else {
-            return apiResponse.ErrorResponse(res,null);
+            return apiResponse.ErrorResponse(res, null);
         }
     });
 };

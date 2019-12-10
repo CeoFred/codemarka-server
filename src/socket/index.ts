@@ -83,7 +83,7 @@ export default (server: express.Application) => {
                                             socket.emit("classroomFilesError", "File ID not found");
                                         }
 
-                                        const classFilesDir = `${__dirname}/../classroomFiles/${data.classroom_id}/`;
+                                        const classFilesDir = `${__dirname}/../../main/classrooms/${data.classroom_id}/`;
 
                                         fs.readdir(classFilesDir, { withFileTypes: true }, (err, files) => {
 
@@ -123,7 +123,11 @@ export default (server: express.Application) => {
                                                     id: cssfileId,
                                                     content: cssFileContent
                                                 };
-                                                socket.emit("class_files", cs, ht);
+                                                const js = {
+                                                    id: jsFileId,
+                                                    content: jsFileContent
+                                                }
+                                                socket.emit("class_files", cs, ht, js);
                                             }
 
                                         });
@@ -243,7 +247,7 @@ export default (server: express.Application) => {
         }
 
         socket.on("editorChanged", (data: EditorChangedInterface) => {
-            const classFilesDir = `${__dirname}/../classroomFiles/${data.class}/`;
+            const classFilesDir = `${__dirname}/../../main/classrooms/${data.class}/`;
 
             classfiles.forEach(element => {
                 if (element.name.includes(data.file) && element.name === `${data.id}.${data.file}`) {
