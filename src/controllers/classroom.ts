@@ -130,8 +130,7 @@ export const classroomPreview = (req: Request, res: Response) => {
         classWeb.findOne({ classroomId: classroomid }).then((d: any) => {
 
             if (!d && d === null) {
-                return res.json({ "message": "classroomFilesError" });
-                console.log("Web files not found");
+                return apiResponse.ErrorResponse(res,{ "message": "files not found" });
             } else {
 
                 const cssfileId = d.css;
@@ -139,7 +138,8 @@ export const classroomPreview = (req: Request, res: Response) => {
                 const htmlFileId = d.html;
 
                 if (!cssfileId || !jsFileId || !htmlFileId) {
-                    return res.json("classroomFilesError");
+                    return apiResponse.ErrorResponse(res,{ "message": "files not found" });
+
                 }
 
 
@@ -147,7 +147,8 @@ export const classroomPreview = (req: Request, res: Response) => {
 
                     if (err) {
                         console.log(err);
-                        return res.json("classroomFilesError");
+                        return apiResponse.ErrorResponse(res,{ "message": "files not found" });
+
                     }
                     else {
                         let htmlFilePath: string, cssFilePath: string, jsFilePath: string;
@@ -185,9 +186,8 @@ export const classroomPreview = (req: Request, res: Response) => {
                             id: jsFileId,
                             content: jsFileContent
                         };
+                        return apiResponse.successResponseWithData(res,"success",{ cs, ht, js, classroomid }); 
                         
-                        res.render("preview", { cs, ht, js, classroomid });
-
                     }
 
                 });
