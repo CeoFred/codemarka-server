@@ -1,5 +1,6 @@
 import fs from "fs";
-// import path from "path";
+import archiver from "archiver";
+
 import { Request, Response, NextFunction } from "express";
 import { validationResult } from "express-validator";
 
@@ -12,7 +13,7 @@ import * as apiResponse from "../helpers/apiResponse";
 // const created = 1;
 const creating = 2;
 
-export const createClassRoom = (req: Request, res: Response, next: NextFunction): any => {
+export const createClassRoom = (req: Request, res: Response, next: NextFunction): object => {
 
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -34,7 +35,7 @@ export const createClassRoom = (req: Request, res: Response, next: NextFunction)
         status: creating,
         owner: userid
     });
-    newclassroom.save().then((data: { _id: any }) => {
+    newclassroom.save().then((data: ClassroomDocument) => {
         const jsfile = randomNumber(15);
         const htmlfile = randomNumber(15);
         const cssfile = randomNumber(15);
@@ -66,7 +67,7 @@ export const createClassRoom = (req: Request, res: Response, next: NextFunction)
                     return next(err);
                 }
             });
-            new classWeb({ classroomId: data._id, js: jsfile, css: cssfile, html: htmlfile }).save().then((fdata) => {
+            new classWeb({ classroomId: data._id, js: jsfile, css: cssfile, html: htmlfile }).save().then(() => {
 
                 successResponseWithData(res, "success", data);
 
@@ -75,7 +76,7 @@ export const createClassRoom = (req: Request, res: Response, next: NextFunction)
             });
         }
 
-    }).catch((err: any) => next(err.message));
+    }).catch((err: Error) => next(err.message));
 
 };
 
@@ -94,9 +95,9 @@ export const createClassRoom = (req: Request, res: Response, next: NextFunction)
 
 // };
 
-export const getClassroomFromLocation = (req: Request, res: Response) => {
+export const getClassroomFromLocation = (req: Request, res: Response): void => {
     const location = req.params.location;
-    Classroom.find({ location }).exec().then((data: object) => res.json({ data })).catch((err: any) => res.status(404).json(err));
+    Classroom.find({ location }).exec().then((data: object) => res.json({ data })).catch((err: Error) => res.status(404).json(err));
 };
 
 export const findClassRoom = (req: Request, res: Response): any => {
@@ -113,9 +114,92 @@ export const findClassRoom = (req: Request, res: Response): any => {
     }
 };
 
+export const downloadClassfiles = (req: Request, res: Response): void => {
+    const { classroomid } = req.params;
 
-export const classroomPreview = (req: Request, res: Response) => {
-    const { userid, classroomid } = req.params;
+    const dire = `${__dirname}/../../main/classrooms/${classroomid}/`;
+
+    if(fs.existsSync(dire+classroomid+'.zip')){
+       fs.unlinkSync(dire+classroomid+'.zip');
+    }
+
+    // create a file to stream archive data to.
+var output = fs.createWriteStream(dire + classroomid +'.zip');
+var archive = archiver('zip', {
+  zlib: { level: 9 } // Sets the compression level.
+});
+ 
+// listen for all archive data to be written
+// 'close' event is fired only when a file descriptor is involved
+output.on('close', function() {
+  console.log(archive.pointer() + ' total bytes');
+  console.log('archiver has been finalized and the output file descriptor has closed.');
+  return res.download(`${dire}${classroomid}.zip`, (e) => {
+            if(e) return false;
+            console.log("Finished");
+
+    });
+});
+ 
+// This event is fired when the data source is drained no matter what was the data source.
+// It is not part of this library but rather from the NodeJS Stream API.
+// @see: https://nodejs.org/api/stream.html#stream_event_end
+output.on('end', function() {
+  console.log('Data has been drained');
+});
+ 
+// good practice to catch warnings (ie stat failures and other non-blocking errors)
+archive.on('warning', function(err) {
+  if (err.code === 'ENOENT') {
+    // log warning
+  } else {
+    // throw error
+    throw err;
+  }
+});
+ 
+// good practice to catch this error explicitly
+archive.on('error', function(err) {
+  throw err;
+});
+ 
+// pipe archive data to the file
+archive.pipe(output);
+ 
+// append a file from stream
+// var file1 = __dirname + '/authy.js';
+// archive.append(fs.createReadStream(file1), { name: 'auth.js' });
+ 
+// append a file from string
+// archive.append('string cheese!', { name: 'file2.txt' });
+ 
+// append a file from buffer
+// var buffer3 = Buffer.from('buff it!');
+// archive.append(buffer3, { name: 'file3.txt' });
+ 
+// append a file
+// archive.file('file1.txt', { name: 'file4.txt' });
+ 
+// append files from a sub-directory and naming it `new-subdir` within the archive
+// archive.directory('subdir/', 'new-subdir');
+ 
+// append files from a sub-directory, putting its contents at the root of archive
+archive.directory(dire, 'dist');
+ 
+
+// append files from a glob pattern
+// archive.glob('subdir/*.txt');
+ 
+// finalize the archive (ie we are done appending files but streams have to finish yet)
+// 'close', 'end' or 'finish' may be fired right after calling this method so register to them beforehand
+archive.finalize().then(() => {
+    console.log("Finalized");
+});
+
+};
+
+export const classroomPreview = (req: Request, res: Response): object => {
+    const { classroomid } = req.params;
 
     const dire = `${__dirname}/../../main/classrooms/${classroomid}/`;
 
@@ -130,7 +214,7 @@ export const classroomPreview = (req: Request, res: Response) => {
         classWeb.findOne({ classroomId: classroomid }).then((d: any) => {
 
             if (!d && d === null) {
-                return apiResponse.ErrorResponse(res,{ "message": "files not found" });
+                return apiResponse.ErrorResponse(res, { "message": "files not found" });
             } else {
 
                 const cssfileId = d.css;
@@ -138,7 +222,7 @@ export const classroomPreview = (req: Request, res: Response) => {
                 const htmlFileId = d.html;
 
                 if (!cssfileId || !jsFileId || !htmlFileId) {
-                    return apiResponse.ErrorResponse(res,{ "message": "files not found" });
+                    return apiResponse.ErrorResponse(res, { "message": "files not found" });
 
                 }
 
@@ -147,7 +231,7 @@ export const classroomPreview = (req: Request, res: Response) => {
 
                     if (err) {
                         console.log(err);
-                        return apiResponse.ErrorResponse(res,{ "message": "files not found" });
+                        return apiResponse.ErrorResponse(res, { "message": "files not found" });
 
                     }
                     else {
@@ -186,8 +270,8 @@ export const classroomPreview = (req: Request, res: Response) => {
                             id: jsFileId,
                             content: jsFileContent
                         };
-                        return apiResponse.successResponseWithData(res,"success",{ cs, ht, js, classroomid }); 
-                        
+                        return apiResponse.successResponseWithData(res, "success", { cs, ht, js, classroomid });
+
                     }
 
                 });
@@ -236,15 +320,15 @@ exports.endClassPermanently = (req: Request, res: Response) => {
                 result
             });
         })
-        .catch((err: any) => {
+        .catch((err: Error) => {
             res.status(500).json({
                 message: err
             });
         });
 };
 
-export const getTrending = (req: Request, res: Response): any => {
-    Classroom.find({ status: 2, classVisibility: "Public" }).sort({ visits: -1 }).then(d => {
+export const getTrending = (req: Request, res: Response): object => {
+    return Classroom.find({ status: 2, classVisibility: "Public" }).sort({ visits: -1 }).then(d => {
         return apiResponse.successResponseWithData(res, "Success", d);
 
     }).catch(e => {

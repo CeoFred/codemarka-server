@@ -1,5 +1,5 @@
 import express from "express";
-import {shortenClassLinks,findClassRoom, classroomPreview, createClassRoom,verifyClassroom, getTrending, verifyUserClassroom, getUserClassrooms} from "../controllers/classroom";
+import {shortenClassLinks,findClassRoom,downloadClassfiles, classroomPreview, createClassRoom,verifyClassroom, getTrending, verifyUserClassroom, getUserClassrooms} from "../controllers/classroom";
 import {check} from "../middleware/check_Auth";
 
 const router = express.Router();
@@ -25,6 +25,8 @@ router.get("/trending/", getTrending);
 router.get("/preview/:classroomid", classroomPreview);
 
 router.get("/search/:q", findClassRoom);
+
+router.get("/download/:classroomid", downloadClassfiles);
 // // set permissions
 // router.post("/permissions/set/:classroomid", check);
 

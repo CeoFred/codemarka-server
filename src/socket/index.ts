@@ -157,43 +157,42 @@ export default (server: express.Application) => {
 
         socket.on("leave", (data: JoinObj) => {
             // socket.leave(data.classroom_id)
-            console.log("left", socket.room);
-            if (data.classroom_id === socket.room) {
-                socket.leave(socket.room, () => {
-                    nsp.to(socket.room).emit("updatechat_left", {
-                        by: "server",
-                        msg: data.userId + " left",
-                        for: data.userId,
-                        name: data.username,
-                        type: "sLeft",
-                        timeSent: moment().format("LT"),
-                        msgId: uuidv4()
-                    });
+            delete clients[socket.id];
+            socket.leave(socket.room);
 
-                    Classroom.findById(data.classroom_id, (err, room: ClassroomDocument) => {
+            nsp.to(socket.room).emit("updatechat_left", {
+                by: "server",
+                msg: socket.username + " left",
+                for: socket.user,
+                name: socket.username,
+                type: "sLeft",
+                timeSent: moment().format("LT"),
+                msgId: uuidv4()
+            });
 
-                        if (err) {
+            Classroom.findById(socket.room, (err, room: ClassroomDocument) => {
 
-                        } else if (room && room !== null) {
-                            // find user in student field array
-                            room.students.forEach((user: { _id: string }, i) => {
-                                if (user._id === data.userId) {
+                if (err) {
 
-                                    let newclassusers = room.students.splice(i, 1);
-                                    Classroom.findOneAndUpdate({ _id: data.classroom_id },
-                                        {$inc: { numberInClass: -1 }, students: newclassusers }, (err, doc) => {
-                                            if (err) console.log("error");
-                                            console.log("class users updated");
-                                        });
-                                }
+                } else if (room && room !== null) {
+                    // find user in student field array
+                    room.students.forEach((user: { _id: any }, i) => {
+                        if (user._id == socket.user) {
+                            let newclassusers: any[];
+
+                            newclassusers = room.students.filter((s: any,i) => {
+                                return s._id != socket.user;
                             });
+                            
+                            Classroom.findOneAndUpdate({ _id: socket.room }, {$inc: { numberInClass: -1 }, students: newclassusers },{new:true}, (err, doc) => {
+                                if (err) console.log("error");
+                                socket.disconnect();
+                            }); 
                         }
-
                     });
-                });
-            } else {
-                socket.emit("leave_error", "Room mismatch");
-            }
+                }
+
+            });
 
         });
         interface NewMessageInterface {
