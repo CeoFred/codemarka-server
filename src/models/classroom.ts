@@ -5,6 +5,7 @@ export type ClassroomDocument = mongoose.Document & {
     status: number;
     classVisibility: string;
     students: [Record<string, any>];
+    subAdmins: [Record<string, any>];
 };
 
 

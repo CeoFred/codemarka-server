@@ -35,113 +35,141 @@ export default (server: express.Application) => {
             socket.room = data.classroom_id;
             socket.username = data.username;
             socket.userModel;
+            let oldStudentsWithoutUser: any[] = [];
             // find user and update
             User.findOne({ _id: data.userId }).then(user => {
                 let studentObj;
 
                 if (user && user !== null) {
 
-                    studentObj = {
-                        _id: user._id,
-                        username: user.username
-                    };
+                    // check if user is already in classm, filter and push new user object
+                    Classroom.findById(data.classroom_id,(err, res) => {
+                        if(err) throw err;
+                        
+                        if(res && res !== null){
 
-                    Classroom.findOneAndUpdate({ _id: data.classroom_id, status: 2 },
-                        {
-                            $push:
-                                { students: studentObj },
-                            $inc: { numberInClass: 1 }
-                        },
-                        { new: true }).then((d: any) => {
-                        if (d) {
-                            console.log(d.students);
-                            console.log(d.numberInClass);
-                            socket.emit("updateMsg", { by: "server", msgs: d.messages, type: "oldMsgUpdate" });
+                            const currentClassStudents = res.students;
 
-                            socket.join(data.classroom_id, () => {
-                                nsp.to(data.classroom_id).emit("someoneJoined",
-                                    {
-                                        by: "server",
-                                        msg: data.userId + " joined",
-                                        for: data.userId,
-                                        name: data.username,
-                                        type: "sJoin",
-                                        msgId: uuidv4()
-                                    });
-                                    
-                                classWeb.findOne({ classroomId: data.classroom_id }).then((d: any) => {
-                                    if (!d && d === null) {
-                                        socket.emit("classroomFilesError", "Files not found");
-                                        console.log("Web files not found");
-                                    } else {
-
-                                        const cssfileId = d.css;
-                                        const jsFileId = d.js;
-                                        const htmlFileId = d.html;
-
-                                        if (!cssfileId || !jsFileId || !htmlFileId) {
-                                            socket.emit("classroomFilesError", "File ID not found");
-                                        }
-
-                                        const classFilesDir = `${__dirname}/../../main/classrooms/${data.classroom_id}/`;
-
-                                        fs.readdir(classFilesDir, { withFileTypes: true }, (err, files) => {
-
-                                            if (err) {
-                                                console.log(err);
-                                                socket.emit("classroomFilesError", "File Directory Not Found");
-                                            }
-                                            else {
-                                                let htmlFilePath: string, cssFilePath: string, jsFilePath: string;
-                                                let htmlFileContent: any, cssFileContent: any, jsFileContent: any;
-                                                // Loop through files inclassroom files
-                                                files.forEach(element => {
-                                                    classfiles.push(element);
-                                                    // read each file in classroom folder
-                                                    if (element.name.includes("css")) {
-                                                        cssFilePath = `${classFilesDir}/${element.name}`;
-                                                        cssFileContent = fs.readFileSync(cssFilePath, "utf8");
-                                                    }
-
-                                                    if (element.name.includes("js")) {
-                                                        jsFilePath = `${classFilesDir}/${element.name}`;
-                                                        jsFileContent = fs.readFileSync(jsFilePath, "utf8");
-
-                                                    }
-
-                                                    if (element.name.includes("html")) {
-                                                        htmlFilePath = `${classFilesDir}/${element.name}`;
-                                                        htmlFileContent = fs.readFileSync(htmlFilePath, "utf8");
-
-                                                    }
-                                                });
-                                                const ht = {
-                                                    id: htmlFileId,
-                                                    content: htmlFileContent
-                                                };
-                                                const cs = {
-                                                    id: cssfileId,
-                                                    content: cssFileContent
-                                                };
-                                                const js = {
-                                                    id: jsFileId,
-                                                    content: jsFileContent
-                                                };
-                                                socket.emit("class_files", cs, ht, js);
-                                            }
-
-                                        });
-
-                                    }
-                                });
+                            oldStudentsWithoutUser =  currentClassStudents.filter(student => {
+                                return String(student.id) !== String(data.userId);
                             });
-                        } else {
-                            console.log("classroom not found");
-                            socket.emit("classroomError", null);
+
+                            studentObj = {
+                                id: String(user._id),
+                                username: user.username,
+                                role:"1" 
+                            };
+
+                            oldStudentsWithoutUser.push(studentObj); 
+                          
+                          
+                            const updatedStudentList = oldStudentsWithoutUser;
+
+                            Classroom.findOneAndUpdate({ _id: data.classroom_id, status: 2 },
+                                {
+                            
+                                    students: updatedStudentList,
+                                    $inc: { numberInClass: 1 }
+                                },
+                                { new: true }).then((d: any) => {
+
+                                if (d) {
+ 
+                                    socket.emit("updateMsg", { by: "server", msgs: d.messages, type: "oldMsgUpdate" });
+ 
+                                    socket.emit("classroom_users",d.students);
+
+                                    socket.join(data.classroom_id, () => {
+
+                                        nsp.to(data.classroom_id).emit("someoneJoined",
+                                            {
+                                                by: "server",
+                                                msg: data.userId + " joined",
+                                                for: data.userId,
+                                                name: data.username,
+                                                type: "sJoin",
+                                                msgId: uuidv4()
+                                            });
+                                    
+                                   
+
+                                        classWeb.findOne({ classroomId: data.classroom_id }).then((d: any) => {
+                                            if (!d && d === null) {
+                                                socket.emit("classroomFilesError", "Files not found");
+                                                console.log("Web files not found");
+                                            } else {
+
+                                                const cssfileId = d.css;
+                                                const jsFileId = d.js;
+                                                const htmlFileId = d.html;
+
+                                                if (!cssfileId || !jsFileId || !htmlFileId) {
+                                                    socket.emit("classroomFilesError", "File ID not found");
+                                                }
+
+                                                const classFilesDir = `${__dirname}/../../main/classrooms/${data.classroom_id}/`;
+
+                                                fs.readdir(classFilesDir, { withFileTypes: true }, (err, files) => {
+
+                                                    if (err) {
+                                                        console.log(err);
+                                                        socket.emit("classroomFilesError", "File Directory Not Found");
+                                                    }
+                                                    else {
+                                                        let htmlFilePath: string, cssFilePath: string, jsFilePath: string;
+                                                        let htmlFileContent: any, cssFileContent: any, jsFileContent: any;
+                                                        // Loop through files inclassroom files
+                                                        files.forEach(element => {
+                                                            classfiles.push(element);
+                                                            // read each file in classroom folder
+                                                            if (element.name.includes("css")) {
+                                                                cssFilePath = `${classFilesDir}/${element.name}`;
+                                                                cssFileContent = fs.readFileSync(cssFilePath, "utf8");
+                                                            }
+
+                                                            if (element.name.includes("js")) {
+                                                                jsFilePath = `${classFilesDir}/${element.name}`;
+                                                                jsFileContent = fs.readFileSync(jsFilePath, "utf8");
+
+                                                            }
+
+                                                            if (element.name.includes("html")) {
+                                                                htmlFilePath = `${classFilesDir}/${element.name}`;
+                                                                htmlFileContent = fs.readFileSync(htmlFilePath, "utf8");
+
+                                                            }
+                                                        });
+                                                        const ht = {
+                                                            id: htmlFileId,
+                                                            content: htmlFileContent
+                                                        };
+                                                        const cs = {
+                                                            id: cssfileId,
+                                                            content: cssFileContent
+                                                        };
+                                                        const js = {
+                                                            id: jsFileId,
+                                                            content: jsFileContent
+                                                        };
+                                                        socket.emit("class_files", cs, ht, js);
+                                                    }
+
+                                                });
+
+                                            }
+                                        });
+                                    });
+                                } else {
+                                    console.log("classroom not found");
+                                    socket.emit("classroomError", null);
+                                }
+                            }).catch(e => {
+                                console.log(e);
+                            });
                         }
-                    }).catch(e => {
-                        console.log(e);
+
                     });
+
                 }
             }).catch(err => {
 
@@ -154,6 +182,79 @@ export default (server: express.Application) => {
         });
 
 
+        socket.on("toogle_class_role",(data: any) => {
+            const  username  = data.user.username;
+            const id = data.user.id;
+            const role = data.new_role;
+            // query classroom classroom and update 
+            // console.log(`Incoming role toogle data ${data}`);
+            
+            Classroom.findById(socket.room,(err,data) => {
+                if(err) console.log(err);
+
+                if(data){
+
+                    // All students in a class
+                    const students = data.students;
+
+                    const newStudentsList = students.map( student => {
+
+                        if(String(student.id) === String(id)){
+                            // console.log(`fOUND STUDENT AND UPDATING CLASS ROLE TO ${role}`)
+                            return  {id,role,username};
+                        } else {
+                            // console.log(`Found student not to be updaed = ${student}`);
+                            return student;
+                        }
+                    });
+                    // console.log(`Updated student role`, newStudentsList);
+
+                    let subAdmins = data.subAdmins;
+
+                    let newSubAdmins;
+
+                    // console.log(`old sub Admin ${subAdmins}`);
+
+                    let foundSubAdminIndex;
+                    
+                    // search if user to assign role is a sub Admin
+                    foundSubAdminIndex = subAdmins.filter((admin: {id: any} ,i) => {
+                        return String(admin.id) === String(id);
+                    });
+
+
+                    if(Array.isArray(foundSubAdminIndex) && foundSubAdminIndex.length > 0){
+                        // was a sub Admin, update role
+                        newSubAdmins = subAdmins.map((admin: {id: string}) => {
+                            if(admin.id === String(id)){
+                                return {id:String(id),role,assignedBy: socket.user};
+                            } else {
+                                return admin;
+                            }
+                        });
+                    } else {
+                        // was not a sub Admin, add user as sub Admin and assign role
+                        subAdmins.push({id:String(id),role,assignedBy: socket.user});
+                        newSubAdmins = subAdmins;
+
+                    }
+                    
+                    Classroom.findOneAndUpdate({ _id: socket.room, status: 2 },
+                        {
+                            
+                            students: newStudentsList ,
+                            subAdmins: newSubAdmins
+                        },
+                        { new: true }).then((d: any) => {
+                            
+                        nsp.to(socket.room).emit("newuser_role",{ id, role, assignedBy: socket.user});
+                    });
+
+                }
+            });
+                   
+
+        });
 
         socket.on("leave", (data: JoinObj) => {
             // socket.leave(data.classroom_id)
@@ -176,12 +277,12 @@ export default (server: express.Application) => {
 
                 } else if (room && room !== null) {
                     // find user in student field array
-                    room.students.forEach((user: { _id: any }, i) => {
-                        if (user._id == socket.user) {
+                    room.students.forEach((user: { id: any }, i) => {
+                        if (user.id == socket.user) {
                             let newclassusers: any[];
 
                             newclassusers = room.students.filter((s: any,i) => {
-                                return s._id != socket.user;
+                                return s.id != socket.user;
                             });
                             
                             Classroom.findOneAndUpdate({ _id: socket.room }, {$inc: { numberInClass: -1 }, students: newclassusers },{new:true}, (err, doc) => {
@@ -265,6 +366,13 @@ export default (server: express.Application) => {
             });
         });
 
+        socket.on("user_typing",(data: any): void => {
+
+            nsp.to(socket.room).emit("utyping",{
+                ...data
+            });
+        });
+
         socket.on("disconnect", function () {
             delete clients[socket.id];
             socket.leave(socket.room);
@@ -285,12 +393,12 @@ export default (server: express.Application) => {
 
                 } else if (room && room !== null) {
                     // find user in student field array
-                    room.students.forEach((user: { _id: any }, i) => {
-                        if (user._id == socket.user) {
+                    room.students.forEach((user: { id: any }, i) => {
+                        if (user.id == socket.user) {
                             let newclassusers: any[];
 
                             newclassusers = room.students.filter((s: any,i) => {
-                                return s._id != socket.user;
+                                return s.id != socket.user;
                             });
                             
                             Classroom.findOneAndUpdate({ _id: socket.room }, {$inc: { numberInClass: -1 }, students: newclassusers },{new:true}, (err, doc) => {
