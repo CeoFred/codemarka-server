@@ -88,7 +88,8 @@ export default (server: express.Application) => {
                                                 for: data.userId,
                                                 name: data.username,
                                                 type: "sJoin",
-                                                msgId: uuidv4()
+                                                msgId: uuidv4(),
+                                                newuserslist: updatedStudentList
                                             });
                                     
                                    
@@ -177,8 +178,6 @@ export default (server: express.Application) => {
 
             });
 
-
-
         });
 
 
@@ -247,7 +246,7 @@ export default (server: express.Application) => {
                         },
                         { new: true }).then((d: any) => {
                             
-                        nsp.to(socket.room).emit("newuser_role",{ id, role, assignedBy: socket.user});
+                        nsp.to(socket.room).emit("newuser_role",{id:id, role, assignedBy: socket.user});
                     });
 
                 }
@@ -372,6 +371,12 @@ export default (server: express.Application) => {
                 ...data
             });
         });
+
+        socket.on("user_typing_cleared",(data: any): void => {
+            nsp.to(socket.room).emit("utyping_cleared",{
+                ...data
+            });
+        })
 
         socket.on("disconnect", function () {
             delete clients[socket.id];
