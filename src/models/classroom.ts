@@ -6,6 +6,7 @@ export type ClassroomDocument = mongoose.Document & {
     classVisibility: string;
     students: [Record<string, any>];
     subAdmins: [Record<string, any>];
+    likes: [Record<string, any>];
 };
 
 
@@ -58,10 +59,7 @@ const classroomSchema = new mongoose.Schema({
         default:0,
         type: Number
     },
-    likes : {
-        default:0,
-        type: Number
-    },
+    likes : [Object],
     location: {
         required: false,
         default: "Nigeria",

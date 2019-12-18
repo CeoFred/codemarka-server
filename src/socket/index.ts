@@ -79,6 +79,8 @@ export default (server: express.Application) => {
  
                                     socket.emit("classroom_users",d.students);
 
+                                    socket.emit("class_favourites", d.likes);
+
                                     socket.join(data.classroom_id, () => {
 
                                         nsp.to(data.classroom_id).emit("someoneJoined",
@@ -180,6 +182,66 @@ export default (server: express.Application) => {
 
         });
 
+        socket.on("add_to_favourite",() => {
+            try{
+                Classroom.findById(socket.room,(err,res) => {
+                    if(err) {
+                        console.log(err);
+                    };
+
+                    if(res && res !== null){
+                        let classFavourites = res.likes;
+                        let newclassfavourites;
+                        let hasLiked =  false;
+
+                        classFavourites.forEach(user => {
+
+                            if(String(user.id) === String(socket.user)){
+                                console.log("user found",user );
+                                hasLiked = true;
+                            }
+                        });
+
+                        if(hasLiked){
+                            console.log("action to unlike classroom");
+                            //remove user to favourite
+                            newclassfavourites = classFavourites.filter(user => {
+                                return String(user.id) !== String(socket.user);
+                            });
+
+
+                        } else {
+                            console.log("action to like classroom");
+
+                            //add user to has favourite
+                            newclassfavourites = classFavourites;
+                            newclassfavourites.push({"id":socket.user,time: moment.now()});
+
+                        }
+
+                        Classroom.findOneAndUpdate({ _id: socket.room, status: 2 },
+                            {
+                            
+                                likes: newclassfavourites ,
+                            },
+                            { new: true }).then((d: any) => {
+                            console.log(d.likes);
+                            nsp.to(socket.room).emit("new_favourite_action",
+                                { liked: hasLiked ? false : true,user: socket.user});
+                        });
+
+                    }
+                });
+            } catch (e) {
+
+            }
+            
+        });
+
+        socket.on("user_waving",(user: any) => {
+            console.log(user);
+            nsp.to(socket.room).emit("user_waved",{from: socket.username, to: user});
+        });
 
         socket.on("toogle_class_role",(data: any) => {
             const  username  = data.user.username;
@@ -376,7 +438,7 @@ export default (server: express.Application) => {
             nsp.to(socket.room).emit("utyping_cleared",{
                 ...data
             });
-        })
+        });
 
         socket.on("disconnect", function () {
             delete clients[socket.id];

@@ -20,7 +20,7 @@ export const createClassRoom = (req: Request, res: Response, next: NextFunction)
         return res.status(403).json({ errors: errors.array() });
     }
 
-    const { name, topic, startTime, startDate, description, classType, visibility } = req.body;
+    const {location, name, topic, startTime, startDate, description, classType, visibility } = req.body;
     // get user id and compare with json decoded token sent
     const userid: string = req.body.decoded._id;
 
@@ -33,7 +33,8 @@ export const createClassRoom = (req: Request, res: Response, next: NextFunction)
         startTime,
         startDate,
         status: creating,
-        owner: userid
+        owner: userid,
+        location
     });
     newclassroom.save().then((data: ClassroomDocument) => {
         const jsfile = randomNumber(15);
@@ -119,11 +120,13 @@ export const downloadClassfiles = (req: Request, res: Response): void => {
 
     const dire = `${__dirname}/../../main/classrooms/${classroomid}/`;
 
-    if(fs.existsSync(dire+classroomid+".zip")) {
+    if(fs.existsSync(dire+classroomid+ "-codemarka"+".zip")) {
+        console.log("zipped file exists");
         fs.unlink(dire+classroomid+".zip",(err) => {
+            console.log("Deleted ",dire);
             if(err) throw err;
             // create a file to stream archive data to.
-            var output = fs.createWriteStream(dire + classroomid +".zip");
+            var output = fs.createWriteStream(dire + classroomid+"-codemarka" +".zip");
             var archive = archiver("zip", {
                 zlib: { level: 9 } // Sets the compression level.
             });
@@ -133,7 +136,7 @@ export const downloadClassfiles = (req: Request, res: Response): void => {
             output.on("close", function() {
                 console.log(archive.pointer() + " total bytes");
                 console.log("archiver has been finalized and the output file descriptor has closed.");
-                return res.download(`${dire}${classroomid}.zip`, (e) => {
+                return res.download(`${dire}${classroomid}-codemarka.zip`, (e) => {
                     if(e) return false;
                     console.log("Finished");
 
@@ -174,7 +177,7 @@ export const downloadClassfiles = (req: Request, res: Response): void => {
         });
     } else {
         // create a file to stream archive data to.
-        var output = fs.createWriteStream(dire + classroomid +".zip");
+        var output = fs.createWriteStream(dire + classroomid+"-codemarka" +".zip");
         var archive = archiver("zip", {
             zlib: { level: 9 } // Sets the compression level.
         });
@@ -184,7 +187,7 @@ export const downloadClassfiles = (req: Request, res: Response): void => {
         output.on("close", function() {
             console.log(archive.pointer() + " total bytes");
             console.log("archiver has been finalized and the output file descriptor has closed.");
-            return res.download(`${dire}${classroomid}.zip`, (e) => {
+            return res.download(`${dire}${classroomid}-codemarka.zip`, (e) => {
                 if(e) return false;
                 console.log("Finished");
 
