@@ -3,5 +3,6 @@
     box-sizing: border-box;
     padding: 0;
     display: block;
-    color: #fff;
+    color: #000;
+    position: relative;
 }

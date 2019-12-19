@@ -105,9 +105,15 @@ export const findClassRoom = (req: Request, res: Response): any => {
     const { q } = req.params;
     if (q && q.trim() !== "") {
         const reqexQ = new RegExp(q, "i");
-        Classroom.find({ name: reqexQ }, "name location", (err, d: ClassroomDocument) => {
+        Classroom.find({ name: reqexQ }, "name location", (err, d: ClassroomDocument[]| any) => {
             if (d && err === null && d.status !== 3) {
-                return apiResponse.successResponseWithData(res, "Successs", d);
+                let classExisits = [];
+                classExisits = d.filter((classN: ClassroomDocument) => {
+                    const dire = `${__dirname}/../../main/classrooms/${classN._id}/`;
+            
+                    return fs.existsSync(dire);
+                });
+                return apiResponse.successResponseWithData(res, "Success", classExisits);
             } else {
                 return apiResponse.ErrorResponse(res, "Opps!");
             }
@@ -360,8 +366,16 @@ exports.endClassPermanently = (req: Request, res: Response) => {
 };
 
 export const getTrending = (req: Request, res: Response): object => {
+
+
     return Classroom.find({ status: 2, classVisibility: "Public" }).sort({ visits: -1 }).then(d => {
-        return apiResponse.successResponseWithData(res, "Success", d);
+        let classExisits = [];
+        classExisits = d.filter(classN => {
+            const dire = `${__dirname}/../../main/classrooms/${classN._id}/`;
+            
+            return fs.existsSync(dire);
+        });
+        return apiResponse.successResponseWithData(res, "Success", classExisits);
 
     }).catch(e => {
         return apiResponse.ErrorResponse(res, e);
