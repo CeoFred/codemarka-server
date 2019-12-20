@@ -28,6 +28,7 @@ export default (server: express.Application) => {
         }
         let classfiles: any[] = [];
 
+        
         // event when someone joins a class
         socket.on("join", (data: JoinObj) => {
 
@@ -238,6 +239,37 @@ export default (server: express.Application) => {
             
         });
 
+        socket.on("star_rating",(rating: number) => {
+            const classroom = socket.room;
+            Classroom.findOneAndUpdate({_id: classroom},{
+                $push: {
+                    ratings: {"id":uuidv4(),"rating":rating,user: socket.user}
+                }
+            },
+            {new : true},
+            (err, doc) => {
+                if(err) console.log(err);
+                nsp.to(classroom).emit("star_rating_added", doc.ratings);
+            }
+            );
+        });
+
+        socket.on("new_pinned_message", (msg: string) => {
+            
+            const classroom = socket.room;
+            Classroom.findOneAndUpdate({_id: classroom},{
+                $push: {
+                    pinnedMessages: {"id":uuidv4(),"content":msg}
+                }
+            },
+            {new : true},
+            (err, doc) => {
+                if(err) console.log(err);
+                nsp.to(classroom).emit("pinned_message_added", doc.pinnedMessages);
+            }
+            );
+        });
+
         socket.on("user_waving",(user: any) => {
             console.log(user);
             nsp.to(socket.room).emit("user_waved",{from: socket.username, to: user});
@@ -315,6 +347,24 @@ export default (server: express.Application) => {
             });
                    
 
+        });
+
+        socket.on("classInformationUpdate", (data: any) => {
+
+            const classid = socket.room;
+            const topic = data.ctopic.value;
+            const description = data.cdesc.value;
+            const name = data.cname.value;
+            
+            Classroom.findOneAndUpdate({_id: classid},{
+                name,
+                description,
+                topic,
+            },{new: true},(err, doc) => {
+                if(err) socket.emit("errUpdating",err);
+                socket.emit("newClassInformation", doc);
+                console.log(doc);
+            });
         });
 
         socket.on("leave", (data: JoinObj) => {

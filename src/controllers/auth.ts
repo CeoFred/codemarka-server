@@ -1,10 +1,12 @@
+/* eslint-disable @typescript-eslint/explicit-function-return-type */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { User, UserDocument } from "../models/User";
 import { UserDeleted } from "../models/DeletedUsers";
 import { Request, Response, NextFunction } from "express";
 import { WriteError } from "mongodb";
 import { validationResult } from "express-validator";
 
-import { failed, successData, successMessage } from "../helpers/response";
+import { successMessage } from "../helpers/response";
 import { randomNumber } from "../helpers/utility";
 // import {send as mailer } from '../helpers/mailer';
 // import {constants} from "../helpers/constants";
@@ -56,7 +58,7 @@ export const tokenVerify = (req: Request, res: Response, next: NextFunction) => 
     });
 };
 
-export const postLogin = (req: Request, res: Response, next: NextFunction) => {
+export const postLogin = (req: Request, res: Response) => {
 
     try {
   

@@ -7,6 +7,8 @@ export type ClassroomDocument = mongoose.Document & {
     students: [Record<string, any>];
     subAdmins: [Record<string, any>];
     likes: [Record<string, any>];
+    pinnedMessages: [Record<string, any>];
+    ratings: [Record<string, any>];
 };
 
 
@@ -54,6 +56,7 @@ const classroomSchema = new mongoose.Schema({
         default:0,
         type: Number
     },
+    ratings:[Object],
     messages: [Object],
     visits: {
         default:0,
@@ -70,7 +73,8 @@ const classroomSchema = new mongoose.Schema({
         type: String,
         default:"https://tinycolab.herokuapp.com"
     },
-    students: [Object]
+    students: [Object],
+    pinnedMessages: [Object]
     ,
 }, { timestamps: true });
 
