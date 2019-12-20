@@ -340,7 +340,8 @@ export default (server: express.Application) => {
                         },
                         { new: true }).then((d: any) => {
                             
-                        nsp.to(socket.room).emit("newuser_role",{id:id, role, assignedBy: socket.user});
+                        nsp.to(socket.room).emit("newuser_role",
+                        {id:id, role, assignedBy: socket.user,newusers:d.students});
                     });
 
                 }
