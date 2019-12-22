@@ -28,7 +28,7 @@ export default (server: express.Application) => {
         }
         let classfiles: any[] = [];
 
-        
+
         // event when someone joins a class
         socket.on("join", (data: JoinObj) => {
 
@@ -44,41 +44,59 @@ export default (server: express.Application) => {
                 if (user && user !== null) {
 
                     // check if user is already in classm, filter and push new user object
-                    Classroom.findById(data.classroom_id,(err, res) => {
-                        if(err) throw err;
-                        
-                        if(res && res !== null){
+                    Classroom.findById(data.classroom_id, (err, res) => {
+                        if (err) throw err;
+
+                        if (res && res !== null) {
 
                             const currentClassStudents = res.students;
 
-                            oldStudentsWithoutUser =  currentClassStudents.filter(student => {
+                            oldStudentsWithoutUser = currentClassStudents.filter(student => {
                                 return String(student.id) !== String(data.userId);
                             });
 
                             studentObj = {
                                 id: String(user._id),
                                 username: user.username,
-                                role:"1" 
+                                role: "1"
                             };
 
-                            oldStudentsWithoutUser.push(studentObj); 
-                          
-                          
+                            oldStudentsWithoutUser.push(studentObj);
+
+
                             const updatedStudentList = oldStudentsWithoutUser;
 
                             Classroom.findOneAndUpdate({ _id: data.classroom_id, status: 2 },
                                 {
-                            
+
                                     students: updatedStudentList,
                                     $inc: { numberInClass: 1 }
                                 },
                                 { new: true }).then((d: any) => {
 
                                 if (d) {
- 
+                                    const classroom = socket.room;
+
+                                    Classroom.findById(classroom, (err, res) => {
+                                        if (err) console.log(err);
+                                        let ratings = res.ratings;
+                                        let foundRating = ratings.filter(rating => {
+                                            return String(socket.user) === String(rating.user);
+                                        });
+
+
+                                        if (foundRating && Array.isArray(foundRating) && foundRating.length > 0) {
+                                            return socket.emit("rated_class", true);
+                                        } else {
+                                            return socket.emit("rated_class", false);
+
+                                        }
+
+                                    });
+
                                     socket.emit("updateMsg", { by: "server", msgs: d.messages, type: "oldMsgUpdate" });
- 
-                                    socket.emit("classroom_users",d.students);
+
+                                    socket.emit("classroom_users", d.students);
 
                                     socket.emit("class_favourites", d.likes);
 
@@ -94,8 +112,8 @@ export default (server: express.Application) => {
                                                 msgId: uuidv4(),
                                                 newuserslist: updatedStudentList
                                             });
-                                    
-                                   
+
+
 
                                         classWeb.findOne({ classroomId: data.classroom_id }).then((d: any) => {
                                             if (!d && d === null) {
@@ -183,27 +201,27 @@ export default (server: express.Application) => {
 
         });
 
-        socket.on("add_to_favourite",() => {
-            try{
-                Classroom.findById(socket.room,(err,res) => {
-                    if(err) {
+        socket.on("add_to_favourite", () => {
+            try {
+                Classroom.findById(socket.room, (err, res) => {
+                    if (err) {
                         console.log(err);
                     };
 
-                    if(res && res !== null){
+                    if (res && res !== null) {
                         let classFavourites = res.likes;
                         let newclassfavourites;
-                        let hasLiked =  false;
+                        let hasLiked = false;
 
                         classFavourites.forEach(user => {
 
-                            if(String(user.id) === String(socket.user)){
-                                console.log("user found",user );
+                            if (String(user.id) === String(socket.user)) {
+                                console.log("user found", user);
                                 hasLiked = true;
                             }
                         });
 
-                        if(hasLiked){
+                        if (hasLiked) {
                             console.log("action to unlike classroom");
                             //remove user to favourite
                             newclassfavourites = classFavourites.filter(user => {
@@ -216,19 +234,19 @@ export default (server: express.Application) => {
 
                             //add user to has favourite
                             newclassfavourites = classFavourites;
-                            newclassfavourites.push({"id":socket.user,time: moment.now()});
+                            newclassfavourites.push({ "id": socket.user, time: moment.now() });
 
                         }
 
                         Classroom.findOneAndUpdate({ _id: socket.room, status: 2 },
                             {
-                            
-                                likes: newclassfavourites ,
+
+                                likes: newclassfavourites,
                             },
                             { new: true }).then((d: any) => {
                             console.log(d.likes);
                             nsp.to(socket.room).emit("new_favourite_action",
-                                { liked: hasLiked ? false : true,user: socket.user});
+                                { liked: hasLiked ? false : true, user: socket.user });
                         });
 
                     }
@@ -236,65 +254,84 @@ export default (server: express.Application) => {
             } catch (e) {
 
             }
-            
+
         });
 
-        socket.on("star_rating",(rating: number) => {
+        socket.on("star_rating", (rating: number) => {
             const classroom = socket.room;
-            Classroom.findOneAndUpdate({_id: classroom},{
-                $push: {
-                    ratings: {"id":uuidv4(),"rating":rating,user: socket.user}
+
+            Classroom.findById(classroom, (err, res) => {
+                if (err) console.log(err);
+                let ratings = res.ratings;
+                let foundRating = ratings.filter(rating => {
+                    return String(socket.user) === String(rating.user);
+                });
+
+                console.log(foundRating.length);
+                if (foundRating && Array.isArray(foundRating) && foundRating.length > 0) {
+                    socket.emit("star_rating_failed", "Already Rated this class");
+                } else {
+
+                    Classroom.findOneAndUpdate({ _id: classroom }, {
+                        $push: {
+                            ratings: { "id": uuidv4(), "rating": rating, user: socket.user }
+                        }
+                    },
+                    { new: true },
+                    (err, doc) => {
+                        if (err) console.log(err);
+                        console.log(doc);
+                        nsp.to(classroom).emit("star_rating_added", doc.ratings);
+                    }
+                    );
                 }
-            },
-            {new : true},
-            (err, doc) => {
-                if(err) console.log(err);
-                nsp.to(classroom).emit("star_rating_added", doc.ratings);
-            }
-            );
+
+            });
+
+            
         });
 
         socket.on("new_pinned_message", (msg: string) => {
-            
+
             const classroom = socket.room;
-            Classroom.findOneAndUpdate({_id: classroom},{
+            Classroom.findOneAndUpdate({ _id: classroom }, {
                 $push: {
-                    pinnedMessages: {"id":uuidv4(),"content":msg}
+                    pinnedMessages: { "id": uuidv4(), "content": msg }
                 }
             },
-            {new : true},
+            { new: true },
             (err, doc) => {
-                if(err) console.log(err);
+                if (err) console.log(err);
                 nsp.to(classroom).emit("pinned_message_added", doc.pinnedMessages);
             }
             );
         });
 
-        socket.on("user_waving",(user: any) => {
+        socket.on("user_waving", (user: any) => {
             console.log(user);
-            nsp.to(socket.room).emit("user_waved",{from: socket.username, to: user});
+            nsp.to(socket.room).emit("user_waved", { from: socket.username, to: user });
         });
 
-        socket.on("toogle_class_role",(data: any) => {
-            const  username  = data.user.username;
+        socket.on("toogle_class_role", (data: any) => {
+            const username = data.user.username;
             const id = data.user.id;
             const role = data.new_role;
             // query classroom classroom and update 
             // console.log(`Incoming role toogle data ${data}`);
-            
-            Classroom.findById(socket.room,(err,data) => {
-                if(err) console.log(err);
 
-                if(data){
+            Classroom.findById(socket.room, (err, data) => {
+                if (err) console.log(err);
+
+                if (data) {
 
                     // All students in a class
                     const students = data.students;
 
-                    const newStudentsList = students.map( student => {
+                    const newStudentsList = students.map(student => {
 
-                        if(String(student.id) === String(id)){
+                        if (String(student.id) === String(id)) {
                             // console.log(`fOUND STUDENT AND UPDATING CLASS ROLE TO ${role}`)
-                            return  {id,role,username};
+                            return { id, role, username };
                         } else {
                             // console.log(`Found student not to be updaed = ${student}`);
                             return student;
@@ -309,44 +346,44 @@ export default (server: express.Application) => {
                     // console.log(`old sub Admin ${subAdmins}`);
 
                     let foundSubAdminIndex;
-                    
+
                     // search if user to assign role is a sub Admin
-                    foundSubAdminIndex = subAdmins.filter((admin: {id: any} ,i) => {
+                    foundSubAdminIndex = subAdmins.filter((admin: { id: any }, i) => {
                         return String(admin.id) === String(id);
                     });
 
 
-                    if(Array.isArray(foundSubAdminIndex) && foundSubAdminIndex.length > 0){
+                    if (Array.isArray(foundSubAdminIndex) && foundSubAdminIndex.length > 0) {
                         // was a sub Admin, update role
-                        newSubAdmins = subAdmins.map((admin: {id: string}) => {
-                            if(admin.id === String(id)){
-                                return {id:String(id),role,assignedBy: socket.user};
+                        newSubAdmins = subAdmins.map((admin: { id: string }) => {
+                            if (admin.id === String(id)) {
+                                return { id: String(id), role, assignedBy: socket.user };
                             } else {
                                 return admin;
                             }
                         });
                     } else {
                         // was not a sub Admin, add user as sub Admin and assign role
-                        subAdmins.push({id:String(id),role,assignedBy: socket.user});
+                        subAdmins.push({ id: String(id), role, assignedBy: socket.user });
                         newSubAdmins = subAdmins;
 
                     }
-                    
+
                     Classroom.findOneAndUpdate({ _id: socket.room, status: 2 },
                         {
-                            
-                            students: newStudentsList ,
+
+                            students: newStudentsList,
                             subAdmins: newSubAdmins
                         },
                         { new: true }).then((d: any) => {
-                            
+
                         nsp.to(socket.room).emit("newuser_role",
-                        {id:id, role, assignedBy: socket.user,newusers:d.students});
+                            { id: id, role, assignedBy: socket.user, newusers: d.students });
                     });
 
                 }
             });
-                   
+
 
         });
 
@@ -356,13 +393,13 @@ export default (server: express.Application) => {
             const topic = data.ctopic.value;
             const description = data.cdesc.value;
             const name = data.cname.value;
-            
-            Classroom.findOneAndUpdate({_id: classid},{
+
+            Classroom.findOneAndUpdate({ _id: classid }, {
                 name,
                 description,
                 topic,
-            },{new: true},(err, doc) => {
-                if(err) socket.emit("errUpdating",err);
+            }, { new: true }, (err, doc) => {
+                if (err) socket.emit("errUpdating", err);
                 socket.emit("newClassInformation", doc);
                 console.log(doc);
             });
@@ -393,14 +430,14 @@ export default (server: express.Application) => {
                         if (user.id == socket.user) {
                             let newclassusers: any[];
 
-                            newclassusers = room.students.filter((s: any,i) => {
+                            newclassusers = room.students.filter((s: any, i) => {
                                 return s.id != socket.user;
                             });
-                            
-                            Classroom.findOneAndUpdate({ _id: socket.room }, {$inc: { numberInClass: -1 }, students: newclassusers },{new:true}, (err, doc) => {
+
+                            Classroom.findOneAndUpdate({ _id: socket.room }, { $inc: { numberInClass: -1 }, students: newclassusers }, { new: true }, (err, doc) => {
                                 if (err) console.log("error");
                                 socket.disconnect();
-                            }); 
+                            });
                         }
                     });
                 }
@@ -478,15 +515,15 @@ export default (server: express.Application) => {
             });
         });
 
-        socket.on("user_typing",(data: any): void => {
+        socket.on("user_typing", (data: any): void => {
 
-            nsp.to(socket.room).emit("utyping",{
+            nsp.to(socket.room).emit("utyping", {
                 ...data
             });
         });
 
-        socket.on("user_typing_cleared",(data: any): void => {
-            nsp.to(socket.room).emit("utyping_cleared",{
+        socket.on("user_typing_cleared", (data: any): void => {
+            nsp.to(socket.room).emit("utyping_cleared", {
                 ...data
             });
         });
@@ -515,13 +552,13 @@ export default (server: express.Application) => {
                         if (user.id == socket.user) {
                             let newclassusers: any[];
 
-                            newclassusers = room.students.filter((s: any,i) => {
+                            newclassusers = room.students.filter((s: any, i) => {
                                 return s.id != socket.user;
                             });
-                            
-                            Classroom.findOneAndUpdate({ _id: socket.room }, {$inc: { numberInClass: -1 }, students: newclassusers },{new:true}, (err, doc) => {
+
+                            Classroom.findOneAndUpdate({ _id: socket.room }, { $inc: { numberInClass: -1 }, students: newclassusers }, { new: true }, (err, doc) => {
                                 if (err) console.log("error");
-                            }); 
+                            });
                         }
                     });
                 }
