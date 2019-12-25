@@ -1,8 +1,31 @@
-import {postDeleteAccount, postLogin, tokenVerify, postSignup, emailVerification, postUpdatePassword,postUpdateProfile,refreshToken} from "../controllers/auth";
+import {postDeleteAccount, 
+    postLogin, tokenVerify,
+    postSignup, emailVerification,
+    postUpdatePassword,
+    postUpdateProfile,
+    refreshToken,
+    handelGoogleAuthCallback
+} from "../controllers/auth";
 import express from "express";
+import passport from "passport";
+
 import {validate} from "../middleware/authValidate";
 
 const router = express.Router();
+//github auth
+router.get("/github",passport.authenticate("github"));
+//github callback
+
+// router.get("/auth/github/callback", passport.authenticate("github", { failureRedirect: "/login" }), (req, res) => {
+//     res.redirect(req.session.returnTo || "/");
+// });
+
+//google auth
+router.get("/google", passport.authenticate("google", { scope: ["profile", "email", "https://www.googleapis.com/auth/plus.login"], prompt: "consent"}));
+
+//google auth callback
+router.get("/google/callback", passport.authenticate("google", { failureRedirect: "https://codemarka.dev/auth/signin?gauth=failed&retry=true" }), handelGoogleAuthCallback);
+
 // update password
 router.patch("/user/password/update", validate("passwordUpdate"),postUpdatePassword);
 tokenVerify;

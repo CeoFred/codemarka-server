@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/explicit-function-return-type */
 import express from "express";
 import compression from "compression"; 
 import bodyParser from "body-parser";
@@ -5,7 +6,10 @@ import lusca from "lusca";
 import path from "path";
 import methodOverride from "method-override";
 import cors from "cors";
+import passport from "passport";
+
 import "./config/db";
+import "./config/passport";
 
 
 import auth from "./routes/auth";
@@ -28,20 +32,30 @@ const app = express();
 //     }
 // };
 
+/**
+ * API keys and Passport configuration.
+ */
 
 // Express configuration
-app.set("port", process.env.PORT || 8000);
 app.set("views", path.join(__dirname, "../views"));
 app.set("view engine", "pug");
 app.use(compression());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
+app.use(passport.initialize());
+app.use(passport.session());
+
+app.set("host", process.env.OPENSHIFT_NODEJS_IP || "0.0.0.0");
+app.set("port", process.env.PORT || process.env.OPENSHIFT_NODEJS_PORT || 8080);
+
 app.use(compression());
 app.use(methodOverride());
 app.use(cors());
 
 app.use(lusca.xframe("SAMEORIGIN"));
+app.disable("x-powered-by");
+
 app.use(lusca.xssProtection(true));
 app.use(express.static(path.join(__dirname, "public"), { maxAge: 31557600000 }));
 
@@ -70,12 +84,22 @@ function logErrors(err: Error, req: Request, res: Response, next: NextFunction) 
     console.error(err.stack);
     next(err);
 }
+interface Error {
+    [x: string]: string;
+    name: string;
+    message: string;
+    stack?: string;
+    provider?: string;
+}
 
 function errorHandler(err: Error, req: Request, res: Response, next: NextFunction) {
     if (res.headersSent) {
         return next(err);
     }
     res.status(500);
+    if(err && err.type === "auth"){
+        res.redirect("https://codemaraka.dev/auth/signin?googleAuth=failed");
+    }
     res.json({ error: err });
 }
 

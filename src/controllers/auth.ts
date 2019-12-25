@@ -249,6 +249,9 @@ export const postSignup = (req: Request, res: Response, next: NextFunction) => {
         
 };
 
+export const handelGoogleAuthCallback  = (req: any | Request, res: Response) => {
+    return res.redirect("https://codemarka.dev");
+};
 export const emailVerification = (req: Request, res: Response, next: NextFunction) => {
     const userid = req.params.user;
     const token = req.params.token;

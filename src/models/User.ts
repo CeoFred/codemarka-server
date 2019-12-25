@@ -4,10 +4,27 @@ import mongoose from "mongoose";
 import geo from "geoip-lite";
 export type UserDocument = mongoose.Document & {
     email: string;
+    emailVerified: boolean;
+    snapchat: string;
+    facebook: string;
+    twitter: string;
+    google: string;
+    github: string;
+    instagram: string;
+    linkedin: string;
+    steam: string;
+    quickbooks: string;
+    profile: {
+        name: string;
+        gender: string;
+        location: string;
+        website: string;
+        picture: string;
+    };
     password: string;
     passwordResetToken: string;
     passwordResetExpires: Date;
-    tokens: AuthToken[];
+    tokens: any[];
     accountType: string;
     name: string;
     gender: string;
@@ -67,12 +84,29 @@ const userSchema = new mongoose.Schema({
     },
     techStack : String,
     emailVerificationToken : {
-        required: true,
         type: String
     },
     gravatarUrl: String,
     lastloggedInIp: String,
-    geoDetails: Object
+    geoDetails: Object,
+    emailVerified: Boolean,
+
+    snapchat: String,
+    facebook: String,
+    twitter: String,
+    google: String,
+    github: String,
+    instagram: String,
+    linkedin: String,
+    steam: String,
+    quickbooks: String,
+    profile: {
+        name: String,
+        gender: String,
+        location: String,
+        website: String,
+        picture: String
+    }
 }, { timestamps: true });
 
 /**

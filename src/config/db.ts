@@ -1,10 +1,16 @@
 import mongoose from "mongoose";
 import bluebird from "bluebird";
+import chalk from "chalk";
+
 import { MONGODB_URI } from "../util/secrets";
 
 // // Connect to MongoDB
 const mongoUrl = MONGODB_URI;
 mongoose.Promise = bluebird;
+mongoose.set("useFindAndModify", false);
+mongoose.set("useCreateIndex", true);
+mongoose.set("useNewUrlParser", true);
+mongoose.set("useUnifiedTopology", true);
 mongoose.connect( mongoUrl , { useNewUrlParser: true,useUnifiedTopology:true} ).then(
     () => { 
         console.log("Connected to mongo");
@@ -16,8 +22,11 @@ mongoose.connect( mongoUrl , { useNewUrlParser: true,useUnifiedTopology:true} ).
 });
 const db = mongoose.connection;
 
-db.on("error", () => {
+db.on("error", (err) => {
     // debug(`MongoDB connection error ${config.database.url} \nPlease make sure MongoDB is running.`);
+    process.exit();
+    console.error(err);
+    console.log("%s MongoDB connection error. Please make sure MongoDB is running.", chalk.red("✗"));
     process.exit();
 });
 
