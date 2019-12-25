@@ -42,4 +42,4 @@ dist/**/*
 
 # ignore yarn.lock
 yarn.lock
-npm-debug.log
+npm-debug.logsendgrid.env

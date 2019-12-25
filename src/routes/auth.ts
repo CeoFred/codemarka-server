@@ -1,4 +1,4 @@
-import {postDeleteAccount, postLogin, tokenVerify, postSignup, postUpdatePassword,postUpdateProfile,refreshToken} from "../controllers/auth";
+import {postDeleteAccount, postLogin, tokenVerify, postSignup, emailVerification, postUpdatePassword,postUpdateProfile,refreshToken} from "../controllers/auth";
 import express from "express";
 import {validate} from "../middleware/authValidate";
 
@@ -26,6 +26,7 @@ router.patch("/user/profile/update", postUpdateProfile);
 //account recovery
 router.post("/user/account/recovery", postDeleteAccount);
 
+router.get("/account/user/verify/:token/:user", emailVerification);
 // password reset 
 
 // all users

@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import sgMail  from "@sendgrid/mail";
 import { User, UserDocument } from "../models/User";
 import { UserDeleted } from "../models/DeletedUsers";
 import { Request, Response, NextFunction } from "express";
@@ -7,7 +8,7 @@ import { WriteError } from "mongodb";
 import { validationResult } from "express-validator";
 
 import { successMessage } from "../helpers/response";
-import { randomNumber } from "../helpers/utility";
+import { randomNumber,randomString } from "../helpers/utility";
 // import {send as mailer } from '../helpers/mailer';
 // import {constants} from "../helpers/constants";
 
@@ -63,6 +64,7 @@ export const postLogin = (req: Request, res: Response) => {
     try {
   
         const errors = validationResult(req);
+        const ip = req.connection.remoteAddress || req.headers["x-forwarded-for"];
 
         if (!errors.isEmpty()) {
             // return res.status(422).json(failed(errors.array()));
@@ -77,7 +79,7 @@ export const postLogin = (req: Request, res: Response) => {
                     user.comparePassword(password,(err,same) => {
                         if(same){
                             //Check account confirmation.
-                            if(!user.isConfirmed){
+                            if(user.isConfirmed){
                                 // Check User's account active or not.
                                 if(user.status) {
                                     let userData = {
@@ -94,6 +96,9 @@ export const postLogin = (req: Request, res: Response) => {
                                     const secret = process.env.JWT_SECRET;
                                     //Generated JWT token with Payload and secret.
                                     userData.token = jwt.sign(jwtPayload, secret, jwtData);
+
+                                    user.updatedLastLoginIp(ip);
+                                    // integrate IP change later
                                     return apiResponse.successResponseWithData(res,"Login Success.", userData);
                                 }else {
                                     return apiResponse.unauthorizedResponse(res, "Account is not active. Please contact admin.");
@@ -107,7 +112,7 @@ export const postLogin = (req: Request, res: Response) => {
                     });
                 }
                 else{
-                    return apiResponse.unauthorizedResponse(res, "Email or Password wrong.");
+                    return apiResponse.unauthorizedResponse(res, "Email does not exist, try signing up");
                 }
             }).catch(err => {
 			    return apiResponse.unauthorizedResponse(res, "Email or Password wrong.");
@@ -133,42 +138,104 @@ export const postSignup = (req: Request, res: Response, next: NextFunction) => {
             // return res.status(422).json(failed(errors.array()));
             return apiResponse.ErrorResponse(res,errors.array());
         }else{
-            const { email, password, username } = req.body;
+            const { email, password, username, skillStack } = req.body;
             
             	// generate OTP for confirmation
             let otp = randomNumber(4);
-        
+            const verificationToken = randomString(40);
             var user = new User(
                 {
                     username,
                     email,
                     password,
                     confirmOTP: otp,
-                    isConfirmed: true,
-                    status:1
+                    isConfirmed: false,
+                    status:1,
+                    emailVerificationToken:verificationToken,
+                    techStack:skillStack
                 }
             );
+            user.gravatar(20);
 
 
             user.save(function (err) {
                 if (err) { return apiResponse.ErrorResponse(res, err); }
-                let userData = {
-                    _id: user._id,
-                    username: user.username,
-                    email: user.email,
-                    token:""
-                };
                 
-                //Prepare JWT token for authentication
-                const jwtPayload = userData;
-                const jwtData = {
-                    expiresIn: process.env.JWT_TIMEOUT_DURATION,
-                };
+                let trial = 0;
+                let maxTrial = 2;
+                let sent = false;
+                const vLink = `https://colabinc.herokuapp.com/auth/account/user/verify/${verificationToken}/${user._id}`;
+                console.log(vLink);
+                const sendMailToNewUser = (email: string) => {
 
-                const secret = process.env.JWT_SECRET;
-                //Generated JWT token with Payload and secret.
-                userData.token = jwt.sign(jwtPayload, secret, jwtData);
-                return apiResponse.successResponseWithData(res,"Registration Success.", userData);
+                    const trimedEmail = email.trim();
+
+                    const emailTemplate = `
+                    <div style="margin:15px;padding:10px;border:1px solid grey;justify-content;">
+                    <div style="text-align:center">
+                    <img src='https://lh3.googleusercontent.com/7mQ4OCDZ1mOyQu1KvJI9NaVXQgLWgX8cvLI6yrDQKfAc-pwp3fcbQPlZfy9uKJUFWBcPpGd-8bJ-9YH60zVN3u9fj81cb2YUhJPShVoe5BzlSpF7lOzbi0hZfg6gn61t9u-OdoFju6rgursXBLyJjCrDIf-gU0AibNf3qjXV0aHJS8wg_KKEI_ExXEnXwtM_JSxthMKSt_9ef-KiG107dTri1sbk74yAyvTiDqcAIozThAbt47gLH1fCLU4Ngx3Mze2lgv3Ed3DsUbtESKV5cpJEkrwAr1dfepXgoKviLzzECuEneLkgkOtSRcmIshZjGMuxY9HzMjcyZQ1tf07aqpnsZ2Mg-IfU5QQQ2pF9AghJbR7pJlNvedBI6rfeo1yP9EEFSsR1ShAR3LZnybR2mw--43AABZRer4DX6T7ZUNA_hxSRvy6i3VsBhkSeZ7bUfkkOzg3RoH8hjbAdKgi4aUXpjFTOWd4vru-u7eTbdcjuYglvRIYvTDu_SZaJne3H25aZbxbmYTUSc6SFla6XIk1x1tH0uNC6D3joQLH-g3pOkmR9CfHRXqp-v2NhCmkrs9tlNjlvSvujqdL3-aZ4ogL8GcQzBpysiCfFbM32QI47w8G5qGKKc4HSPt-MNLRC0Hi56CrWjSLhxMCYraWecUvDIdlwMQolhjydLCtCWFgQ4DhClYQ-1Q=s298-no' height="100" width="100"/>
+                    </div>
+                    <h4><b>Hi ${username},</b></h4>
+                    <br/>
+
+                    <p>Please verify your email address used in creating an account on codemarka.
+                    Click on the link below to activate your account.
+                    </p>
+
+                    <br/>
+
+                    <p><a href='${vLink}'>${vLink}</a></p>
+                    </div>
+
+                    `;
+
+                    sgMail.setApiKey("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");
+
+                    const msg = {
+                        to: trimedEmail,
+                        from: "Codemarka@codemarak.dev",
+                        subject: "Verify Your Email",
+                        text: `Click below to verify ${vLink}`,
+                        html: emailTemplate,
+                    };
+
+                    if(trial <= maxTrial){
+                        try {
+                            sgMail.send(msg,true,(err: any,resp: unknown) => {
+                                if(err){
+                                    // RECURSION
+                                    trial++;
+                                    console.log("retrying..",trial);
+                                  
+                                    sendMailToNewUser(trimedEmail);
+                                } else {
+                                
+                                    // BASE
+                                    console.log("sent mail to",trimedEmail);
+                                    sent = true;
+                                    console.log(user);
+                                    return apiResponse.successResponse(res,"Hurray! One last thing, we sent a confirmation mail , please check your inbox.");
+
+                                }
+                                
+                            });
+                        } catch (e) {
+                            next(e);
+                            console.log(e);
+                            return apiResponse.ErrorResponse(res,"Whoops!  Something went wrong");
+
+                        }
+                       
+                    } else {
+                        // TERMINATION
+                        console.log("exceeded trial");
+                        sent = false;
+                        return apiResponse.successResponse(res,"Registration Success,But mail not sent!");
+                    }
+                    
+
+                };
+                sendMailToNewUser(email);
             });
 
         }
@@ -180,6 +247,112 @@ export const postSignup = (req: Request, res: Response, next: NextFunction) => {
         
     }
         
+};
+
+export const emailVerification = (req: Request, res: Response, next: NextFunction) => {
+    const userid = req.params.user;
+    const token = req.params.token;
+
+    if(userid && userid.trim().length >= 23){
+        try {
+            let trial = 0;
+            let maxTrial = 2;
+            let sent = false;
+            User.findOne({_id: userid, emailVerificationToken: token,isConfirmed: false},(err, user) => {
+                console.log(user);
+                if(user !== null){
+
+                    console.log("found");
+
+                    user.emailConfirmed();
+                    const username = user.username;
+                    //send Welcome mail;
+                    const sendWelcomeEmailToUser = (email: string) => {
+
+                        const trimedEmail = email.trim();
+
+                        const emailTemplate = `
+                    <div style="margin:15px;padding:10px;border:1px solid grey;justify-content;">
+                    <div style="text-align:center">
+                    <img src='https://lh3.googleusercontent.com/7mQ4OCDZ1mOyQu1KvJI9NaVXQgLWgX8cvLI6yrDQKfAc-pwp3fcbQPlZfy9uKJUFWBcPpGd-8bJ-9YH60zVN3u9fj81cb2YUhJPShVoe5BzlSpF7lOzbi0hZfg6gn61t9u-OdoFju6rgursXBLyJjCrDIf-gU0AibNf3qjXV0aHJS8wg_KKEI_ExXEnXwtM_JSxthMKSt_9ef-KiG107dTri1sbk74yAyvTiDqcAIozThAbt47gLH1fCLU4Ngx3Mze2lgv3Ed3DsUbtESKV5cpJEkrwAr1dfepXgoKviLzzECuEneLkgkOtSRcmIshZjGMuxY9HzMjcyZQ1tf07aqpnsZ2Mg-IfU5QQQ2pF9AghJbR7pJlNvedBI6rfeo1yP9EEFSsR1ShAR3LZnybR2mw--43AABZRer4DX6T7ZUNA_hxSRvy6i3VsBhkSeZ7bUfkkOzg3RoH8hjbAdKgi4aUXpjFTOWd4vru-u7eTbdcjuYglvRIYvTDu_SZaJne3H25aZbxbmYTUSc6SFla6XIk1x1tH0uNC6D3joQLH-g3pOkmR9CfHRXqp-v2NhCmkrs9tlNjlvSvujqdL3-aZ4ogL8GcQzBpysiCfFbM32QI47w8G5qGKKc4HSPt-MNLRC0Hi56CrWjSLhxMCYraWecUvDIdlwMQolhjydLCtCWFgQ4DhClYQ-1Q=s298-no' height="100" width="100"/>
+                    </div>
+                    <h4><b>Hey ${username},</b></h4>
+                    <br/>
+
+                    <p>Thank you for confirming your account, we want to use this opportunity to welcome you to the
+                    codemarka community. Having confirmed your account, you can now create or hosts classroom sessions right
+                    from your homepage, all the best!
+                    </p>
+
+                    <br/>
+                    <p><a href='https://codemarka.dev/auth/signin?ref=confirm'>Login</a></p>
+                    </div>
+
+                    `;
+
+                        sgMail.setApiKey("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");
+
+                        const msg = {
+                            to: trimedEmail,
+                            from: "Codemarka@codemarak.dev",
+                            subject: "Welcome To Codemarka",
+                            text: "Welcome to codemarka!",
+                            html: emailTemplate,
+                        };
+
+                        if(trial <= maxTrial){
+                            try {
+                                sgMail.send(msg,true,(err: any,resp: unknown) => {
+                                    if(err){
+                                    // RECURSION
+                                        trial++;
+                                        console.log("retrying..",trial);
+                                  
+                                        sendWelcomeEmailToUser(trimedEmail);
+                                    } else {
+                                
+                                        // BASE
+                                        console.log("sent mail to",trimedEmail);
+                                        sent = true;
+                                        console.log(user);
+                                        return res.redirect("https://codemarka.dev/account/confirmed/?true&sent=true");
+                                    }
+                                
+                                });
+                            } catch (e) {
+                                next(e);
+                                console.log(e);
+
+                                return res.redirect("https://codemarka.dev/account/confirmed/?true&sent=false");
+
+                            }
+                       
+                        } else {
+                        // TERMINATION
+                            console.log("exceeded trial");
+                            sent = false;
+                            return res.redirect("https://codemarka.dev/account/confirmed/?true&sent=false");
+                        }
+                    
+
+                    };
+                    sendWelcomeEmailToUser(user.email);
+                } else {
+                    return res.redirect("https://codemarka.dev/pages/error/?email_ver=false&info=0");
+
+                }
+            });
+        } catch (error) {
+
+            return res.redirect("https://codemarka.dev/pages/error/?email_ver=false&info=0");
+
+        }
+    } else {
+        return res.redirect("https://codemarka.dev/pages/error/?email_ver=false&info=0");
+
+
+    }
+
 };
 
 /**

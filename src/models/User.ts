@@ -1,7 +1,7 @@
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import mongoose from "mongoose";
-
+import geo from "geoip-lite";
 export type UserDocument = mongoose.Document & {
     email: string;
     password: string;
@@ -18,9 +18,14 @@ export type UserDocument = mongoose.Document & {
     comparePassword: comparePasswordFunction;
     addToken: addToken;
     status: boolean;
+    techStack: string;
     isConfirmed: boolean;
     confirmOTP: number;
     gravatar: (size: number) => string;
+    emailVerificationToken: string;
+    updatedLastLoginIp: (ip: any) => any;
+    geoDetails: object;
+    emailConfirmed: () => void;
 };
 
 type comparePasswordFunction = (candidatePassword: string, cb: (err: any, isMatch: boolean) => {}) => void;
@@ -44,7 +49,7 @@ const userSchema = new mongoose.Schema({
         default: true,
         type: Boolean
     },
-    isConfired: {
+    isConfirmed: {
         default: true,
         type: Boolean
     },
@@ -59,7 +64,15 @@ const userSchema = new mongoose.Schema({
     },
     confirmOTP: {
         type: Number
-    }
+    },
+    techStack : String,
+    emailVerificationToken : {
+        required: true,
+        type: String
+    },
+    gravatarUrl: String,
+    lastloggedInIp: String,
+    geoDetails: Object
 }, { timestamps: true });
 
 /**
@@ -78,23 +91,35 @@ const comparePassword: comparePasswordFunction = function (candidatePassword, cb
     });
 };
 
-const addToken = function(token: string, type: string){
+const addToken = function(token: string, type: string): void{
     let tokens = this.tokens;
     tokens.push({accessToken:token,type});
     this.save();
 };
 
+const updatedLastLoginIp = function(ip: string): void {
+    this.lastLoggedInIp = ip;
+    var geoCord = geo.lookup(ip);
+    this.geoDetails = geoCord;
+    this.save();
+};
+const emailConfirmed = function(): void {
+    this.isConfirmed = true;
+    this.save();
+};
+
 userSchema.methods.comparePassword = comparePassword;
 userSchema.methods.addToken = addToken;
+userSchema.methods.updatedLastLoginIp = updatedLastLoginIp;
+userSchema.methods.emailConfirmed = emailConfirmed;
+
 /**
  * Helper method for getting user's gravatar.
  */
-userSchema.methods.gravatar = function (size: number = 200): string {
-    if (!this.email) {
-        return `https://gravatar.com/avatar/?s=${size}&d=retro`;
-    }
+userSchema.methods.gravatar = function (size: number = 200): void {
+    
     const md5 = crypto.createHash("md5").update(this.email).digest("hex");
-    return `https://gravatar.com/avatar/${md5}?s=${size}&d=retro`;
+    this.gravatarUrl = `https://gravatar.com/avatar/${md5}?s=${size}&d=retro`;
 };
 
 export const User = mongoose.model<UserDocument>("User", userSchema);
