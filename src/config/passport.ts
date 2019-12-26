@@ -11,6 +11,10 @@ import {User} from "../models/User";
 const { OAuth2Strategy: GoogleStrategy } = google;
 const { Strategy: GitHubStrategy } = github;
 
+export const ENVIRONMENT = process.env.NODE_ENV;
+const prod = ENVIRONMENT === "production";
+
+const host = prod ? "https://colabinc.herokuapp.com" : "http://localhost:2001";
 passport.serializeUser((user: any, done) => {
     done(null, user.id);
 });
@@ -25,7 +29,7 @@ passport.deserializeUser((id, done) => {
 passport.use(new GitHubStrategy({
     clientID: process.env.GITHUB_CLIENT_ID,
     clientSecret: process.env.GITHUB_CLIENT_SECRET,
-    callbackURL: "/auth/github/callback",
+    callbackURL: `${host}/auth/github/callback`,
     passReqToCallback: true,
     scope: ["user:email","read:user"]
 },
@@ -138,7 +142,7 @@ function(req: any,accessToken, refreshToken, profile: any, done) {
 passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: "/auth/google/callback",
+    callbackURL: `${host}/auth/github/callback`,
     passReqToCallback: true
 
 },
