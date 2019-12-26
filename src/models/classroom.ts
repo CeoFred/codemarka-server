@@ -9,6 +9,7 @@ export type ClassroomDocument = mongoose.Document & {
     likes: [Record<string, any>];
     pinnedMessages: [Record<string, any>];
     ratings: [Record<string, any>];
+    blocked: [Record<string, any>];
 };
 
 
@@ -35,6 +36,7 @@ const classroomSchema = new mongoose.Schema({
         type: String,
         default:"Basic web App"
     },
+    blocked: [Object],
     description:{
         required: true,
         type: String

@@ -361,13 +361,13 @@ export const emailVerification = (req: Request, res: Response, next: NextFunctio
                     };
                     sendWelcomeEmailToUser(user.email);
                 } else {
-                    return res.redirect("https://codemarka.dev/pages/error/?email_ver=false&info=0");
+                    return res.redirect("https://codemarka.dev/account/confirmed/false/?sent=false&info=0");
 
                 }
             });
         } catch (error) {
 
-            return res.redirect("https://codemarka.dev/pages/error/?email_ver=false&info=0");
+            return res.redirect("https://codemarka.dev/account/confirmed/false/?sent=false&info=0");
 
         }
     } else {

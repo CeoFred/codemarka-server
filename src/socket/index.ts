@@ -28,7 +28,89 @@ export default (server: express.Application) => {
         }
         let classfiles: any[] = [];
 
+        socket.on("re_join",(data: JoinObj) => {
+            
+            socket.user = data.userId;
+            socket.room = data.classroom_id;
+            socket.username = data.username;
+            socket.join(data.classroom_id, () => {
+                Classroom.findById(data.classroom_id, (err, res: any) => {
+                    if(res && res !== null){
+                                    
+                        socket.emit("rejoin_updateMsg", { by: "server", msgs: res.messages, type: "oldMsgUpdate" });
 
+                        socket.emit("classroom_users", res.students);
+                        
+                        classWeb.findOne({ classroomId: data.classroom_id }).then((d: any) => {
+                            if (!d && d === null) {
+                                socket.emit("classroomFilesError", "Files not found");
+                                console.log("Web files not found");
+                            } else {
+
+                                const cssfileId = d.css;
+                                const jsFileId = d.js;
+                                const htmlFileId = d.html;
+
+                                if (!cssfileId || !jsFileId || !htmlFileId) {
+                                    socket.emit("classroomFilesError", "File ID not found");
+                                }
+
+                                const classFilesDir = `${__dirname}/../../main/classrooms/${data.classroom_id}/`;
+
+                                fs.readdir(classFilesDir, { withFileTypes: true }, (err, files) => {
+
+                                    if (err) {
+                                        console.log(err);
+                                        socket.emit("classroomFilesError", "File Directory Not Found");
+                                    }
+                                    else {
+                                        let htmlFilePath: string, cssFilePath: string, jsFilePath: string;
+                                        let htmlFileContent: any, cssFileContent: any, jsFileContent: any;
+                                        // Loop through files inclassroom files
+                                        files.forEach(element => {
+                                            classfiles.push(element);
+                                            // read each file in classroom folder
+                                            if (element.name.includes("css")) {
+                                                cssFilePath = `${classFilesDir}/${element.name}`;
+                                                cssFileContent = fs.readFileSync(cssFilePath, "utf8");
+                                            }
+
+                                            if (element.name.includes("js")) {
+                                                jsFilePath = `${classFilesDir}/${element.name}`;
+                                                jsFileContent = fs.readFileSync(jsFilePath, "utf8");
+
+                                            }
+
+                                            if (element.name.includes("html")) {
+                                                htmlFilePath = `${classFilesDir}/${element.name}`;
+                                                htmlFileContent = fs.readFileSync(htmlFilePath, "utf8");
+
+                                            }
+                                        });
+                                        const ht = {
+                                            id: htmlFileId,
+                                            content: htmlFileContent
+                                        };
+                                        const cs = {
+                                            id: cssfileId,
+                                            content: cssFileContent
+                                        };
+                                        const js = {
+                                            id: jsFileId,
+                                            content: jsFileContent
+                                        };
+                                        socket.emit("class_files", cs, ht, js);
+                                    }
+
+                                });
+
+                            }
+                        });
+                    }
+                });
+            }); 
+
+        });
         // event when someone joins a class
         socket.on("join", (data: JoinObj) => {
 
@@ -48,9 +130,8 @@ export default (server: express.Application) => {
                         if (err) throw err;
 
                         if (res && res !== null) {
-
                             const currentClassStudents = res.students;
-
+                            console.log(currentClassStudents);
                             oldStudentsWithoutUser = currentClassStudents.filter(student => {
                                 return String(student.id) !== String(data.userId);
                             });
@@ -198,6 +279,85 @@ export default (server: express.Application) => {
                 socket.emit("ErrorFetchingUser");
 
             });
+
+        });
+
+        socket.on("block_user",(user: any) => {
+            const classroom = socket.room;
+            const userToBlock =  user.id;
+
+            // find classroom of user
+            Classroom.findById(classroom, (err, res) => {
+                
+                if(err) {
+                    console.log(err);
+                }
+
+                if(res && res !== null) {
+                    
+                    // All students in a class
+                    const students = res.students;
+
+                    const studentSearch = students.filter(student => {
+    
+                        return String(student.id) === String(userToBlock);
+                         
+                    });
+
+                    const isBlocked = res.blocked.filter(blockedStudent => {
+                        return blockedStudent.user.id === String(userToBlock);
+                    });
+
+                    if(isBlocked && isBlocked.length > 0 && Array.isArray(isBlocked)){
+                        socket.emit("blocking_user_failed",{user,reason:"User is already blocked"});
+                        // return;
+                    };
+
+                    let studentInClass = undefined;
+                    let newStudentsInClassArray;
+
+                    if(studentSearch && Array.isArray(studentSearch) && studentSearch.length > 0){
+                        studentInClass = true;
+                    } else {
+                        studentInClass = false;
+                    }
+
+
+
+                    if(studentInClass){
+                    // remove user from classroom table as a student
+
+                        newStudentsInClassArray = students.filter((student) => {
+                            return String(student.id) !== String(userToBlock);
+                        });
+                    } else {
+                        socket.emit("blocking_user_failed",{user,reason:"User is not a student in class"});
+                        return true;
+                    }
+
+
+                    //add user to blocked users field
+                    Classroom.findOneAndUpdate({_id: classroom},{
+                        // $push : {
+                        // blocked : { user,by: socket.user, at: moment.now() }
+                        // },
+                        students: newStudentsInClassArray,
+                        blocked: []
+                    },{new: true},(err, doc) => {
+
+                        if(!err){
+                            //emit socket to namespace
+                            console.log(doc);
+                            nsp.to(socket.room).emit("blocking_user_success",{user,by: socket.user,newStudents: doc.students});
+                        }
+
+                    });
+
+
+                }
+
+            });
+
 
         });
 
@@ -400,7 +560,7 @@ export default (server: express.Application) => {
                 topic,
             }, { new: true }, (err, doc) => {
                 if (err) socket.emit("errUpdating", err);
-                socket.emit("newClassInformation", doc);
+                nsp.to(socket.room).emit("newClassInformation", doc);
                 console.log(doc);
             });
         });
@@ -437,6 +597,8 @@ export default (server: express.Application) => {
                             Classroom.findOneAndUpdate({ _id: socket.room }, { $inc: { numberInClass: -1 }, students: newclassusers }, { new: true }, (err, doc) => {
                                 if (err) console.log("error");
                                 socket.disconnect();
+                                console.log(`${socket.username} disconnected`);
+
                             });
                         }
                     });
