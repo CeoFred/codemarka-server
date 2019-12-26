@@ -142,7 +142,7 @@ function(req: any,accessToken, refreshToken, profile: any, done) {
 passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: `${host}/auth/github/callback`,
+    callbackURL: `${host}/auth/google/callback`,
     passReqToCallback: true
 
 },
