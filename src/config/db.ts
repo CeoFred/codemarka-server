@@ -24,7 +24,6 @@ const db = mongoose.connection;
 
 db.on("error", (err) => {
     // debug(`MongoDB connection error ${config.database.url} \nPlease make sure MongoDB is running.`);
-    process.exit();
     console.error(err);
     console.log("%s MongoDB connection error. Please make sure MongoDB is running.", chalk.red("✗"));
     process.exit();

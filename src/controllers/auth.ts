@@ -9,12 +9,12 @@ import { validationResult } from "express-validator";
 
 import { successMessage } from "../helpers/response";
 import { randomNumber,randomString } from "../helpers/utility";
-// import {send as mailer } from '../helpers/mailer';
 // import {constants} from "../helpers/constants";
 
 import jwt from "jsonwebtoken";
 
 import * as apiResponse from "../helpers/apiResponse";
+import * as CLIENT_URLS from "../config/url";
 
 const options = { algorithm: "HS256", noTimestamp: false, audience: "users", issuer: "colab", subject: "auth", expiresIn: "7d" };
 
@@ -152,7 +152,7 @@ export const postSignup = (req: Request, res: Response, next: NextFunction) => {
                     isConfirmed: false,
                     status:1,
                     emailVerificationToken:verificationToken,
-                    techStack:skillStack
+                    techStack:skillStack || ""
                 }
             );
             user.gravatar(20);
@@ -250,7 +250,27 @@ export const postSignup = (req: Request, res: Response, next: NextFunction) => {
 };
 
 export const handelGoogleAuthCallback  = (req: any | Request, res: Response) => {
-    return res.redirect("https://codemarka.dev");
+    
+    const user =  req.user._id;
+    const username = req.user.username;
+    console.log(req.session);
+
+    let userData = {
+        _id: user,
+        username: username
+    };
+    //Prepare JWT token for authentication
+    const jwtPayload = userData;
+
+    const jwtData = {
+        expiresIn: process.env.JWT_TIMEOUT_DURATION,
+    };
+
+    const secret = process.env.JWT_SECRET;
+    //Generated JWT token with Payload and secret.
+    const token  = jwt.sign(jwtPayload, secret, jwtData);
+
+    return res.redirect(`${CLIENT_URLS.GOOGLE_AUTH_SUCCESS_CLIENT}/${token}/${user}`);
 };
 export const emailVerification = (req: Request, res: Response, next: NextFunction) => {
     const userid = req.params.user;
@@ -318,7 +338,7 @@ export const emailVerification = (req: Request, res: Response, next: NextFunctio
                                         console.log("sent mail to",trimedEmail);
                                         sent = true;
                                         console.log(user);
-                                        return res.redirect("https://codemarka.dev/account/confirmed/?true&sent=true");
+                                        return res.redirect("https://codemarka.dev/account/confirmed/true/?sent=true");
                                     }
                                 
                                 });
@@ -326,7 +346,7 @@ export const emailVerification = (req: Request, res: Response, next: NextFunctio
                                 next(e);
                                 console.log(e);
 
-                                return res.redirect("https://codemarka.dev/account/confirmed/?true&sent=false");
+                                return res.redirect("https://codemarka.dev/account/confirmed/true/?sent=false");
 
                             }
                        
@@ -334,7 +354,7 @@ export const emailVerification = (req: Request, res: Response, next: NextFunctio
                         // TERMINATION
                             console.log("exceeded trial");
                             sent = false;
-                            return res.redirect("https://codemarka.dev/account/confirmed/?true&sent=false");
+                            return res.redirect("https://codemarka.dev/account/confirmed/true/?sent=false");
                         }
                     
 

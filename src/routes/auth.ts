@@ -16,9 +16,7 @@ const router = express.Router();
 router.get("/github",passport.authenticate("github"));
 //github callback
 
-// router.get("/auth/github/callback", passport.authenticate("github", { failureRedirect: "/login" }), (req, res) => {
-//     res.redirect(req.session.returnTo || "/");
-// });
+router.get("/github/callback", passport.authenticate("github", { failureRedirect: "https://codemarka.dev/auth/signin?gauth=failed&retry=true" }), handelGoogleAuthCallback);
 
 //google auth
 router.get("/google", passport.authenticate("google", { scope: ["profile", "email", "https://www.googleapis.com/auth/plus.login"], prompt: "consent"}));

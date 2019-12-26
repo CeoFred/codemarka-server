@@ -8,15 +8,20 @@ import methodOverride from "method-override";
 import cors from "cors";
 import passport from "passport";
 
-import "./config/db";
+import session from "express-session";
+import connectStore from "connect-mongo";
+
+import mongoose from "./config/db";
 import "./config/passport";
 
+import { SESS_NAME, SESS_SECRET , SESS_LIFETIME } from "./util/secrets";
 
 import auth from "./routes/auth";
 import classroom from "./routes/classroom";
 
 import { NextFunction, Request, Response } from "express";
 
+const MongoStore = connectStore(session);
 
 // Create Express server
 const app = express();
@@ -45,7 +50,22 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 app.use(passport.initialize());
 app.use(passport.session());
-
+app.use(session({
+    name: SESS_NAME,
+    secret: SESS_SECRET,
+    saveUninitialized: false,
+    resave: false,
+    store: new MongoStore({
+        mongooseConnection: mongoose,
+        collection: "session",
+        ttl: (SESS_LIFETIME) / 1000
+    }),
+    cookie: {
+        sameSite: true,
+        secure: app.get("NODE_ENV") === "production",
+        maxAge: (SESS_LIFETIME)
+    }
+}));
 app.set("host", process.env.OPENSHIFT_NODEJS_IP || "0.0.0.0");
 app.set("port", process.env.PORT || process.env.OPENSHIFT_NODEJS_PORT || 8080);
 
@@ -100,6 +120,7 @@ function errorHandler(err: Error, req: Request, res: Response, next: NextFunctio
     if(err && err.type === "auth"){
         res.redirect("https://codemaraka.dev/auth/signin?googleAuth=failed");
     }
+
     res.json({ error: err });
 }
 
