@@ -40,9 +40,10 @@ export type UserDocument = mongoose.Document & {
     confirmOTP: number;
     gravatar: (size: number) => string;
     emailVerificationToken: string;
-    updatedLastLoginIp: (ip: any) => any;
+    updatedLastLoginIp: (ip: any,cd: any) => any;
     geoDetails: object;
     emailConfirmed: () => void;
+    gravatarUrl: string;
 };
 
 type comparePasswordFunction = (candidatePassword: string, cb: (err: any, isMatch: boolean) => {}) => void;
@@ -131,11 +132,13 @@ const addToken = function(token: string, type: string): void{
     this.save();
 };
 
-const updatedLastLoginIp = function(ip: string): void {
+const updatedLastLoginIp = function(ip: string,cb: any): void {
     this.lastLoggedInIp = ip;
-    var geoCord = geo.lookup(ip);
+    const geoCord = geo.lookup(ip);
     this.geoDetails = geoCord;
     this.save();
+    cb(geoCord);
+
 };
 const emailConfirmed = function(): void {
     this.isConfirmed = true;

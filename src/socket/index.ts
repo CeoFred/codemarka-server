@@ -131,7 +131,6 @@ export default (server: express.Application) => {
 
                         if (res && res !== null) {
                             const currentClassStudents = res.students;
-                            console.log(currentClassStudents);
                             oldStudentsWithoutUser = currentClassStudents.filter(student => {
                                 return String(student.id) !== String(data.userId);
                             });
@@ -139,9 +138,13 @@ export default (server: express.Application) => {
                             studentObj = {
                                 id: String(user._id),
                                 username: user.username,
-                                role: "1"
-                            };
+                                role: "1",
 
+                                stack: user.techStack,
+
+                                avatar: user.gravatarUrl
+                            };
+ 
                             oldStudentsWithoutUser.push(studentObj);
 
 
@@ -174,11 +177,10 @@ export default (server: express.Application) => {
                                         }
 
                                     });
-
                                     socket.emit("updateMsg", { by: "server", msgs: d.messages, type: "oldMsgUpdate" });
 
                                     socket.emit("classroom_users", d.students);
-
+                                    
                                     socket.emit("class_favourites", d.likes);
 
                                     socket.join(data.classroom_id, () => {
@@ -282,6 +284,27 @@ export default (server: express.Application) => {
 
         });
 
+        socket.on("shutdown_classroom",() => {
+            nsp.to(socket.room).emit("shut_down_emitted",{by:socket.user});
+
+            
+            Classroom.findOneAndUpdate({_id: socket.room},{
+                status:2
+
+            },{new: true},(err, doc) => {
+
+                if(!err){
+                    //emit socket to namespace
+                    console.log(doc);
+                    setTimeout(() => {
+                        nsp.to(socket.room).emit("shut_down_now");
+                        
+                    }, 7000);
+                }
+
+            });
+
+        });
         socket.on("block_user",(user: any) => {
             const classroom = socket.room;
             const userToBlock =  user.id;
@@ -336,13 +359,11 @@ export default (server: express.Application) => {
                     }
 
 
-                    //add user to blocked users field
                     Classroom.findOneAndUpdate({_id: classroom},{
-                        // $push : {
-                        // blocked : { user,by: socket.user, at: moment.now() }
-                        // },
+                        $push : {
+                            blocked : { user,by: socket.user, at: moment.now() }
+                        },
                         students: newStudentsInClassArray,
-                        blocked: []
                     },{new: true},(err, doc) => {
 
                         if(!err){
@@ -570,16 +591,6 @@ export default (server: express.Application) => {
             delete clients[socket.id];
             socket.leave(socket.room);
 
-            nsp.to(socket.room).emit("updatechat_left", {
-                by: "server",
-                msg: socket.username + " left",
-                for: socket.user,
-                name: socket.username,
-                type: "sLeft",
-                timeSent: moment().format("LT"),
-                msgId: uuidv4()
-            });
-
             Classroom.findById(socket.room, (err, room: ClassroomDocument) => {
 
                 if (err) {
@@ -596,7 +607,9 @@ export default (server: express.Application) => {
 
                             Classroom.findOneAndUpdate({ _id: socket.room }, { $inc: { numberInClass: -1 }, students: newclassusers }, { new: true }, (err, doc) => {
                                 if (err) console.log("error");
-                                socket.disconnect();
+                                if(socket.connected){
+                                    socket.disconnect();
+                                }
                                 console.log(`${socket.username} disconnected`);
 
                             });
@@ -678,7 +691,6 @@ export default (server: express.Application) => {
         });
 
         socket.on("user_typing", (data: any): void => {
-
             nsp.to(socket.room).emit("utyping", {
                 ...data
             });
@@ -689,6 +701,7 @@ export default (server: express.Application) => {
                 ...data
             });
         });
+
 
         socket.on("disconnect", function () {
             delete clients[socket.id];
@@ -726,7 +739,7 @@ export default (server: express.Application) => {
                 }
 
             });
-            console.log(`${socket.username} disconnected`);
+            console.log(`${socket.username}  disconnected`);
         });
     });
 };

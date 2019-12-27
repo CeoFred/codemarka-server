@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import sgMail  from "@sendgrid/mail";
@@ -97,8 +98,12 @@ export const postLogin = (req: Request, res: Response) => {
                                     //Generated JWT token with Payload and secret.
                                     userData.token = jwt.sign(jwtPayload, secret, jwtData);
 
-                                    user.updatedLastLoginIp(ip);
+                                    user.updatedLastLoginIp(ip,(cord: string | any) => {
+                                        user.addToken(userData.token,"login");
+                                    });
+
                                     // integrate IP change later
+                                    console.log(user);
                                     return apiResponse.successResponseWithData(res,"Login Success.", userData);
                                 }else {
                                     return apiResponse.unauthorizedResponse(res, "Account is not active. Please contact admin.");
@@ -138,8 +143,7 @@ export const postSignup = (req: Request, res: Response, next: NextFunction) => {
             // return res.status(422).json(failed(errors.array()));
             return apiResponse.ErrorResponse(res,errors.array());
         }else{
-            const { email, password, username, skillStack } = req.body;
-            
+            const { email, password, username, techStack } = req.body;
             	// generate OTP for confirmation
             let otp = randomNumber(4);
             const verificationToken = randomString(40);
@@ -152,15 +156,15 @@ export const postSignup = (req: Request, res: Response, next: NextFunction) => {
                     isConfirmed: false,
                     status:1,
                     emailVerificationToken:verificationToken,
-                    techStack:skillStack || ""
+                    techStack:techStack || ""
                 }
             );
             user.gravatar(20);
 
 
-            user.save(function (err) {
+            user.save(function (err,data) {
                 if (err) { return apiResponse.ErrorResponse(res, err); }
-                
+                console.log(data);
                 let trial = 0;
                 let maxTrial = 2;
                 let sent = false;
@@ -230,7 +234,7 @@ export const postSignup = (req: Request, res: Response, next: NextFunction) => {
                         // TERMINATION
                         console.log("exceeded trial");
                         sent = false;
-                        return apiResponse.successResponse(res,"Registration Success,But mail not sent!");
+                        return apiResponse.successResponse(res,"Hurray! One last thing, we sent a confirmation mail , please check your inbox.");
                     }
                     
 
