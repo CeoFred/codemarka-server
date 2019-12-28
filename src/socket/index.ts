@@ -130,6 +130,7 @@ export default (server: express.Application) => {
                         if (err) throw err;
 
                         if (res && res !== null) {
+                            console.log("found class");
                             const currentClassStudents = res.students;
                             oldStudentsWithoutUser = currentClassStudents.filter(student => {
                                 return String(student.id) !== String(data.userId);
@@ -150,7 +151,7 @@ export default (server: express.Application) => {
 
                             const updatedStudentList = oldStudentsWithoutUser;
 
-                            Classroom.findOneAndUpdate({ _id: data.classroom_id, status: 2 },
+                            Classroom.findOneAndUpdate({ _id: data.classroom_id },
                                 {
 
                                     students: updatedStudentList,
@@ -283,13 +284,22 @@ export default (server: express.Application) => {
             });
 
         });
+        socket.on("start_class",(userid: string) => {
+            Classroom.findOneAndUpdate({ _id: socket.room, owner: userid },{
+                status:2
+            },{new: true},(err, doc) => {
+                if(!err){
+                    socket.emit("started_class");
+                }
+            });
+        });
 
         socket.on("shutdown_classroom",() => {
             nsp.to(socket.room).emit("shut_down_emitted",{by:socket.user});
 
             
             Classroom.findOneAndUpdate({_id: socket.room},{
-                status:2
+                status:3
 
             },{new: true},(err, doc) => {
 

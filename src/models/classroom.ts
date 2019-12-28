@@ -10,6 +10,8 @@ export type ClassroomDocument = mongoose.Document & {
     pinnedMessages: [Record<string, any>];
     ratings: [Record<string, any>];
     blocked: [Record<string, any>];
+    startTime: any;
+    startDate: any;
 };
 
 
@@ -51,7 +53,7 @@ const classroomSchema = new mongoose.Schema({
         required: true
     },
     status: {
-        default: 3,
+        default: 1,
         type: Number
     },
     numberInClass: {

@@ -11,8 +11,9 @@ import { classWeb } from "../models/classWebFiles";
 import * as apiResponse from "../helpers/apiResponse";
 
 // const created = 1;
-const creating = 2;
-
+const notStarted = 1;
+const started = 2;
+const ended = 3;
 export const createClassRoom = (req: Request, res: Response, next: NextFunction): object => {
 
     const errors = validationResult(req);
@@ -32,7 +33,7 @@ export const createClassRoom = (req: Request, res: Response, next: NextFunction)
         classType,
         startTime,
         startDate,
-        status: creating,
+        status: notStarted,
         owner: userid,
         location
     });
@@ -332,12 +333,13 @@ export const verifyClassroom = (req: Request, res: Response, next: NextFunction)
 
     if (fs.existsSync(dire)) {
         Classroom.findOneAndUpdate({ _id: classroom }, { $inc: { visits: 1 } }).then(d => {
-            if (d && d.status === 2) {
+            if (d && d.status === started) {
                 return apiResponse.successResponseWithData(res, "success", d);
-            } else if (d && d.status === 1) {
-                return apiResponse.ErrorResponse(res, "Class has not started!");
+            } else if (d && d.status === notStarted) {
+                return apiResponse.successResponse(res,
+                    {startTimeFull:`${d.startTime} - ${d.startDate}`, msg:"Class has not started!",cdata:d });
             } else {
-                return apiResponse.ErrorResponse(res, "Class has ended!");
+                return apiResponse.successResponse(res, "Class has ended!");
             }
         }).catch(e => {
             return next(e);
@@ -368,7 +370,7 @@ exports.endClassPermanently = (req: Request, res: Response) => {
 export const getTrending = (req: Request, res: Response): object => {
 
 
-    return Classroom.find({ status: 2, classVisibility: "Public" }).sort({ visits: -1 }).then(d => {
+    return Classroom.find({ status: started, classVisibility: "Public" }).sort({ visits: -1 }).then(d => {
         let classExisits = [];
         classExisits = d.filter(classN => {
             const dire = `${__dirname}/../../main/classrooms/${classN._id}/`;

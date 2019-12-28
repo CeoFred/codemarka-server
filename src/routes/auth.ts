@@ -4,10 +4,12 @@ import {postDeleteAccount,
     postUpdatePassword,
     postUpdateProfile,
     refreshToken,
-    handelGoogleAuthCallback
+    handelGoogleAuthCallback,
+    logout
 } from "../controllers/auth";
 import express from "express";
 import passport from "passport";
+import {check} from "../middleware/check_Auth";
 
 import {validate} from "../middleware/authValidate";
 
@@ -33,8 +35,12 @@ router.post("/user/signin",validate("login"), postLogin);
 //signup a user
 router.post("/user/signup",validate("signup"), postSignup);
 
+//logout a user
+
+router.get("/user/logout",check, logout);
+
 // delete user account
-router.delete("/user/delete/:userId", postDeleteAccount);
+router.delete("/user/delete/:userId",check, postDeleteAccount);
 
 // refresh jwt token
 router.post("/user/token/refresh", refreshToken);
@@ -42,7 +48,7 @@ router.post("/user/token/refresh", refreshToken);
 // verify token
 router.post("/user/token/verify", tokenVerify );
 // update user profile
-router.patch("/user/profile/update", postUpdateProfile);
+router.patch("/user/profile/update",check, postUpdateProfile);
 
 //account recovery
 router.post("/user/account/recovery", postDeleteAccount);

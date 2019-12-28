@@ -37,6 +37,8 @@ export type UserDocument = mongoose.Document & {
     status: boolean;
     techStack: string;
     isConfirmed: boolean;
+    privateClassCreated: number;
+    publicClassCreated: number;
     confirmOTP: number;
     gravatar: (size: number) => string;
     emailVerificationToken: string;
@@ -59,6 +61,14 @@ const userSchema = new mongoose.Schema({
     passwordResetToken: String,
     passwordResetExpires: Date,
     tokens: Array,
+    publicClassCreated: {
+        type: Number,
+        default: 0
+    },
+    privateClassCreated: {
+        type: Number,
+        default:0
+    },
     username: {
         unique:true,
         type: String

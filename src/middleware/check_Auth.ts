@@ -13,6 +13,7 @@ export const check = (req: Request, res: Response, next: NextFunction): void | o
 
         req.body.usertoken = jwt.decode(token);
         req.body.decoded = decoded;
+        req.body.token = token;
     } catch (err) {
         return res.status(404).json({
             message: "Auth Failed",

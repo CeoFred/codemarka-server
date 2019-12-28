@@ -448,8 +448,29 @@ export const postDeleteAccount = (req: Request, res: Response, next: NextFunctio
 };
 
 
-export const logout = () => {
+export const logout = async (req: Request,res: Response) => {
+    
+    const { _id } = req.body.decoded;
+    const otoken = req.body.token;
+    
+    User.findOne({ _id:_id },(err,user) => {
+        if(err) return apiResponse.ErrorResponse(res,"Whoops! Something went wrong");
+        if(user && user !== null) {
+            let tokens = user.tokens;
 
+            tokens = tokens.filter(token => {
+                return token.accessToken !== otoken && token.type;
+            });
+
+            User.findByIdAndUpdate(_id,{tokens},(err,user) => {
+                if (err) return apiResponse.ErrorResponse(res,"Whoops! Something went wrong");
+
+                return apiResponse.successResponse(res,"Logged out successfully");
+            });
+        }
+    });
+
+    // User.findByIdAndUpdate();
 };
 
 /**
