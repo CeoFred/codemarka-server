@@ -370,7 +370,7 @@ exports.endClassPermanently = (req: Request, res: Response) => {
 export const getTrending = (req: Request, res: Response): object => {
 
 
-    return Classroom.find({ status: started, classVisibility: "Public" }).sort({ visits: -1 }).then(d => {
+    return Classroom.find({ status: started, classVisibility: "Public" }).limit(12).sort({ visits: -1 }).then(d => {
         let classExisits = [];
         classExisits = d.filter(classN => {
             const dire = `${__dirname}/../../main/classrooms/${classN._id}/`;
