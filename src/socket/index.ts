@@ -634,19 +634,26 @@ export default (server: express.Application) => {
             message: string;
             class: string;
             user: string;
+
+            time: Date;
+
+            messageColor: string;
         }
 
         socket.on("newMessage", (data: NewMessageInterface) => {
+            
             User.findOne({ _id: data.user }).then(u => {
                 if (u) {
                     const msgId = uuidv4();
+                    const msgObject = {
+                        timeSent: moment(data.time).format("LT"),
+                        msgId, name: u.username, by: data.user, msg: data.message,
+                        color: data.messageColor
+                    };
                     Classroom.findByIdAndUpdate({ _id: data.class, status: 2 },
                         {
                             $push: {
-                                messages: {
-                                    timeSent: moment().format("LT"),
-                                    msgId, name: u.username, by: data.user, msg: data.message
-                                }
+                                messages: msgObject
                             }
                         },
                         { upsert: true },
@@ -657,11 +664,7 @@ export default (server: express.Application) => {
                                 //do stuff
                                 nsp.to(data.class).emit("nM",
                                     {
-                                        by: data.user,
-                                        msg: data.message,
-                                        name: u.username,
-                                        timeSent: moment().format("LT"),
-                                        msgId
+                                        ...msgObject
                                     });
                             }
                         }
