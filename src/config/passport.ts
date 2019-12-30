@@ -7,6 +7,7 @@ import passport from "passport";
 import sgMail  from "@sendgrid/mail";
 
 import {User} from "../models/User";
+import { randomNumber } from "../helpers/utility";
 
 const { OAuth2Strategy: GoogleStrategy } = google;
 const { Strategy: GitHubStrategy } = github;
@@ -53,15 +54,34 @@ function(req: any,accessToken, refreshToken, profile: any, done) {
             } else {
                 console.log("new user");
                 console.log(profile);
+
+                function findUser(params: string): any {
+                    const originalUsername = params;
+
+                    const generateRandomNumberWithUsername = () => {
+                        return originalUsername+randomNumber(3);
+                    };
+
+                    User.findOne({username: params}).then(user => {
+                        if(user === null){
+                            return params;
+                        } else {
+                            return findUser(generateRandomNumberWithUsername());
+                        }
+                    });
+
+                }
+
                 const user = new User();
                 user.email = pEmail;
                 user.github = profile.id;
-                user.username = profile.displayName;
+                user.username = findUser(profile.displayName);
                 user.tokens.push({ kind: "github", accessToken });
                 user.profile.name = profile.displayName;
                 user.profile.picture = profile._json.avatar_url;
                 user.profile.location = profile._json.location;
                 user.profile.website = profile._json.blog;
+                user.gravatar(20);
                 user.save((err) => {
                     if(err) done(err, user);
                         
@@ -177,8 +197,27 @@ function(req: any,accessToken, refreshToken, profile, done) {
                     accessToken,
                     refreshToken,
                 });
+                
+                function findUser(params: string): any {
+                    const originalUsername = params;
+
+                    const generateRandomNumberWithUsername = () => {
+                        return originalUsername+randomNumber(3);
+                    };
+
+                    User.findOne({username: params}).then(user => {
+                        if(user === null){
+                            return params;
+                        } else {
+                            return findUser(generateRandomNumberWithUsername());
+                        }
+                    });
+
+                }
                 user.isConfirmed = true;
-                user.username = profile.displayName;
+                user.username = findUser(profile.displayName);
+                user.gravatar(20);
+
                 user.profile.name = profile.displayName;
                 user.profile.gender = profile._json.gender;
                 user.profile.picture = profile._json.picture;

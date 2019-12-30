@@ -129,7 +129,7 @@ export const downloadClassfiles = (req: Request, res: Response): void => {
 
     if(fs.existsSync(dire+classroomid+ "-codemarka"+".zip")) {
         console.log("zipped file exists");
-        fs.unlink(dire+classroomid+".zip",(err) => {
+        fs.unlink(dire+classroomid+"-codemarka.zip",(err) => {
             console.log("Deleted ",dire);
             if(err) throw err;
             // create a file to stream archive data to.

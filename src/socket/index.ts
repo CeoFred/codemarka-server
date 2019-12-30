@@ -472,7 +472,7 @@ export default (server: express.Application) => {
                     (err, doc) => {
                         if (err) console.log(err);
                         console.log(doc);
-                        nsp.to(classroom).emit("star_rating_added", doc.ratings);
+                        socket.emit("star_rating_added", socket.user);
                     }
                     );
                 }
