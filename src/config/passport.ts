@@ -198,24 +198,9 @@ function(req: any,accessToken, refreshToken, profile, done) {
                     refreshToken,
                 });
                 
-                function findUser(params: string): any {
-                    const originalUsername = params;
-
-                    const generateRandomNumberWithUsername = () => {
-                        return originalUsername+randomNumber(3);
-                    };
-
-                    User.findOne({username: params}).then(user => {
-                        if(user === null){
-                            return params;
-                        } else {
-                            return findUser(generateRandomNumberWithUsername());
-                        }
-                    });
-
-                }
+            
                 user.isConfirmed = true;
-                user.username = findUser(profile.displayName);
+                user.username = profile.displayName;
                 user.gravatar(20);
 
                 user.profile.name = profile.displayName;
