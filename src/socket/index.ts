@@ -37,7 +37,7 @@ export default (server: express.Application) => {
                 Classroom.findById(data.classroom_id, (err, res: any) => {
                     if(res && res !== null){
                                     
-                        socket.emit("rejoin_updateMsg", { by: "server", msgs: res.messages, type: "oldMsgUpdate" });
+                        socket.emit("rejoin_updateMsg", { by: "server",newuserslist: res.students, msgs: res.messages, type: "oldMsgUpdate" });
 
                         socket.emit("classroom_users", res.students);
                         
