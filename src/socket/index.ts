@@ -33,81 +33,127 @@ export default (server: express.Application) => {
             socket.user = data.userId;
             socket.room = data.classroom_id;
             socket.username = data.username;
+            
             socket.join(data.classroom_id, () => {
-                Classroom.findById(data.classroom_id, (err, res: any) => {
-                    if(res && res !== null){
+
+                
+                User.findOne({ _id: data.userId }).then(user => {
+                    if(user && user !== null){
+                        Classroom.findById(data.classroom_id, (err, res: any) => {
+                            if(res && res !== null){
                                     
-                        socket.emit("rejoin_updateMsg", { by: "server",newuserslist: res.students, msgs: res.messages, type: "oldMsgUpdate" });
+                                socket.emit("rejoin_updateMsg", { by: "server",newuserslist: res.students, msgs: res.messages, type: "oldMsgUpdate" });
 
-                        socket.emit("classroom_users", res.students);
+                                socket.emit("classroom_users", res.students);
                         
-                        classWeb.findOne({ classroomId: data.classroom_id }).then((d: any) => {
-                            if (!d && d === null) {
-                                socket.emit("classroomFilesError", "Files not found");
-                                console.log("Web files not found");
-                            } else {
-
-                                const cssfileId = d.css;
-                                const jsFileId = d.js;
-                                const htmlFileId = d.html;
-
-                                if (!cssfileId || !jsFileId || !htmlFileId) {
-                                    socket.emit("classroomFilesError", "File ID not found");
-                                }
-
-                                const classFilesDir = `${__dirname}/../../main/classrooms/${data.classroom_id}/`;
-
-                                fs.readdir(classFilesDir, { withFileTypes: true }, (err, files) => {
-
-                                    if (err) {
-                                        console.log(err);
-                                        socket.emit("classroomFilesError", "File Directory Not Found");
-                                    }
-                                    else {
-                                        let htmlFilePath: string, cssFilePath: string, jsFilePath: string;
-                                        let htmlFileContent: any, cssFileContent: any, jsFileContent: any;
-                                        // Loop through files inclassroom files
-                                        files.forEach(element => {
-                                            classfiles.push(element);
-                                            // read each file in classroom folder
-                                            if (element.name.includes("css")) {
-                                                cssFilePath = `${classFilesDir}/${element.name}`;
-                                                cssFileContent = fs.readFileSync(cssFilePath, "utf8");
-                                            }
-
-                                            if (element.name.includes("js")) {
-                                                jsFilePath = `${classFilesDir}/${element.name}`;
-                                                jsFileContent = fs.readFileSync(jsFilePath, "utf8");
-
-                                            }
-
-                                            if (element.name.includes("html")) {
-                                                htmlFilePath = `${classFilesDir}/${element.name}`;
-                                                htmlFileContent = fs.readFileSync(htmlFilePath, "utf8");
-
-                                            }
-                                        });
-                                        const ht = {
-                                            id: htmlFileId,
-                                            content: htmlFileContent
-                                        };
-                                        const cs = {
-                                            id: cssfileId,
-                                            content: cssFileContent
-                                        };
-                                        const js = {
-                                            id: jsFileId,
-                                            content: jsFileContent
-                                        };
-                                        socket.emit("class_files", cs, ht, js);
-                                    }
-
+                                let oldStudentsWithoutUser = [];
+                        
+                                const currentClassStudents = res.students;
+                                oldStudentsWithoutUser = currentClassStudents.filter((student: any[]| any) => {
+                                    return String(student.id) !== String(data.userId);
                                 });
 
+                                const studentObj = {
+                                    id: String(user._id),
+                                    username: user.username,
+                                    role: "1",
+
+                                    stack: user.techStack,
+
+                                    avatar: user.gravatarUrl
+                                };
+ 
+                                oldStudentsWithoutUser.push(studentObj);
+
+                                const updatedStudentList = oldStudentsWithoutUser;
+                        
+                                Classroom.findOneAndUpdate({ _id: data.classroom_id },
+                                    {
+
+                                        students: updatedStudentList,
+                                        $inc: { numberInClass: 1 }
+                                    },
+                                    { new: true }).then((d: any) => {});
+
+                                nsp.to(data.classroom_id).emit("someoneJoined",
+                                    {
+                                        by: "server",
+                                        msg: data.userId + " reconnected",
+                                        for: data.userId,
+                                        name: data.username,
+                                        type: "sJoin",
+                                        msgId: uuidv4(),
+                                        newuserslist: updatedStudentList
+                                    });
+                                classWeb.findOne({ classroomId: data.classroom_id }).then((d: any) => {
+                                    if (!d && d === null) {
+                                        socket.emit("classroomFilesError", "Files not found");
+                                    } else {
+
+                                        const cssfileId = d.css;
+                                        const jsFileId = d.js;
+                                        const htmlFileId = d.html;
+
+                                        if (!cssfileId || !jsFileId || !htmlFileId) {
+                                            socket.emit("classroomFilesError", "File ID not found");
+                                        }
+
+                                        const classFilesDir = `${__dirname}/../../main/classrooms/${data.classroom_id}/`;
+
+                                        fs.readdir(classFilesDir, { withFileTypes: true }, (err, files) => {
+
+                                            if (err) {
+                                                socket.emit("classroomFilesError", "File Directory Not Found");
+                                            }
+                                            else {
+                                                let htmlFilePath: string, cssFilePath: string, jsFilePath: string;
+                                                let htmlFileContent: any, cssFileContent: any, jsFileContent: any;
+                                                // Loop through files inclassroom files
+                                                files.forEach(element => {
+                                                    classfiles.push(element);
+                                                    // read each file in classroom folder
+                                                    if (element.name.includes("css")) {
+                                                        cssFilePath = `${classFilesDir}/${element.name}`;
+                                                        cssFileContent = fs.readFileSync(cssFilePath, "utf8");
+                                                    }
+
+                                                    if (element.name.includes("js")) {
+                                                        jsFilePath = `${classFilesDir}/${element.name}`;
+                                                        jsFileContent = fs.readFileSync(jsFilePath, "utf8");
+
+                                                    }
+
+                                                    if (element.name.includes("html")) {
+                                                        htmlFilePath = `${classFilesDir}/${element.name}`;
+                                                        htmlFileContent = fs.readFileSync(htmlFilePath, "utf8");
+
+                                                    }
+                                                });
+                                                const ht = {
+                                                    id: htmlFileId,
+                                                    content: htmlFileContent
+                                                };
+                                                const cs = {
+                                                    id: cssfileId,
+                                                    content: cssFileContent
+                                                };
+                                                const js = {
+                                                    id: jsFileId,
+                                                    content: jsFileContent
+                                                };
+                                                socket.emit("class_files", cs, ht, js);
+                                            }
+
+                                        });
+
+                                    }
+                                });
                             }
                         });
                     }
+
                 });
+               
             }); 
 
         });
