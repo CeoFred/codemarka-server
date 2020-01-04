@@ -693,8 +693,11 @@ export default (server: express.Application) => {
                     const msgId = uuidv4();
                     const msgObject = {
                         timeSent: moment(data.time).format("LT"),
-                        msgId, name: u.username, by: data.user, msg: data.message,
-                        color: data.messageColor
+                        msgId, name: u.username, 
+                        by: data.user, 
+                        msg: data.message,
+                        color: data.messageColor,
+                        oTime: data.time
                     };
                     Classroom.findByIdAndUpdate({ _id: data.class, status: 2 },
                         {
