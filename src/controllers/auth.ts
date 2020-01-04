@@ -91,16 +91,14 @@ export const postLogin = (req: Request, res: Response) => {
                                     //Prepare JWT token for authentication
                                     const jwtPayload = userData;
                                     const jwtData = {
-                                        expiresIn: process.env.JWT_TIMEOUT_DURATION,
+                                        expiresIn: process.env.JWT_TIMEOUT_DURATION || "10days",
                                     };
 
                                     const secret = process.env.JWT_SECRET;
                                     //Generated JWT token with Payload and secret.
                                     userData.token = jwt.sign(jwtPayload, secret, jwtData);
 
-                                    user.updatedLastLoginIp(ip,(cord: string | any) => {
-                                        user.addToken(userData.token,"login");
-                                    });
+                                    user.updateAfterLogin(ip,{accessToken:userData.token,type: "login"});
 
                                     // integrate IP change later
                                     console.log(user);

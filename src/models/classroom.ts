@@ -12,10 +12,16 @@ export type ClassroomDocument = mongoose.Document & {
     blocked: [Record<string, any>];
     startTime: any;
     startDate: any;
+    maxUsers: number;
+    Kid: string;
 };
 
 
 const classroomSchema = new mongoose.Schema({
+    Kid: {
+        type: String,
+        required: true
+    },
     name:{
         type: String,
         required: true
@@ -78,8 +84,8 @@ const classroomSchema = new mongoose.Schema({
         default:"https://tinycolab.herokuapp.com"
     },
     students: [Object],
-    pinnedMessages: [Object]
-    ,
+    pinnedMessages: [Object],
+    maxUsers: Number    ,
 }, { timestamps: true });
 
 

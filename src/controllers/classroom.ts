@@ -5,15 +5,25 @@ import { Request, Response, NextFunction } from "express";
 import { validationResult } from "express-validator";
 
 import { Classroom, ClassroomDocument } from "../models/classroom";
-import { randomNumber } from "../helpers/utility";
+import { User, UserDocument } from "../models/User";
+import { randomNumber ,randomString} from "../helpers/utility";
 import { successResponseWithData } from "../helpers/apiResponse";
 import { classWeb } from "../models/classWebFiles";
 import * as apiResponse from "../helpers/apiResponse";
+import * as modelHelper from "../helpers/userModel";
 
-// const created = 1;
 const notStarted = 1;
 const started = 2;
 const ended = 3;
+
+const MAX_PRIVATE_CLASSROOM_REGULAR = 15;
+const MAX_PRIVATE_CLASSROOM_PREMUIM = "unlimited";
+
+const MAX_CASSROOM_MEMBERS_REGULAR = 100;
+const MAX_CLASSROOM_MEMBERS_PREMUIM = 300;
+
+const MAX_PUBLIC_CLASSROOMS = "unlimited";
+
 export const createClassRoom = (req: Request, res: Response, next: NextFunction): object => {
 
     const errors = validationResult(req);
@@ -21,64 +31,120 @@ export const createClassRoom = (req: Request, res: Response, next: NextFunction)
         return res.status(403).json({ errors: errors.array() });
     }
 
-    const {location, name, topic, startTime, startDate, description, classType, visibility } = req.body;
-    // get user id and compare with json decoded token sent
+    const { location, name, topic, startTime, startDate, description, classType, visibility } = req.body;
+    
+
     const userid: string = req.body.decoded._id;
 
-    const newclassroom = new Classroom({
-        name,
-        topic,
-        description,
-        classVisibility: visibility,
-        classType,
-        startTime,
-        startDate,
-        status: notStarted,
-        owner: userid,
-        location
-    });
-    newclassroom.save().then((data: ClassroomDocument) => {
-        const jsfile = randomNumber(15);
-        const htmlfile = randomNumber(15);
-        const cssfile = randomNumber(15);
+    // find user and validate classroom creation limit.
+    let userAccountType,privateClassroomsCreated,user;
 
-        // create editors for class
-        const dire = `${__dirname}/../../main/classrooms/${data._id}/`;
-        const jsSource = `${__dirname}/../../main/boilerplates/basic--web--app/index.js`;
-        const cssSource = `${__dirname}/../../main/boilerplates/basic--web--app/index.css`;
-        const htmlSource = `${__dirname}/../../main/boilerplates/basic--web--app/index.html`;
+    try {
+     
+        modelHelper.findUser(userid).then((respo: UserDocument) => {
 
-        if (!fs.existsSync(dire)) {
-
-            fs.mkdir(dire, { recursive: true }, (err) => {
-
-
-                if (!err) {
-
-                    fs.copyFile(jsSource, `${dire}/${jsfile}.js`, (err) => {
-                        if (err) next(err);
-                    });
-                    fs.copyFile(htmlSource, `${dire}/${htmlfile}.html`, (err) => {
-                        if (err) next(err);
-                    });
-                    fs.copyFile(cssSource, `${dire}/${cssfile}.css`, (err) => {
-                        if (err) next(err);
-                    });
+            if(respo){
+                user = respo;
+                if (user) {
+                    userAccountType = user.accountType;
+                    privateClassroomsCreated = user.privateClassCreated;
                 } else {
-
-                    return next(err);
+                    return apiResponse.ErrorResponse(res,"User not found");
                 }
-            });
-            new classWeb({ classroomId: data._id, js: jsfile, css: cssfile, html: htmlfile }).save().then(() => {
 
-                successResponseWithData(res, "success", data);
+                if (userAccountType && userAccountType === "regular") {
 
-            }).catch(err => {
-                return next(err);
-            });
-        }
+                    if (visibility === "Private") {
+                        if (Number(privateClassroomsCreated) > MAX_PRIVATE_CLASSROOM_REGULAR) {
+                            return apiResponse.ErrorResponse(res,"You have reached your max private classroom limit for your account");
+                        }
+                    }
+                }
+                const newclassroom = new Classroom({
+                    name,
+                    Kid: randomString(25),
+                    topic,
+                    description,
+                    classVisibility: visibility,
+                    classType,
+                    startTime,
+                    startDate,
+                    status: notStarted,
+                    owner: userid,
+                    location,
+                    maxUsers: userAccountType === "regular" ? MAX_CASSROOM_MEMBERS_REGULAR : MAX_CLASSROOM_MEMBERS_PREMUIM
+                });
 
-    }).catch((err: Error) => next(err.message));
+
+                newclassroom.save().then((data: ClassroomDocument) => {
+                    const jsfile = randomNumber(15);
+                    const htmlfile = randomNumber(15);
+                    const cssfile = randomNumber(15);
+
+                    // create editors for class
+                    const dire = `${__dirname}/../../main/classrooms/${data._id}/`;
+                    const jsSource = `${__dirname}/../../main/boilerplates/basic--web--app/index.js`;
+                    const cssSource = `${__dirname}/../../main/boilerplates/basic--web--app/index.css`;
+                    const htmlSource = `${__dirname}/../../main/boilerplates/basic--web--app/index.html`;
+
+                    console.log(visibility);
+                    /// update user classrooms limit
+                    if (visibility === "Public") {
+                        User.findOneAndUpdate({_id: userid},{$inc: {publicClassCreated: 1}},(err,doc: UserDocument) => {
+                            if(err){ 
+                                return apiResponse.ErrorResponse(res,"Whoops! Something went wrong");
+                            }
+                        });
+                    } else {
+                        User.findOneAndUpdate({_id: userid},{$inc: {privateClassCreated: 1}},(err,doc: UserDocument) => {
+                            if(err){ 
+                                return apiResponse.ErrorResponse(res,"Whoops! Something went wrong");
+                            }
+                        });
+                    }
+
+                    if (!fs.existsSync(dire)) {
+
+                        fs.mkdir(dire, { recursive: true }, (err) => {
+
+
+                            if (!err) {
+
+                                fs.copyFile(jsSource, `${dire}/${jsfile}.js`, (err) => {
+                                    if (err) next(err);
+                                });
+                                fs.copyFile(htmlSource, `${dire}/${htmlfile}.html`, (err) => {
+                                    if (err) next(err);
+                                });
+                                fs.copyFile(cssSource, `${dire}/${cssfile}.css`, (err) => {
+                                    if (err) next(err);
+                                });
+                            } else {
+
+                                return next(err);
+                            }
+                        });
+                        new classWeb({ classroomId: data._id, js: jsfile, css: cssfile, html: htmlfile }).save().then(() => {
+            
+                            return  successResponseWithData(res, "success", data);
+
+                        }).catch(err => {
+                            return next(err);
+                        });
+                    }
+
+                }).catch((err: Error) => next(err.message));
+
+            }
+        }).catch((err: boolean) => {
+            return apiResponse.ErrorResponse(res,"User not found");
+        });
+
+       
+    } catch (error) {
+        return apiResponse.ErrorResponse(res,"Somthing went wrong");
+        
+    }
 
 };
 

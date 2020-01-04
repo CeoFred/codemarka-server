@@ -42,10 +42,10 @@ export type UserDocument = mongoose.Document & {
     confirmOTP: number;
     gravatar: (size: number) => string;
     emailVerificationToken: string;
-    updatedLastLoginIp: (ip: any,cd: any) => any;
     geoDetails: object;
     emailConfirmed: () => void;
     gravatarUrl: string;
+    updateAfterLogin: (ip: string | string[],token: any) => void;
 };
 
 type comparePasswordFunction = (candidatePassword: string, cb: (err: any, isMatch: boolean) => {}) => void;
@@ -111,6 +111,7 @@ const userSchema = new mongoose.Schema({
     linkedin: String,
     steam: String,
     quickbooks: String,
+    lastLoggedInIp: String,
     profile: {
         name: String,
         gender: String,
@@ -136,18 +137,16 @@ const comparePassword: comparePasswordFunction = function (candidatePassword, cb
     });
 };
 
-const addToken = function(token: string, type: string): void{
-    let tokens = this.tokens;
-    tokens.push({accessToken:token,type});
-    this.save();
-};
 
-const updatedLastLoginIp = function(ip: string,cb: any): void {
+const updateAfterLogin = function(ip: any,token: object): void {
     this.lastLoggedInIp = ip;
     const geoCord = geo.lookup(ip);
+    console.log(ip);
     this.geoDetails = geoCord;
+    let tokens = this.tokens;
+    tokens.push(token);
     this.save();
-    cb(geoCord);
+    
 
 };
 const emailConfirmed = function(): void {
@@ -156,9 +155,8 @@ const emailConfirmed = function(): void {
 };
 
 userSchema.methods.comparePassword = comparePassword;
-userSchema.methods.addToken = addToken;
-userSchema.methods.updatedLastLoginIp = updatedLastLoginIp;
 userSchema.methods.emailConfirmed = emailConfirmed;
+userSchema.methods.updateAfterLogin = updateAfterLogin;
 
 /**
  * Helper method for getting user's gravatar.

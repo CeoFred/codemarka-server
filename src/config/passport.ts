@@ -41,9 +41,8 @@ function(req: any,accessToken, refreshToken, profile: any, done) {
         if (existingUser) {
             console.log("Existing User");
             const ip = req.connection.remoteAddress || req.headers["x-forwarded-for"];
-            existingUser.updatedLastLoginIp(ip, () => {
-                console.log("");
-            });
+            existingUser.updateAfterLogin(ip,{accessToken,type: "google"});
+
             return done(null, existingUser);
         }
         const pEmail = _.get(_.orderBy(profile.emails, ["primary", "verified"], ["desc", "desc"]), [0, "value"], null);
@@ -182,9 +181,8 @@ function(req: any,accessToken, refreshToken, profile, done) {
             if (err) { return done(err); }
             if (existingEmailUser) {
                 const ip = req.connection.remoteAddress || req.headers["x-forwarded-for"];
-                existingEmailUser.updatedLastLoginIp(ip,() => {
-                    console.log("");
-                });
+                existingUser.updateAfterLogin(ip,{accessToken,type: "google"});
+
                 return done(null,existingEmailUser);
             } else  {
                 //link account with google details;

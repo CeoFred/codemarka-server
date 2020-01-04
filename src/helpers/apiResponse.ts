@@ -1,5 +1,35 @@
 import { Response } from "express";
+import { User, UserDocument } from "../models/User";
 
+export const findUser = function (id: string): unknown {
+  
+    let result = null;
+
+    if(id && id.trim() === ""){
+        console.log("UE");
+        result = false;
+    }
+    
+    const r = User.findById(id).then((user: UserDocument) => {
+
+        if(user && user !== null){
+            console.log("FU");
+            result = user;
+            return result;
+        } else {
+            console.log("NU");
+
+            result = false;
+        }
+        
+    }).catch((err) => {
+        result = false;
+    });
+    console.log(r);
+    return r;
+
+  
+};
 export const successResponse = function (res: Response, msg: string | object | number): object {
     var data = {
         status: 1,
