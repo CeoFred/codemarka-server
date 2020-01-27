@@ -10,11 +10,20 @@ import { classWeb } from "../models/classWebFiles";
 import { User } from "../models/User";
 
 export default (server: express.Application) => {
+    let activeSockets: string[] = [];
+
     const io = require("socket.io")(server, chat);
     const clients: any[] = [];
     const nsp = io.of("/classrooms");
 
     nsp.on("connection", function (socket: any) {
+
+        const existingSocket = activeSockets.find(
+            existingSocket => existingSocket === socket.id
+        );
+        if (!existingSocket) {
+            activeSockets.push(socket.id);
+        };
 
         console.log("New socket connection to classroom");
 
@@ -189,7 +198,8 @@ export default (server: express.Application) => {
 
                                 stack: user.techStack,
 
-                                avatar: user.gravatarUrl
+                                avatar: user.gravatarUrl,
+                                socketId: socket.id
                             };
  
                             oldStudentsWithoutUser.push(studentObj);
@@ -240,7 +250,8 @@ export default (server: express.Application) => {
                                                 name: data.username,
                                                 type: "sJoin",
                                                 msgId: uuidv4(),
-                                                newuserslist: updatedStudentList
+                                                newuserslist: updatedStudentList,
+                                                socketId: socket.id
                                             });
 
 
@@ -801,6 +812,9 @@ export default (server: express.Application) => {
                 }
 
             });
+            activeSockets = activeSockets.filter(
+                existingSocket => existingSocket !== socket.id
+            );
             console.log(`${socket.username}  disconnected`);
         });
     });
