@@ -46,6 +46,7 @@ export type UserDocument = mongoose.Document & {
     emailConfirmed: () => void;
     gravatarUrl: string;
     updateAfterLogin: (ip: string | string[],token: any) => void;
+    hashPasswordResetAndValidateToken: (password: string, token: string) => boolean;
 };
 
 type comparePasswordFunction = (candidatePassword: string, cb: (err: any, isMatch: boolean) => {}) => void;
@@ -131,6 +132,33 @@ userSchema.pre("save", function save(next: any) {
     next();
 });
 
+/**
+ * Password reset hash middleware
+ */
+
+const hashPasswordResetAndValidateToken = function (password: string, Resettoken: string): boolean {
+    this.password = bcrypt.hashSync(password,10);
+    let tokens = this.tokens;
+
+    let foundToken =  tokens.filter((token: {type: string;accessToken: string}) => {
+        return String(token.type) === "ActRecry" && token.accessToken === Resettoken;
+    });
+    
+    if (Array.isArray(foundToken) && foundToken.length > 0){
+        tokens =  tokens.filter((token: {type: string; accessToken: string}) => {
+            return String(token.type) !== "ActRecry" && token.accessToken !== Resettoken;
+        }); 
+    } else {
+        foundToken = false;
+    }
+
+    this.tokens = tokens;
+
+    this.save();
+
+    return foundToken;
+};
+
 const comparePassword: comparePasswordFunction = function (candidatePassword, cb) {
     bcrypt.compare(candidatePassword, this.password, (err: mongoose.Error, isMatch: boolean) => {
         cb(err, isMatch);
@@ -157,6 +185,7 @@ const emailConfirmed = function(): void {
 userSchema.methods.comparePassword = comparePassword;
 userSchema.methods.emailConfirmed = emailConfirmed;
 userSchema.methods.updateAfterLogin = updateAfterLogin;
+userSchema.methods.hashPasswordResetAndValidateToken = hashPasswordResetAndValidateToken;
 
 /**
  * Helper method for getting user's gravatar.

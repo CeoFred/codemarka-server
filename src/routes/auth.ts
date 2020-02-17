@@ -5,7 +5,9 @@ import {postDeleteAccount,
     postUpdateProfile,
     refreshToken,
     handelGoogleAuthCallback,
-    logout
+    logout,
+    passwordReset,
+    accountRecovery
 } from "../controllers/auth";
 import express from "express";
 import passport from "passport";
@@ -51,7 +53,10 @@ router.post("/user/token/verify", tokenVerify );
 router.patch("/user/profile/update",check, postUpdateProfile);
 
 //account recovery
-router.post("/user/account/recovery", postDeleteAccount);
+router.post("/user/account/recovery", accountRecovery);
+
+// password reset
+router.post("/user/account/password/reset/:token/:user", passwordReset);
 
 router.get("/account/user/verify/:token/:user", emailVerification);
 // password reset 

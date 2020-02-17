@@ -19,10 +19,156 @@ import * as CLIENT_URLS from "../config/url";
 
 const options = { algorithm: "HS256", noTimestamp: false, audience: "users", issuer: "colab", subject: "auth", expiresIn: "7d" };
 
+/** 
+ *
+ *Account recovery for user 
+ * 
+*/
+export const accountRecovery = (req: Request, res: Response, next: NextFunction) => {
+    const email: string =  req.body.email;
+    
+    if(!email){
+        return apiResponse.ErrorResponse(res,"Email is required");
+    }
+
+    const formattedMail = String(email.trim());
+
+    if(formattedMail !== ""){
+        
+        // validate email
+        const EmailRegexPattern = new RegExp(/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/);
+
+        if(!formattedMail.match(EmailRegexPattern)){
+            return apiResponse.validationErrorWithData(res,"Invalid Email format",formattedMail);
+        };
+        // search email, update and send email
+        const token = randomString(30);
+        User.findOneAndUpdate({email:formattedMail},{$push:{ tokens: { type:"ActRecry",accessToken:token } } },(err,doc) => {
+            if(err){
+                return apiResponse.ErrorResponse(res,"Whoops! Something went wrong");
+            }
+            if(doc && doc !== null && doc !== undefined){
+                const { username,_id:user } = doc;
+                let trial = 0;
+                let maxTrial = 2;
+                let sent = false;
+
+                const PasswordResetLink = `https://codemaraka.dev/auth/user/account/password/reset/${token}/${user}`;
+                console.log(PasswordResetLink);
+                const sendPasswordResetMail = (email: string) => {
+
+                    const trimedEmail = email.trim();
+
+                    const emailTemplate = `
+                    <div style="margin:15px;padding:10px;border:1px solid grey;justify-content;">
+                    <div style="text-align:center">
+                    <img src='https://lh3.googleusercontent.com/7mQ4OCDZ1mOyQu1KvJI9NaVXQgLWgX8cvLI6yrDQKfAc-pwp3fcbQPlZfy9uKJUFWBcPpGd-8bJ-9YH60zVN3u9fj81cb2YUhJPShVoe5BzlSpF7lOzbi0hZfg6gn61t9u-OdoFju6rgursXBLyJjCrDIf-gU0AibNf3qjXV0aHJS8wg_KKEI_ExXEnXwtM_JSxthMKSt_9ef-KiG107dTri1sbk74yAyvTiDqcAIozThAbt47gLH1fCLU4Ngx3Mze2lgv3Ed3DsUbtESKV5cpJEkrwAr1dfepXgoKviLzzECuEneLkgkOtSRcmIshZjGMuxY9HzMjcyZQ1tf07aqpnsZ2Mg-IfU5QQQ2pF9AghJbR7pJlNvedBI6rfeo1yP9EEFSsR1ShAR3LZnybR2mw--43AABZRer4DX6T7ZUNA_hxSRvy6i3VsBhkSeZ7bUfkkOzg3RoH8hjbAdKgi4aUXpjFTOWd4vru-u7eTbdcjuYglvRIYvTDu_SZaJne3H25aZbxbmYTUSc6SFla6XIk1x1tH0uNC6D3joQLH-g3pOkmR9CfHRXqp-v2NhCmkrs9tlNjlvSvujqdL3-aZ4ogL8GcQzBpysiCfFbM32QI47w8G5qGKKc4HSPt-MNLRC0Hi56CrWjSLhxMCYraWecUvDIdlwMQolhjydLCtCWFgQ4DhClYQ-1Q=s298-no' height="100" width="100"/>
+                    </div>
+                    <h4><b>Hi ${username},</b></h4>
+                    <br/>
+
+                    <p>Let's help you reset your password so you can get back to collaborating and learning.
+
+                    <button style="width:80%,text-align:center,color:#fff,padding:20px,margin-top:20px,margin-bottom:20px,background-color:#172839"><a href='${PasswordResetLink}'>Password Reset</a></button>
+
+                    copy link below to your browser if button above does not work on your device.
+                    ${PasswordResetLink}
+
+                    <br/>
+
+                    </div>
+
+                    `;
+
+                    sgMail.setApiKey("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");
+
+                    const msg = {
+                        to: trimedEmail,
+                        from: "Codemarka@codemarak.dev",
+                        subject: "Complete your password reset request",
+                        text: `Click below to verify ${PasswordResetLink}`,
+                        html: emailTemplate,
+                    };
+
+                    if(trial <= maxTrial && !sent){
+                        try {
+                            sgMail.send(msg,true,(err: any,resp: unknown) => {
+                                if(err){
+                                    // RECURSION
+                                    trial++;
+                                    console.log("retrying..",trial);
+                                    sent = false;
+                                    sendPasswordResetMail(trimedEmail);
+                                } else {
+                                
+                                    // BASE
+                                    console.log("sent mail to",trimedEmail);
+                                    sent = true;
+                                    console.log(user);
+                                    return apiResponse.successResponse(res,"Please check your inbox.");
+                                }
+                                
+                            });
+                        } catch (e) {
+                            next(e);
+                            console.log(e);
+                            return apiResponse.ErrorResponse(res,"Whoops!  Something went wrong");
+                        }
+                       
+                    } else {
+                        // TERMINATION
+                        console.log("password reset mail exceeded trial");
+                        sent = false;
+                        return apiResponse.successResponse(res,"Please try again.");
+                    }
+                };
+                sendPasswordResetMail(email);
+            }
+        });
+
+
+    } else {
+        return apiResponse.ErrorResponse(res,"Email is required");
+    }
+
+};
+
 /**
- * POST /login
- * Sign in using email and password.
+ * Reset User password by creating a new password
  */
+export const passwordReset = (req: {param: any;body: any} | Request, res: Response) => {
+    const newPassword = (req.body.newPassword);
+    const token = req.param.token;
+    const userId = req.param.user;
+
+    if(newPassword && String(newPassword).trim() !== ""){
+        if(!token){
+            return apiResponse.ErrorResponse(res,"Token not found");
+        }
+
+        if(!userId){
+            return apiResponse.ErrorResponse(res,"User id not found");
+        }
+
+        User.findById(userId,(err,doc) => {
+            if(err){
+                return apiResponse.ErrorResponse(res,"Whoops! Something went wrong");
+            }
+
+            if(doc && doc !== null){
+                try {
+                    doc.hashPasswordResetAndValidateToken(newPassword, token);
+                    return apiResponse.successResponse(res,"Password reset successful");     
+                } catch (error) {
+                    return apiResponse.ErrorResponse(res,"Failed to update password");
+                }
+            }
+        });
+    } 
+
+    return apiResponse.ErrorResponse(res,"New password not set");
+
+};
 
 export const tokenVerify = (req: Request, res: Response, next: NextFunction) => {
     
