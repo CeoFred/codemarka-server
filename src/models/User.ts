@@ -143,8 +143,9 @@ const hashPasswordResetAndValidateToken = function (password: string, Resettoken
     let foundToken =  tokens.filter((token: {type: string;accessToken: string}) => {
         return String(token.type) === "ActRecry" && token.accessToken === Resettoken;
     });
-    
+    console.log(foundToken);
     if (Array.isArray(foundToken) && foundToken.length > 0){
+        foundToken = true;
         tokens =  tokens.filter((token: {type: string; accessToken: string}) => {
             return String(token.type) !== "ActRecry" && token.accessToken !== Resettoken;
         }); 
@@ -155,7 +156,7 @@ const hashPasswordResetAndValidateToken = function (password: string, Resettoken
     this.tokens = tokens;
 
     this.save();
-
+    console.log(foundToken);
     return foundToken;
 };
 

@@ -62,15 +62,14 @@ export const accountRecovery = (req: Request, res: Response, next: NextFunction)
                     const emailTemplate = `
                     <div style="margin:15px;padding:10px;border:1px solid grey;justify-content;">
                     <div style="text-align:center">
-                    <img src='https://lh3.googleusercontent.com/7mQ4OCDZ1mOyQu1KvJI9NaVXQgLWgX8cvLI6yrDQKfAc-pwp3fcbQPlZfy9uKJUFWBcPpGd-8bJ-9YH60zVN3u9fj81cb2YUhJPShVoe5BzlSpF7lOzbi0hZfg6gn61t9u-OdoFju6rgursXBLyJjCrDIf-gU0AibNf3qjXV0aHJS8wg_KKEI_ExXEnXwtM_JSxthMKSt_9ef-KiG107dTri1sbk74yAyvTiDqcAIozThAbt47gLH1fCLU4Ngx3Mze2lgv3Ed3DsUbtESKV5cpJEkrwAr1dfepXgoKviLzzECuEneLkgkOtSRcmIshZjGMuxY9HzMjcyZQ1tf07aqpnsZ2Mg-IfU5QQQ2pF9AghJbR7pJlNvedBI6rfeo1yP9EEFSsR1ShAR3LZnybR2mw--43AABZRer4DX6T7ZUNA_hxSRvy6i3VsBhkSeZ7bUfkkOzg3RoH8hjbAdKgi4aUXpjFTOWd4vru-u7eTbdcjuYglvRIYvTDu_SZaJne3H25aZbxbmYTUSc6SFla6XIk1x1tH0uNC6D3joQLH-g3pOkmR9CfHRXqp-v2NhCmkrs9tlNjlvSvujqdL3-aZ4ogL8GcQzBpysiCfFbM32QI47w8G5qGKKc4HSPt-MNLRC0Hi56CrWjSLhxMCYraWecUvDIdlwMQolhjydLCtCWFgQ4DhClYQ-1Q=s298-no' height="100" width="100"/>
                     </div>
                     <h4><b>Hi ${username},</b></h4>
                     <br/>
 
-                    <p>Let's help you reset your password so you can get back to collaborating and learning.
+                    <p>Let's help you reset your password so you can get back to collaborating and learning.</p>
 
-                    <button style="width:80%,text-align:center,color:#fff,padding:20px,margin-top:20px,margin-bottom:20px,background-color:#172839"><a href='${PasswordResetLink}'>Password Reset</a></button>
-
+                    <button type='button'><a href='${PasswordResetLink}'>Password Reset</a></button>
+                    <br/>
                     copy link below to your browser if button above does not work on your device.
                     ${PasswordResetLink}
 
@@ -136,11 +135,10 @@ export const accountRecovery = (req: Request, res: Response, next: NextFunction)
 /**
  * Reset User password by creating a new password
  */
-export const passwordReset = (req: {param: any;body: any} | Request, res: Response) => {
+export const passwordReset = (req: Request | any, res: Response) => {
     const newPassword = (req.body.newPassword);
-    const token = req.param.token;
-    const userId = req.param.user;
-
+    const token = req.params.token;
+    const userId = req.params.user;
     if(newPassword && String(newPassword).trim() !== ""){
         if(!token){
             return apiResponse.ErrorResponse(res,"Token not found");
@@ -157,50 +155,51 @@ export const passwordReset = (req: {param: any;body: any} | Request, res: Respon
 
             if(doc && doc !== null){
                 try {
-                    doc.hashPasswordResetAndValidateToken(newPassword, token);
-                    return apiResponse.successResponse(res,"Password reset successful");     
+                    const passwordUpated = doc.hashPasswordResetAndValidateToken(newPassword, token);
+                    if(passwordUpated){
+                        return apiResponse.successResponse(res,"Password reset successful");     
+                    } else {
+                        return apiResponse.ErrorResponse(res,"Failed to update password");
+                        
+                    }
                 } catch (error) {
-                    return apiResponse.ErrorResponse(res,"Failed to update password");
+                    return apiResponse.ErrorResponse(res,"Error updating password");
                 }
             }
         });
-    } 
+    } else {
+        return apiResponse.ErrorResponse(res,"New password not set");
+    }
 
-    return apiResponse.ErrorResponse(res,"New password not set");
 
 };
-
+/**
+ * Verify email using token
+ */
 export const tokenVerify = (req: Request, res: Response, next: NextFunction) => {
     
     const t = req.body.token;
     const uI = req.body.user;
 
-    jwt.verify(t, process.env.JWT_SECRET, (er: jwt.JsonWebTokenError, dcd: any) => {
+    User.findOneAndUpdate({_id:uI,emailVerificationToken:t},{emailVerified:true,emailVerificationToken:null}, (err, user) => {
 
-        if(er){
-            if(er.message === "jwt not active"){
-                return apiResponse.ErrorResponse(res,"token expired");
-            }
-            return apiResponse.ErrorResponse(res, er);
+        if(err){
+            return apiResponse.ErrorResponse(res, "Wboops something went wrong");
         } else {
             
-            User.findOne({_id:dcd._id}).then(ud => {
+            if (user === null){
+                return apiResponse.ErrorResponse(res,"No User Found");
+            }
 
-                if (ud === null){
-                    return apiResponse.ErrorResponse(res,"No User Found");
-                }
+            if (user && uI == user._id) {
+                
+                
+                return apiResponse.successResponse(res,"Token verification success");
 
-                if (ud && uI == ud._id) {
-                            
-                    return apiResponse.successResponseWithData(res,"Token verification success",ud);
+            }else {
+                return apiResponse.ErrorResponse(res,"failed");
+            }
 
-                }else {
-                    return apiResponse.ErrorResponse(res,"failed");
-                }
-
-            }).catch(er => {
-                return next(er);
-            });
 
         }
     });
@@ -290,7 +289,7 @@ export const postSignup = (req: Request, res: Response, next: NextFunction) => {
             const { email, password, username, techStack } = req.body;
             	// generate OTP for confirmation
             let otp = randomNumber(4);
-            const verificationToken = randomString(40);
+            const verificationToken = randomString(70);
             var user = new User(
                 {
                     username,
@@ -320,9 +319,6 @@ export const postSignup = (req: Request, res: Response, next: NextFunction) => {
 
                     const emailTemplate = `
                     <div style="margin:15px;padding:10px;border:1px solid grey;justify-content;">
-                    <div style="text-align:center">
-                    <img src='https://lh3.googleusercontent.com/7mQ4OCDZ1mOyQu1KvJI9NaVXQgLWgX8cvLI6yrDQKfAc-pwp3fcbQPlZfy9uKJUFWBcPpGd-8bJ-9YH60zVN3u9fj81cb2YUhJPShVoe5BzlSpF7lOzbi0hZfg6gn61t9u-OdoFju6rgursXBLyJjCrDIf-gU0AibNf3qjXV0aHJS8wg_KKEI_ExXEnXwtM_JSxthMKSt_9ef-KiG107dTri1sbk74yAyvTiDqcAIozThAbt47gLH1fCLU4Ngx3Mze2lgv3Ed3DsUbtESKV5cpJEkrwAr1dfepXgoKviLzzECuEneLkgkOtSRcmIshZjGMuxY9HzMjcyZQ1tf07aqpnsZ2Mg-IfU5QQQ2pF9AghJbR7pJlNvedBI6rfeo1yP9EEFSsR1ShAR3LZnybR2mw--43AABZRer4DX6T7ZUNA_hxSRvy6i3VsBhkSeZ7bUfkkOzg3RoH8hjbAdKgi4aUXpjFTOWd4vru-u7eTbdcjuYglvRIYvTDu_SZaJne3H25aZbxbmYTUSc6SFla6XIk1x1tH0uNC6D3joQLH-g3pOkmR9CfHRXqp-v2NhCmkrs9tlNjlvSvujqdL3-aZ4ogL8GcQzBpysiCfFbM32QI47w8G5qGKKc4HSPt-MNLRC0Hi56CrWjSLhxMCYraWecUvDIdlwMQolhjydLCtCWFgQ4DhClYQ-1Q=s298-no' height="100" width="100"/>
-                    </div>
                     <h4><b>Hi ${username},</b></h4>
                     <br/>
 
@@ -420,6 +416,8 @@ export const handelGoogleAuthCallback  = (req: any | Request, res: Response) => 
 
     return res.redirect(`${CLIENT_URLS.GOOGLE_AUTH_SUCCESS_CLIENT}/${token}/${user}`);
 };
+
+
 export const emailVerification = (req: Request, res: Response, next: NextFunction) => {
     const userid = req.params.user;
     const token = req.params.token;
