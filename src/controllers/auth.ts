@@ -13,12 +13,11 @@ import { randomNumber,randomString } from "../helpers/utility";
 // import {constants} from "../helpers/constants";
 
 import jwt from "jsonwebtoken";
-
 import * as apiResponse from "../helpers/apiResponse";
 import * as CLIENT_URLS from "../config/url";
 
-const options = { algorithm: "HS256", noTimestamp: false, audience: "users", issuer: "colab", subject: "auth", expiresIn: "7d" };
 
+const options = { algorithm: "HS256", noTimestamp: false, audience: "users", issuer: "colab", subject: "auth", expiresIn: "7d" };
 /** 
  *
  *Account recovery for user 
@@ -203,6 +202,33 @@ export const tokenVerify = (req: Request, res: Response, next: NextFunction) => 
 
         }
     });
+};
+
+/**
+ * Verify user authrication token
+ */
+export const userAuthtokenVerify = (req: Request, res: Response, next: NextFunction) => {
+    try{
+        const { _id } = req.body.decoded;
+        User.findOne( {_id}, (err, user) => {
+            if(err){
+                return apiResponse.ErrorResponse(res, "Wboops something went wrong");
+            } else {
+                if (user === null){
+                    return apiResponse.ErrorResponse(res,"No User Found");
+                }
+                const userObject = {
+                    email: user.email,
+                    username: user.username,
+                    _id: user._id
+                };
+                return apiResponse.successResponseWithData(res,"success",userObject);
+            }
+        });
+    }
+    catch {
+        return apiResponse.ErrorResponse(res,"Something went wrong");
+    } 
 };
 
 export const postLogin = (req: Request, res: Response) => {

@@ -7,7 +7,8 @@ import {postDeleteAccount,
     handelGoogleAuthCallback,
     logout,
     passwordReset,
-    accountRecovery
+    accountRecovery,
+    userAuthtokenVerify
 } from "../controllers/auth";
 import express from "express";
 import passport from "passport";
@@ -47,8 +48,10 @@ router.delete("/user/delete/:userId",check, postDeleteAccount);
 // refresh jwt token
 router.post("/user/token/refresh", refreshToken);
 
-// verify token
-router.post("/user/token/verify", tokenVerify );
+// verify user authentication token
+router.post("/user/token/verify",check, userAuthtokenVerify );
+
+
 // update user profile
 router.patch("/user/profile/update",check, postUpdateProfile);
 
