@@ -7,7 +7,6 @@ import path from "path";
 import methodOverride from "method-override";
 import cors from "cors";
 import passport from "passport";
-
 import session from "express-session";
 import connectStore from "connect-mongo";
 

@@ -52,7 +52,7 @@ export const accountRecovery = (req: Request, res: Response, next: NextFunction)
                 let maxTrial = 2;
                 let sent = false;
 
-                const PasswordResetLink = `https://codemaraka.dev/auth/user/account/password/reset/${token}/${user}`;
+                const PasswordResetLink = `https://codemarka.dev/auth/user/account/password/reset/${token}/${user}`;
                 console.log(PasswordResetLink);
                 const sendPasswordResetMail = (email: string) => {
 
@@ -63,11 +63,28 @@ export const accountRecovery = (req: Request, res: Response, next: NextFunction)
                     <div style="text-align:center">
                     </div>
                     <h4><b>Hi ${username},</b></h4>
-                    <br/>
-
                     <p>Let's help you reset your password so you can get back to collaborating and learning.</p>
-
-                    <button type='button'><a href='${PasswordResetLink}'>Password Reset</a></button>
+                    <button type='button' style={
+                        display: inline-block;
+    font-weight: 600;
+    text-align: center;
+    vertical-align: middle;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    background-color: transparent;
+    border: 1px solid transparent;
+    padding: .75rem 1.75rem;
+    font-size: 1rem;
+    line-height: 1.5;
+    border-radius: .375rem;
+    transition: color .15s ease-in-out,background-color .15s ease-in-out,border-color .15s ease-in-out,box-shadow .15s ease-in-out;
+    color: #fff;
+    background-color: #2dca8c;
+    border-color: #2dca8c;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.15);
+}><a href='${PasswordResetLink}'>Password Reset</a></button>
                     <br/>
                     copy link below to your browser if button above does not work on your device.
                     ${PasswordResetLink}
@@ -78,11 +95,11 @@ export const accountRecovery = (req: Request, res: Response, next: NextFunction)
 
                     `;
 
-                    sgMail.setApiKey("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");
+                    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
                     const msg = {
                         to: trimedEmail,
-                        from: "Codemarka@codemarak.dev",
+                        from: "no-reply@codemarak.dev",
                         subject: "Complete your password reset request",
                         text: `Click below to verify ${PasswordResetLink}`,
                         html: emailTemplate,
@@ -121,6 +138,9 @@ export const accountRecovery = (req: Request, res: Response, next: NextFunction)
                     }
                 };
                 sendPasswordResetMail(email);
+            } else {
+                return apiResponse.ErrorResponse(res,"Account not found");
+
             }
         });
 
