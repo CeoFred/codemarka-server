@@ -59,7 +59,7 @@ router.patch("/user/profile/update",check, postUpdateProfile);
 router.post("/user/account/recovery", accountRecovery);
 
 // password reset
-router.post("/user/account/password/reset/:token/:user", passwordReset);
+router.post("/user/account/password/reset", passwordReset);
 
 router.get("/account/user/verify/:token/:user", emailVerification);
 // password reset 

@@ -22,8 +22,6 @@ export type UserDocument = mongoose.Document & {
         picture: string;
     };
     password: string;
-    passwordResetToken: string;
-    passwordResetExpires: Date;
     tokens: any[];
     accountType: string;
     name: string;
@@ -35,6 +33,8 @@ export type UserDocument = mongoose.Document & {
     comparePassword: comparePasswordFunction;
     addToken: addToken;
     status: boolean;
+    resetPasswordToken: string | "";
+    resetPasswordExpires: Date | "";
     techStack: string;
     isConfirmed: boolean;
     privateClassCreated: number;
@@ -59,8 +59,14 @@ export interface AuthToken {
 const userSchema = new mongoose.Schema({
     email: { type: String, unique: true },
     password: String,
-    passwordResetToken: String,
-    passwordResetExpires: Date,
+    resetPasswordToken: {
+        type:String,
+        default:""
+    },
+    resetPasswordExpires: {
+        type:Date,
+        default:""
+    },
     tokens: Array,
     publicClassCreated: {
         type: Number,
@@ -127,8 +133,9 @@ const userSchema = new mongoose.Schema({
  */
 userSchema.pre("save", function save(next: any) {
     const user = this as UserDocument;
-    if (!user.isModified("password")) { return next(); }
+    if (user.isModified("password")) { return next(); }
     user.password = bcrypt.hashSync(user.password, 10);
+    console.log("pass modified",user.password);
     next();
 });
 
@@ -136,29 +143,30 @@ userSchema.pre("save", function save(next: any) {
  * Password reset hash middleware
  */
 
-const hashPasswordResetAndValidateToken = function (password: string, Resettoken: string): boolean {
-    this.password = bcrypt.hashSync(password,10);
-    let tokens = this.tokens;
+// const hashPasswordResetAndValidateToken = function (password: string, Resettoken: string): boolean {
+//     this.password = bcrypt.hashSync(password,10);
+//     let tokens = this.tokens;
 
-    let foundToken =  tokens.filter((token: {type: string;accessToken: string}) => {
-        return String(token.type) === "ActRecry" && token.accessToken === Resettoken;
-    });
-    console.log(foundToken);
-    if (Array.isArray(foundToken) && foundToken.length > 0){
-        foundToken = true;
-        tokens =  tokens.filter((token: {type: string; accessToken: string}) => {
-            return String(token.type) !== "ActRecry" && token.accessToken !== Resettoken;
-        }); 
-    } else {
-        foundToken = false;
-    }
+//     let foundToken =  tokens.filter((token: {type: string;accessToken: string}) => {
+//         return String(token.type) === "ActRecry" && token.accessToken === Resettoken;
+//     });
 
-    this.tokens = tokens;
+//     if (Array.isArray(foundToken) && foundToken.length > 0){
+//         foundToken = true;
+//         tokens =  tokens.filter((token: {type: string; accessToken: string}) => {
+//             return String(token.type) !== "ActRecry" && token.accessToken !== Resettoken;
+//         }); 
+//     } else {
+//         foundToken = false;
+//     }
 
-    this.save();
-    console.log(foundToken);
-    return foundToken;
-};
+//     this.tokens = tokens;
+//     console.log(this.password);
+//     console.log(password);
+
+//     this.save();
+//     return foundToken;
+// };
 
 const comparePassword: comparePasswordFunction = function (candidatePassword, cb) {
     bcrypt.compare(candidatePassword, this.password, (err: mongoose.Error, isMatch: boolean) => {
@@ -186,7 +194,6 @@ const emailConfirmed = function(): void {
 userSchema.methods.comparePassword = comparePassword;
 userSchema.methods.emailConfirmed = emailConfirmed;
 userSchema.methods.updateAfterLogin = updateAfterLogin;
-userSchema.methods.hashPasswordResetAndValidateToken = hashPasswordResetAndValidateToken;
 
 /**
  * Helper method for getting user's gravatar.

@@ -7,7 +7,8 @@ import { UserDeleted } from "../models/DeletedUsers";
 import { Request, Response, NextFunction } from "express";
 import { WriteError } from "mongodb";
 import { validationResult } from "express-validator";
-
+import crypto from "crypto";
+import bcrypt from "bcryptjs";
 import { successMessage } from "../helpers/response";
 import { randomNumber,randomString } from "../helpers/utility";
 // import {constants} from "../helpers/constants";
@@ -41,30 +42,39 @@ export const accountRecovery = (req: Request, res: Response, next: NextFunction)
             return apiResponse.validationErrorWithData(res,"Invalid Email format",formattedMail);
         };
         // search email, update and send email
-        const token = randomString(30);
-        User.findOneAndUpdate({email:formattedMail},{$push:{ tokens: { type:"ActRecry",accessToken:token } } },(err,doc) => {
-            if(err){
-                return apiResponse.ErrorResponse(res,"Whoops! Something went wrong");
-            }
-            if(doc && doc !== null && doc !== undefined){
-                const { username,_id:user } = doc;
-                let trial = 0;
-                let maxTrial = 2;
-                let sent = false;
+        
+        User.findOne({email: formattedMail}).exec((err,resp) => {
+            // console.log(err,res);
+            let token = "";
+            const buf = crypto.randomBytes(26);
+            token = buf.toString("hex");
+            let userid;
+            userid = resp._id;
+            
+            User.findByIdAndUpdate({ _id : userid },{ resetPasswordToken: token, resetPasswordExpires: Date.now() + 86400000  }, { upsert: true, new: true },(err,doc: UserDocument) => {
+                if(err){
+                    console.log(err); 
+                    return apiResponse.ErrorResponse(res,"Whoops! Something went wrong");
+                }
+                if(doc && doc !== null && doc !== undefined) {
+                    const { username,_id:user } = doc;
+                    let trial = 0;
+                    let maxTrial = 2;
+                    let sent = false;
+                    console.log(doc);
+                    const PasswordResetLink = `${req.hostname === "localhost" ? "http://localhost:3000" : "https://codemarka.dev"}/auth/user/account/password/reset/${token}/${user}`;
+                    console.log(PasswordResetLink);
+                    const sendPasswordResetMail = (email: string) => {
 
-                const PasswordResetLink = `https://codemarka.dev/auth/user/account/password/reset/${token}/${user}`;
-                console.log(PasswordResetLink);
-                const sendPasswordResetMail = (email: string) => {
+                        const trimedEmail = email.trim();
 
-                    const trimedEmail = email.trim();
-
-                    const emailTemplate = `
+                        const emailTemplate = `
                     <div style="margin:15px;padding:10px;border:1px solid grey;justify-content;">
                     <div style="text-align:center">
                     </div>
                     <h4><b>Hi ${username},</b></h4>
                     <p>Let's help you reset your password so you can get back to collaborating and learning.</p>
-                    <button type='button' style={
+                    <button type='button' style="
                         display: inline-block;
     font-weight: 600;
     text-align: center;
@@ -84,7 +94,7 @@ export const accountRecovery = (req: Request, res: Response, next: NextFunction)
     background-color: #2dca8c;
     border-color: #2dca8c;
     box-shadow: inset 0 1px 0 rgba(255,255,255,.15);
-}><a href='${PasswordResetLink}'>Password Reset</a></button>
+"><a href='${PasswordResetLink}'>Password Reset</a></button>
                     <br/>
                     copy link below to your browser if button above does not work on your device.
                     ${PasswordResetLink}
@@ -95,55 +105,55 @@ export const accountRecovery = (req: Request, res: Response, next: NextFunction)
 
                     `;
 
-                    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+                        sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
-                    const msg = {
-                        to: trimedEmail,
-                        from: "no-reply@codemarak.dev",
-                        subject: "Complete your password reset request",
-                        text: `Click below to verify ${PasswordResetLink}`,
-                        html: emailTemplate,
-                    };
+                        const msg = {
+                            to: trimedEmail,
+                            from: "no-reply@codemarak.dev",
+                            subject: "Complete your password reset request",
+                            text: `Click below to verify ${PasswordResetLink}`,
+                            html: emailTemplate,
+                        };
 
-                    if(trial <= maxTrial && !sent){
-                        try {
-                            sgMail.send(msg,true,(err: any,resp: unknown) => {
-                                if(err){
+                        if(trial <= maxTrial && !sent){
+                            try {
+                                sgMail.send(msg,true,(err: any,resp: unknown) => {
+                                    if(err){
                                     // RECURSION
-                                    trial++;
-                                    console.log("retrying..",trial);
-                                    sent = false;
-                                    sendPasswordResetMail(trimedEmail);
-                                } else {
+                                        trial++;
+                                        console.log("retrying..",trial);
+                                        sent = false;
+                                        sendPasswordResetMail(trimedEmail);
+                                    } else {
                                 
-                                    // BASE
-                                    console.log("sent mail to",trimedEmail);
-                                    sent = true;
-                                    console.log(user);
-                                    return apiResponse.successResponse(res,"Please check your inbox.");
-                                }
+                                        // BASE
+                                        console.log("sent mail to",trimedEmail);
+                                        sent = true;
+                                        return apiResponse.successResponse(res,"Please check your inbox.");
+                                    }
                                 
-                            });
-                        } catch (e) {
-                            next(e);
-                            console.log(e);
-                            return apiResponse.ErrorResponse(res,"Whoops!  Something went wrong");
-                        }
+                                });
+                            } catch (e) {
+                                next(e);
+                                return apiResponse.ErrorResponse(res,"Whoops!  Something went wrong");
+                            }
                        
-                    } else {
+                        } else {
                         // TERMINATION
-                        console.log("password reset mail exceeded trial");
-                        sent = false;
-                        return apiResponse.successResponse(res,"Please try again.");
-                    }
-                };
-                sendPasswordResetMail(email);
-            } else {
-                return apiResponse.ErrorResponse(res,"Account not found");
+                            console.log("password reset mail exceeded trial");
+                            sent = false;
+                            return apiResponse.successResponse(res,"Please try again.");
+                        }
+                    };
+                    sendPasswordResetMail(email);
+                } else {
+                    return apiResponse.ErrorResponse(res,"Account not found");
 
-            }
+                }
+
+
+            });
         });
-
 
     } else {
         return apiResponse.ErrorResponse(res,"Email is required");
@@ -155,9 +165,12 @@ export const accountRecovery = (req: Request, res: Response, next: NextFunction)
  * Reset User password by creating a new password
  */
 export const passwordReset = (req: Request | any, res: Response) => {
-    const newPassword = (req.body.newPassword);
-    const token = req.params.token;
-    const userId = req.params.user;
+    const newPassword = (req.body.nPass);
+    const newPassword2 = req.body.nPass2;
+
+    const token = req.body.token;
+    const userId = req.body.user;
+
     if(newPassword && String(newPassword).trim() !== ""){
         if(!token){
             return apiResponse.ErrorResponse(res,"Token not found");
@@ -167,23 +180,44 @@ export const passwordReset = (req: Request | any, res: Response) => {
             return apiResponse.ErrorResponse(res,"User id not found");
         }
 
-        User.findById(userId,(err,doc) => {
+        if(newPassword !== newPassword2){
+            return apiResponse.ErrorResponse(res,"Passwords do not match");
+        }
+
+        User.findOne( {resetPasswordToken: req.body.token,
+            resetPasswordExpires: {
+                $gt: Date.now()
+            }},(err,doc) => {
+
             if(err){
                 return apiResponse.ErrorResponse(res,"Whoops! Something went wrong");
             }
 
             if(doc && doc !== null){
                 try {
-                    const passwordUpated = doc.hashPasswordResetAndValidateToken(newPassword, token);
-                    if(passwordUpated){
-                        return apiResponse.successResponse(res,"Password reset successful");     
-                    } else {
-                        return apiResponse.ErrorResponse(res,"Failed to update password");
-                        
-                    }
+                    console.log(newPassword);
+                    doc.password = bcrypt.hashSync(newPassword, 10);
+                    console.log(doc.password);
+                    doc.resetPasswordToken = "";
+                    doc.resetPasswordExpires = "";
+                    doc.save((err,user) => {
+                        console.log(user);
+                        bcrypt.compare(newPassword, user.password, (err, isMatch: boolean) => {
+                            console.log(err,isMatch);
+                        });
+                        if (err) {
+                            return apiResponse.ErrorResponse(res,"Failed to update password");
+
+                        } else {
+                            return apiResponse.successResponse(res,"Password reset successful");     
+                        }
+                    });
                 } catch (error) {
+                    console.log(error);
                     return apiResponse.ErrorResponse(res,"Error updating password");
                 }
+            } else {
+                return apiResponse.ErrorResponse(res,"Invalid or expired token");
             }
         });
     } else {
@@ -259,7 +293,6 @@ export const postLogin = (req: Request, res: Response) => {
         const ip = req.connection.remoteAddress || req.headers["x-forwarded-for"];
 
         if (!errors.isEmpty()) {
-            // return res.status(422).json(failed(errors.array()));
             return apiResponse.ErrorResponse(res,errors.array());
         }
         else {
