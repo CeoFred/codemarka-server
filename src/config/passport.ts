@@ -15,7 +15,7 @@ const { Strategy: GitHubStrategy } = github;
 export const ENVIRONMENT = process.env.NODE_ENV;
 const prod = ENVIRONMENT === "production";
 
-const host = prod ? "https://colabinc.herokuapp.com" : "http://localhost:2001";
+const host = prod ? "https://code-marka.herokuapp.com" : "http://localhost:2001";
 passport.serializeUser((user: any, done) => {
     done(null, user.id);
 });

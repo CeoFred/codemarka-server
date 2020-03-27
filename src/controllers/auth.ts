@@ -388,7 +388,7 @@ export const postSignup = (req: Request, res: Response, next: NextFunction) => {
                 let trial = 0;
                 let maxTrial = 2;
                 let sent = false;
-                const vLink = `https://colabinc.herokuapp.com/auth/account/user/verify/${verificationToken}/${user._id}`;
+                const vLink = `https://code-maraka.herokuapp.com/auth/account/user/verify/${verificationToken}/${user._id}`;
                 console.log(vLink);
                 const sendMailToNewUser = (email: string) => {
 
