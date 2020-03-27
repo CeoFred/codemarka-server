@@ -53,7 +53,6 @@ export const accountRecovery = (req: Request, res: Response, next: NextFunction)
             
             User.findByIdAndUpdate({ _id : userid },{ resetPasswordToken: token, resetPasswordExpires: Date.now() + 86400000  }, { upsert: true, new: true },(err,doc: UserDocument) => {
                 if(err){
-                    console.log(err); 
                     return apiResponse.ErrorResponse(res,"Whoops! Something went wrong");
                 }
                 if(doc && doc !== null && doc !== undefined) {
@@ -61,7 +60,6 @@ export const accountRecovery = (req: Request, res: Response, next: NextFunction)
                     let trial = 0;
                     let maxTrial = 2;
                     let sent = false;
-                    console.log(doc);
                     const PasswordResetLink = `${req.hostname === "localhost" ? "http://localhost:3000" : "https://codemarka.dev"}/auth/user/account/password/reset/${token}/${user}`;
                     console.log(PasswordResetLink);
                     const sendPasswordResetMail = (email: string) => {
@@ -325,7 +323,7 @@ export const postLogin = (req: Request, res: Response) => {
                                     user.updateAfterLogin(ip,{accessToken:userData.token,type: "login"});
 
                                     // integrate IP change later
-                                    console.log(user);
+                                 
                                     return apiResponse.successResponseWithData(res,"Login Success.", userData);
                                 }else {
                                     return apiResponse.unauthorizedResponse(res, "Account is not active. Please contact admin.");
@@ -386,7 +384,7 @@ export const postSignup = (req: Request, res: Response, next: NextFunction) => {
 
             user.save(function (err,data) {
                 if (err) { return apiResponse.ErrorResponse(res, err); }
-                console.log(data);
+                
                 let trial = 0;
                 let maxTrial = 2;
                 let sent = false;

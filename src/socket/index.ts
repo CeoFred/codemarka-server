@@ -1,8 +1,11 @@
+/* eslint-disable @typescript-eslint/explicit-function-return-type */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { chat } from "./config";
 import express from "express";
 import fs from "fs";
 import moment from "moment";
 import uuidv4 from "uuid/v4";
+import sgMail  from "@sendgrid/mail";
 
 import { Classroom, ClassroomDocument } from "../models/classroom";
 import { classWeb } from "../models/classWebFiles";
@@ -539,6 +542,124 @@ export default (server: express.Application) => {
             
         });
 
+        socket.on("invite_user", (user: any) => {
+            const userNameOrEmail = user.user;
+            const classroomInfo = user.classData;
+            let trial = 0;
+            let maxTrial = 2;
+            let sent = false;
+            
+            const sendPasswordResetMail = (username: string, email: string) => {
+
+                const joinLink = `https://codemarka.dev/c/classroom/${classroomInfo.cid}`;
+                const emailTemplate = `
+                    <div style="margin:15px;padding:10px;border:1px solid grey;justify-content;">
+                    <div style="text-align:center">
+                    </div>
+                    <h4><b>Hi ${username},</b></h4>
+                    <p>You've been invited by ${classroomInfo.username} to join a classroom session on codemarka, more details about this classroom 
+                    below. </p>
+                    <div>
+                    <p>Classroom Name - ${classroomInfo.name}</p>
+                    <p>Classroom Topic - ${classroomInfo.topic}</p>
+                    <p>Classroom Description - ${classroomInfo.description}</p>
+
+                    </div>
+                    <button type='button' style="
+                        display: inline-block;
+    font-weight: 600;
+    text-align: center;
+    vertical-align: middle;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    background-color: transparent;
+    border: 1px solid transparent;
+    padding: .75rem 1.75rem;
+    font-size: 1rem;
+    line-height: 1.5;
+    border-radius: .375rem;
+    transition: color .15s ease-in-out,background-color .15s ease-in-out,border-color .15s ease-in-out,box-shadow .15s ease-in-out;
+    color: #fff;
+    background-color: #2dca8c;
+    border-color: #2dca8c;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.15);
+"><a href='${joinLink}'>Join</a></button>
+                    <br/>
+                    copy link below to your browser if button above does not work on your device.
+                    ${joinLink}
+
+                    <br/>
+
+                    </div>
+
+                    `;
+
+                sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+
+                const msg = {
+                    to: email,
+                    from: "no-reply@codemarak.dev",
+                    subject: "Classroom Invitation",
+                    text: `Click to join ${joinLink}`,
+                    html: emailTemplate,
+                };
+
+                if(trial <= maxTrial && !sent){
+                    try {
+                        sgMail.send(msg,true,(err: any,resp: unknown) => {
+                            if(err){
+                                // RECURSION
+                                trial++;
+                                console.log("retrying..",trial);
+                                sent = false;
+                                sendPasswordResetMail(username,email);
+                            } else {
+                                
+                                // BASE
+                                console.log("sent mail to",email);
+                                sent = true;
+                                socket.emit("invite_sent");
+
+                            }
+                                
+                        });
+                    } catch (e) {
+                        socket.emit("error");
+                     
+                    }
+                       
+                } else {
+                    // TERMINATION
+                    console.log("password reset mail exceeded trial");
+                    sent = false;
+                    socket.emit("error");
+                    
+                }
+            };
+            User.findOne({email: userNameOrEmail},(err, user) => {
+                if(err) socket.emit("error");
+
+                if(user !== null){
+                    sendPasswordResetMail(user.username,user.email);
+                } else if(user === null){
+
+                    User.findOne({ username: userNameOrEmail }, (err, user) => {
+                        if(err) socket.emit("error");
+
+                        if(user !== null){
+                            sendPasswordResetMail(user.username,user.email);
+                        } else {
+                            socket.emit("User_not_found_on_search");
+                        }
+
+                    });
+                }
+                
+            });
+        });
+
         socket.on("new_pinned_message", (msg: string) => {
 
             const classroom = socket.room;
@@ -556,7 +677,6 @@ export default (server: express.Application) => {
         });
 
         socket.on("user_waving", (user: any) => {
-            console.log(user);
             nsp.to(socket.room).emit("user_waved", { from: socket.username, to: user });
         });
 
