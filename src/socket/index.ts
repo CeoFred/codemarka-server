@@ -700,8 +700,11 @@ export default (server: express.Application) => {
                 topic,
             }, { new: true }, (err, doc) => {
                 if (err) socket.emit("errUpdating", err);
-                nsp.to(socket.room).emit("newClassInformation", doc);
-                console.log(doc);
+                if(doc) {
+                    nsp.to(socket.room).emit("newClassInformation", doc);
+                    console.log("classroom_Information Updated Successfully!");
+                }
+                
             });
         });
 
@@ -762,7 +765,7 @@ export default (server: express.Application) => {
                         color: data.messageColor,
                         oTime: data.time
                     };
-                    Classroom.findByIdAndUpdate({ _id: data.class, status: 2 },
+                    Classroom.findOneAndUpdate({ Kid: data.class, status: 2 },
                         {
                             $push: {
                                 messages: msgObject
@@ -774,7 +777,7 @@ export default (server: express.Application) => {
                                 console.log(err);
                             } else {
                                 //do stuff
-                                nsp.to(data.class).emit("nM",
+                                nsp.emit("nM",
                                     {
                                         ...msgObject
                                     });

@@ -14,6 +14,7 @@ export type ClassroomDocument = mongoose.Document & {
     startDate: any;
     maxUsers: number;
     Kid: string;
+    shortUrl: string;
 };
 
 
@@ -81,7 +82,7 @@ const classroomSchema = new mongoose.Schema({
     shortUrl:{
         required: false,
         type: String,
-        default:"https://tinycolab.herokuapp.com"
+        default:"https://cmarka.xyz"
     },
     students: [Object],
     pinnedMessages: [Object],

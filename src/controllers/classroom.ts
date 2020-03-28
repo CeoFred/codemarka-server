@@ -5,6 +5,7 @@ import { Request, Response, NextFunction } from "express";
 import { validationResult } from "express-validator";
 
 import { Classroom, ClassroomDocument } from "../models/classroom";
+import { classAliasUrl } from "../models/classAlias"; 
 import { User, UserDocument } from "../models/User";
 import { randomNumber ,randomString} from "../helpers/utility";
 import { successResponseWithData } from "../helpers/apiResponse";
@@ -60,9 +61,30 @@ export const createClassRoom = (req: Request, res: Response, next: NextFunction)
                         }
                     }
                 }
+
+                
+                const generateClassUrlAlias = (data: any): any => {
+                    return new Promise((resolve,reject) => {
+                        let rs = randomString(4);
+
+                        classAliasUrl.findOne({shortUrl:`https://cmarka.xyz/${rs}`},(err, url) => {
+                            if(err) reject("Something went wrong while searching for urlAlias");
+                            if(url){
+                            //url exists
+                                resolve(generateClassUrlAlias(data));
+                            } else {
+                                const url = new classAliasUrl({Kid: randomNumber(29),shortUrl: `https://cmarka.xyz/${rs}`,classroomKid:data.Kid});
+                                url.save((err,urlDoc) => {
+                                    if(err) reject("Something went wrong while trying to save");
+                                    resolve(`https://cmarka.xyz/${rs}`);
+                                });
+                            }
+                        });
+                    });
+                };
                 const newclassroom = new Classroom({
                     name,
-                    Kid: randomString(25),
+                    Kid: randomString(40),
                     topic,
                     description,
                     classVisibility: visibility,
@@ -82,7 +104,6 @@ export const createClassRoom = (req: Request, res: Response, next: NextFunction)
                     const cssfile = randomNumber(15);
 
                     // create editors for class
-                    const dire = `${__dirname}/../../main/classrooms/${data._id}/`;
                     const jsSource = `${__dirname}/../../main/boilerplates/basic--web--app/index.js`;
                     const cssSource = `${__dirname}/../../main/boilerplates/basic--web--app/index.css`;
                     const htmlSource = `${__dirname}/../../main/boilerplates/basic--web--app/index.html`;
@@ -100,40 +121,34 @@ export const createClassRoom = (req: Request, res: Response, next: NextFunction)
                             }
                         });
                     }
-
-                    if (!fs.existsSync(dire)) {
-
-                        fs.mkdir(dire, { recursive: true }, (err) => {
-
-
-                            if (!err) {
-
-                                fs.copyFile(jsSource, `${dire}/${jsfile}.js`, (err) => {
-                                    if (err) next(err);
-                                });
-                                fs.copyFile(htmlSource, `${dire}/${htmlfile}.html`, (err) => {
-                                    if (err) next(err);
-                                });
-                                fs.copyFile(cssSource, `${dire}/${cssfile}.css`, (err) => {
-                                    if (err) next(err);
-                                });
-                            } else {
-
-                                return next(err);
+                    generateClassUrlAlias(data).then((dataUrl: string) => {
+                        data.shortUrl = dataUrl;
+                        data.save((err,nd) => {
+                            if(err){ 
+                                return apiResponse.ErrorResponse(res,"Whoops! Something went wrong");
                             }
+                            console.log(nd);
+                            const jsContent = fs.readFileSync(jsSource,"utf8");
+                            const cssContent = fs.readFileSync(cssSource,"utf8");
+                            const htmlContent = fs.readFileSync(htmlSource,"utf8");
 
+                            new classWeb({ classroomId: data._id, js: {id:jsfile,content:jsContent}, css: { id:cssfile,content:cssContent }, html: {id:htmlfile,content:htmlContent} }).save().then((file) => {
+                                return  successResponseWithData(res, "success", nd);
+
+                            }).catch(err => {
+                                return next(err);
+                            });
                         });
-                        const jsContent = fs.readFileSync(jsSource,"utf8");
-                        const cssContent = fs.readFileSync(cssSource,"utf8");
-                        const htmlContent = fs.readFileSync(htmlSource,"utf8");
 
-                        new classWeb({ classroomId: data._id, js: {id:jsfile,content:jsContent}, css: { id:cssfile,content:cssContent }, html: {id:htmlfile,content:htmlContent} }).save().then((file) => {
-                            return  successResponseWithData(res, "success", data);
+                    }).catch((err: string) => {
+                        console.log(err);
+                    });
 
-                        }).catch(err => {
-                            return next(err);
-                        });
-                    }
+                    // data.shortUrl = shortUrl;
+                    // data.save((err) => {
+                    // 
+
+                    // });
 
                 }).catch((err: Error) => next(err.message));
 
@@ -306,7 +321,7 @@ export const verifyClassroom = (req: Request, res: Response, next: NextFunction)
         return apiResponse.ErrorResponse(res, "Invalid classroom id");
     }
 
-    Classroom.findOneAndUpdate({ _id: classroom }, { $inc: { visits: 1 } }).then(d => {
+    Classroom.findOneAndUpdate({ Kid: classroom }, { $inc: { visits: 1 } }).then(d => {
         if (d && d.status === started) {
             return apiResponse.successResponseWithData(res, "success", d);
         } else if (d && d.status === notStarted) {
@@ -351,26 +366,27 @@ export const getTrending = (req: Request, res: Response): object => {
 };
 
 
-const generateShortUrl = (): string => {
-    return `https://tinycloab.herokuapp.com/${randomNumber(6)}`;
-};
-// shorten classroom links
-export const shortenClassLinks = (req: Request, res: Response, next: NextFunction): any => {
-    const { classid } = req.params;
-    const shortly = generateShortUrl();
-    if (classid && classid.trim() !== "" && classid.length > 23) {
-        Classroom.findOneAndUpdate({ _id: classid }, { $set: { shortUrl: shortly } }, { new: true }, (err, doc) => {
-            if (err) {
-                return next(err);
+
+// fecth classroom original url
+export const fecthClassByUrlAlias = (req: Request, res: Response, next: NextFunction): any => {
+    const { id } = req.params;
+    const url = `https://cmarka.xyz/${id}`;
+    console.log(url);
+    if(req.hostname.includes("localhost") || req.hostname.includes("cmarka.xyz")){
+        classAliasUrl.findOneAndUpdate({shortUrl: url},{$inc:{visits:1}}).then(data => {
+            if(data){
+                if(req.hostname.includes("localhost")){
+                    return apiResponse.successResponseWithData(res, "Success", `http://localhost:3000/c/classroom/${data.classroomKid}`);
+                } 
+                return apiResponse.successResponseWithData(res, "Success", `https://codemarka.dev/c/classroom/${data.classroomKid}`);
+
             }
-            if (doc && doc !== null) {
-                return apiResponse.successResponseWithData(res, "success", shortly);
-            } else {
-                return apiResponse.ErrorResponse(res, null);
-            }
+            return apiResponse.ErrorResponse(res,"URL not found");
+        }).catch(err => {
+            return apiResponse.ErrorResponse(res, err);
         });
     } else {
-
+        return apiResponse.ErrorResponse(res,"CRSF Toekn Invalid!");
     }
 };
 
