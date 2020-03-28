@@ -483,7 +483,7 @@ export default (server: express.Application) => {
             
             const sendPasswordResetMail = (username: string, email: string) => {
 
-                const joinLink = `https://codemarka.dev/c/classroom/${classroomInfo.cid}`;
+                const joinLink = `https://codemarka.dev/c/classroom/${classroomInfo.kid}`;
                 const emailTemplate = `
                     <div style="margin:15px;padding:10px;border:1px solid grey;justify-content;">
                     <div style="text-align:center">
