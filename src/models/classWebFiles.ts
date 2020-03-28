@@ -1,7 +1,19 @@
 import mongoose from "mongoose";
 
 export type ClassroomDocument = mongoose.Document & {
-    
+    classroomId: string;
+    js: {
+        content: string;
+        id: number;
+    };
+    css: {
+        content: string;
+        id: number;
+    };
+    html: {
+        content: string;
+        id: number;
+    };
 };
 
 
@@ -11,16 +23,34 @@ const classWebFiles = new mongoose.Schema({
         required: true
     },
     js:{
-        type: String,
-        required: true,
+        content:{
+            type:String,
+            required:true
+        },
+        id: {
+            type:Number,
+            required:true
+        }
     },
     css:{
-        type: String,
-        required:true
+        content:{
+            type:String,
+            required: true,
+        },
+        id: {
+            type:Number,
+            required:true
+        }
     },
     html: {
-        type: String,
-        required: true
+        content:{
+            type:String,
+            required: true,
+        },
+        id: {
+            type:Number,
+            required:true
+        }
     }
 }, { timestamps: true });
 

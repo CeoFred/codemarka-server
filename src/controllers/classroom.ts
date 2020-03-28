@@ -86,8 +86,6 @@ export const createClassRoom = (req: Request, res: Response, next: NextFunction)
                     const jsSource = `${__dirname}/../../main/boilerplates/basic--web--app/index.js`;
                     const cssSource = `${__dirname}/../../main/boilerplates/basic--web--app/index.css`;
                     const htmlSource = `${__dirname}/../../main/boilerplates/basic--web--app/index.html`;
-
-                    console.log(visibility);
                     /// update user classrooms limit
                     if (visibility === "Public") {
                         User.findOneAndUpdate({_id: userid},{$inc: {publicClassCreated: 1}},(err,doc: UserDocument) => {
@@ -123,9 +121,13 @@ export const createClassRoom = (req: Request, res: Response, next: NextFunction)
 
                                 return next(err);
                             }
+
                         });
-                        new classWeb({ classroomId: data._id, js: jsfile, css: cssfile, html: htmlfile }).save().then(() => {
-            
+                        const jsContent = fs.readFileSync(jsSource,"utf8");
+                        const cssContent = fs.readFileSync(cssSource,"utf8");
+                        const htmlContent = fs.readFileSync(htmlSource,"utf8");
+
+                        new classWeb({ classroomId: data._id, js: {id:jsfile,content:jsContent}, css: { id:cssfile,content:cssContent }, html: {id:htmlfile,content:htmlContent} }).save().then((file) => {
                             return  successResponseWithData(res, "success", data);
 
                         }).catch(err => {
@@ -136,7 +138,7 @@ export const createClassRoom = (req: Request, res: Response, next: NextFunction)
                 }).catch((err: Error) => next(err.message));
 
             }
-        }).catch((err: boolean) => {
+        }).catch(() => {
             return apiResponse.ErrorResponse(res,"User not found");
         });
 
@@ -174,13 +176,8 @@ export const findClassRoom = (req: Request, res: Response): any => {
         const reqexQ = new RegExp(q, "i");
         Classroom.find({ name: reqexQ }, "name location", (err, d: ClassroomDocument[]| any) => {
             if (d && err === null && d.status !== 3) {
-                let classExisits = [];
-                classExisits = d.filter((classN: ClassroomDocument) => {
-                    const dire = `${__dirname}/../../main/classrooms/${classN._id}/`;
-            
-                    return fs.existsSync(dire);
-                });
-                return apiResponse.successResponseWithData(res, "Success", classExisits);
+                
+                return apiResponse.successResponseWithData(res, "Success", d);
             } else {
                 return apiResponse.ErrorResponse(res, "Opps!");
             }
@@ -191,123 +188,75 @@ export const findClassRoom = (req: Request, res: Response): any => {
 export const downloadClassfiles = (req: Request, res: Response): void => {
     const { classroomid } = req.params;
 
-    const dire = `${__dirname}/../../main/classrooms/${classroomid}/`;
+    const dire = `${__dirname}/../../main/classrooms/${classroomid}/${classroomid+ "-codemarka"+".zip"}`;
+    const root = `${__dirname}/../../main/classrooms/${classroomid}/`;
 
-    if(fs.existsSync(dire+classroomid+ "-codemarka"+".zip")) {
-        console.log("zipped file exists");
-        fs.unlink(dire+classroomid+"-codemarka.zip",(err) => {
-            console.log("Deleted ",dire);
-            if(err) throw err;
-            // create a file to stream archive data to.
-            var output = fs.createWriteStream(dire + classroomid+"-codemarka" +".zip");
-            var archive = archiver("zip", {
-                zlib: { level: 9 } // Sets the compression level.
-            });
- 
-            // listen for all archive data to be written
-            // 'close' event is fired only when a file descriptor is involved
-            output.on("close", function() {
-                console.log(archive.pointer() + " total bytes");
-                console.log("archiver has been finalized and the output file descriptor has closed.");
-                return res.download(`${dire}${classroomid}-codemarka.zip`, (e) => {
-                    if(e) return false;
-                    console.log("Finished");
-
-                });
-            });
- 
-            output.on("end", function() {
-                console.log("Data has been drained");
-            });
- 
-            // good practice to catch warnings (ie stat failures and other non-blocking errors)
-            archive.on("warning", function(err) {
-                if (err.code === "ENOENT") {
-                    // log warning
-                } else {
-                    // throw error
-                    throw err;
-                }
-            });
- 
-            // good practice to catch this error explicitly
-            archive.on("error", function(err) {
-                throw err;
-            });
- 
-            // pipe archive data to the file
-            archive.pipe(output);
- 
- 
-            // append files from a sub-directory, putting its contents at the root of archive
-            archive.directory(dire, "dist");
- 
-
-            archive.finalize().then(() => {
-                console.log("Finalized");
-            });
-
-        });
-    } else {
-        // create a file to stream archive data to.
-        var output = fs.createWriteStream(dire + classroomid+"-codemarka" +".zip");
-        var archive = archiver("zip", {
-            zlib: { level: 9 } // Sets the compression level.
-        });
- 
-        // listen for all archive data to be written
-        // 'close' event is fired only when a file descriptor is involved
-        output.on("close", function() {
-            console.log(archive.pointer() + " total bytes");
-            console.log("archiver has been finalized and the output file descriptor has closed.");
-            return res.download(`${dire}${classroomid}-codemarka.zip`, (e) => {
-                if(e) return false;
-                console.log("Finished");
-
-            });
-        });
- 
-        output.on("end", function() {
-            console.log("Data has been drained");
-        });
- 
-        // good practice to catch warnings (ie stat failures and other non-blocking errors)
-        archive.on("warning", function(err) {
-            if (err.code === "ENOENT") {
-            // log warning
-            } else {
-            // throw error
-                throw err;
-            }
-        });
- 
-        // good practice to catch this error explicitly
-        archive.on("error", function(err) {
-            throw err;
-        });
- 
-        // pipe archive data to the file
-        archive.pipe(output);
- 
- 
-        // append files from a sub-directory, putting its contents at the root of archive
-        archive.directory(dire, "dist");
- 
-
-        archive.finalize().then(() => {
-            console.log("Finalized");
-        });
-
+    if(fs.existsSync(dire)) {
+        fs.unlinkSync(dire);
+        console.log("File exists,deleted.");
     }
+
+    classWeb.findOne({classroomId: classroomid},(err, res) => {
+        if(err) return;
+        if(res){
+            // create files from database;
+            fs.writeFileSync(`${root}/${res.html.id}.html`,res.html.content);
+            fs.writeFileSync(`${root}/${res.css.id}.css`,res.css.content);
+            fs.writeFileSync(`${root}/${res.js.id}.js`,res.js.content);
+        }
+    });
+    // create a file to stream archive data to.
+    var output = fs.createWriteStream(dire);
+    var archive = archiver("zip", {
+        zlib: { level: 9 } // Sets the compression level.
+    });
+ 
+    // listen for all archive data to be written
+    // 'close' event is fired only when a file descriptor is involved
+    output.on("close", function() {
+        return res.download(dire, (e) => {
+            if(e) return false;
+            console.log("Finished");
+        });
+    });
+ 
+    output.on("end", function() {
+        console.log("Data has been drained");
+    });
+ 
+    // good practice to catch warnings (ie stat failures and other non-blocking errors)
+    archive.on("warning", function(err) {
+        if (err.code === "ENOENT") {
+            // log warning
+        } else {
+            // throw error
+            throw err;
+        }
+    });
+ 
+    // good practice to catch this error explicitly
+    archive.on("error", function() {
+        return false;
+    });
+ 
+    // pipe archive data to the file
+    archive.pipe(output);
+ 
+ 
+    // append files from a sub-directory, putting its contents at the root of archive
+    archive.directory(root, "dist");
+ 
+
+    archive.finalize().then(() => {
+        console.log("Finalized");
+    });
+
 
  
 };
 
 export const classroomPreview = (req: Request, res: Response): object => {
     const { classroomid } = req.params;
-
-    const dire = `${__dirname}/../../main/classrooms/${classroomid}/`;
-
     // todo -- track who previews files
 
     if (classroomid && classroomid.trim().length < 24) {
@@ -321,66 +270,27 @@ export const classroomPreview = (req: Request, res: Response): object => {
             if (!d && d === null) {
                 return apiResponse.ErrorResponse(res, { "message": "files not found" });
             } else {
-
+                        
                 const cssfileId = d.css;
                 const jsFileId = d.js;
                 const htmlFileId = d.html;
-
-                if (!cssfileId || !jsFileId || !htmlFileId) {
-                    return apiResponse.ErrorResponse(res, { "message": "files not found" });
-
-                }
-
-
-                fs.readdir(dire, { withFileTypes: true }, (err, files) => {
-
-                    if (err) {
-                        console.log(err);
-                        return apiResponse.ErrorResponse(res, { "message": "files not found" });
-
-                    }
-                    else {
-                        let htmlFilePath: string, cssFilePath: string, jsFilePath: string;
-                        let htmlFileContent: any, cssFileContent: any, jsFileContent: any;
-                        // Loop through files inclassroom files
-                        files.forEach(element => {
-
-                            // read each file in classroom folder
-                            if (element.name.includes("css")) {
-                                cssFilePath = `${dire}/${element.name}`;
-                                cssFileContent = fs.readFileSync(cssFilePath, "utf8");
-                            }
-
-                            if (element.name.includes("js")) {
-                                jsFilePath = `${dire}/${element.name}`;
-                                jsFileContent = fs.readFileSync(jsFilePath, "utf8");
-
-                            }
-
-                            if (element.name.includes("html")) {
-                                htmlFilePath = `${dire}/${element.name}`;
-                                htmlFileContent = fs.readFileSync(htmlFilePath, "utf8");
-
-                            }
-                        });
-                        const ht = {
-                            id: htmlFileId,
-                            content: htmlFileContent
-                        };
-                        const cs = {
-                            id: cssfileId,
-                            content: cssFileContent
-                        };
-                        const js = {
-                            id: jsFileId,
-                            content: jsFileContent
-                        };
-                        return apiResponse.successResponseWithData(res, "success", { cs, ht, js, classroomid });
-
-                    }
-
-                });
-
+                const cssContent = d.css.content;
+                const htmlContent = d.html.content;
+                const jsContent = d.js.content;
+                                        
+                const ht = {
+                    id: htmlFileId,
+                    content: htmlContent
+                };
+                const cs = {
+                    id: cssfileId,
+                    content: cssContent
+                };
+                const js = {
+                    id: jsFileId,
+                    content: jsContent
+                };
+                return apiResponse.successResponseWithData(res, "success", { cs, ht, js, classroomid });
             }
         });
 
@@ -392,28 +302,23 @@ export const classroomPreview = (req: Request, res: Response): object => {
 export const verifyClassroom = (req: Request, res: Response, next: NextFunction): any => {
 
     const { classroom } = req.body;
-    const dire = `${__dirname}/../../main/classrooms/${classroom}/`;
     if (classroom && classroom.trim().length < 24) {
         return apiResponse.ErrorResponse(res, "Invalid classroom id");
     }
 
-    if (fs.existsSync(dire)) {
-        Classroom.findOneAndUpdate({ _id: classroom }, { $inc: { visits: 1 } }).then(d => {
-            if (d && d.status === started) {
-                return apiResponse.successResponseWithData(res, "success", d);
-            } else if (d && d.status === notStarted) {
-                return apiResponse.successResponse(res,
-                    {startTimeFull:`${d.startTime} - ${d.startDate}`, msg:"Class has not started!",cdata:d });
-            } else {
-                return apiResponse.successResponse(res, "Class has ended!");
-            }
-        }).catch(e => {
-            return next(e);
-        });
-    } else {
-        return apiResponse.ErrorResponse(res, "Class Files Not Found");
-
-    }
+    Classroom.findOneAndUpdate({ _id: classroom }, { $inc: { visits: 1 } }).then(d => {
+        if (d && d.status === started) {
+            return apiResponse.successResponseWithData(res, "success", d);
+        } else if (d && d.status === notStarted) {
+            return apiResponse.successResponse(res,
+                {startTimeFull:`${d.startTime} - ${d.startDate}`, msg:"Class has not started!",cdata:d });
+        } else {
+            return apiResponse.successResponse(res, "Class has ended!");
+        }
+    }).catch(e => {
+        return next(e);
+    });
+    
 
 };
 
@@ -437,18 +342,14 @@ export const getTrending = (req: Request, res: Response): object => {
 
 
     return Classroom.find({ status: started, classVisibility: "Public" }).limit(12).sort({ visits: -1 }).then(d => {
-        let classExisits = [];
-        classExisits = d.filter(classN => {
-            const dire = `${__dirname}/../../main/classrooms/${classN._id}/`;
-            
-            return fs.existsSync(dire);
-        });
-        return apiResponse.successResponseWithData(res, "Success", classExisits);
+        
+        return apiResponse.successResponseWithData(res, "Success", d);
 
     }).catch(e => {
         return apiResponse.ErrorResponse(res, e);
     });
 };
+
 
 const generateShortUrl = (): string => {
     return `https://tinycloab.herokuapp.com/${randomNumber(6)}`;
