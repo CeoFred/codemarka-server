@@ -38,7 +38,6 @@ export default (server: express.Application) => {
             classroom_id: string;
             username: string;
         }
-        let classfiles: any[] = [];
 
         socket.on("re_join",(data: JoinObj) => {
             
@@ -570,18 +569,45 @@ export default (server: express.Application) => {
                     
                 }
             };
+            
+
             User.findOne({email: userNameOrEmail},(err, user) => {
                 if(err) socket.emit("error");
 
                 if(user !== null){
-                    sendPasswordResetMail(user.username,user.email);
+                    Classroom.findOne({Kid:classroomInfo.kid}, (err, res: any) => {
+                        if(res){
+                            const students = res.students;
+                            let found = students.filter((s: any) => {
+                                return String(s.id) === String(user._id);
+                            });
+                            if(Array.isArray(found) && found[0]){
+                                socket.emit("user_invite_failed","Already In class");
+                            }else {
+                                sendPasswordResetMail(user.username,user.email);
+                            }
+                        }
+                    });
                 } else if(user === null){
 
                     User.findOne({ username: userNameOrEmail }, (err, user) => {
                         if(err) socket.emit("error");
 
                         if(user !== null){
-                            sendPasswordResetMail(user.username,user.email);
+                            Classroom.findOne({Kid:classroomInfo.kid}, (err, res: any) => {
+                                if(res){
+                                    const students = res.students;
+                                    let found = students.filter((s: any) => {
+                                        return String(s.id) === String(user._id);
+
+                                    });
+                                    if(Array.isArray(found) && found[0]){
+                                        socket.emit("user_invite_failed","Already In class");
+                                    }else {
+                                        sendPasswordResetMail(user.username,user.email);
+                                    }
+                                }
+                            });
                         } else {
                             socket.emit("User_not_found_on_search");
                         }
