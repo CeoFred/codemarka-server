@@ -51,6 +51,15 @@ export default (server: express.Application) => {
                 User.findOne({ _id: data.userId }).then(user => {
                     if(user && user !== null){
                         Classroom.findById(data.classroom_id, (err, res: any) => {
+                           
+                            const students = res.students;
+                            let found = students.filter((s: any) => {
+                                return String(s.id) === String(socket.user);
+                            });
+                            if(Array.isArray(found) && found[0]){
+                                nsp.to(socket.room).emit("disconnect_user_before_join",data);
+                            };
+                       
                             if(res && res !== null){
                                     
                                 socket.emit("rejoin_updateMsg", { by: "server",newuserslist: res.students, msgs: res.messages, type: "oldMsgUpdate" });
@@ -101,9 +110,9 @@ export default (server: express.Application) => {
                                         socket.emit("classroomFilesError", "Files not found");
                                     } else {
 
-                                        const cssfileId = d.css;
-                                        const jsFileId = d.js;
-                                        const htmlFileId = d.html;
+                                        const cssfileId = d.css.id;
+                                        const jsFileId = d.js.id;
+                                        const htmlFileId = d.html.id;
                                         const cssContent = d.css.content;
                                         const htmlContent = d.html.content;
                                         const jsContent = d.js.content;
@@ -155,8 +164,15 @@ export default (server: express.Application) => {
                     // check if user is already in classm, filter and push new user object
                     Classroom.findById(data.classroom_id, (err, res) => {
                         if (err) throw err;
-
+                        
                         if (res && res !== null) {
+                            const students = res.students;
+                            let found = students.filter((s: any) => {
+                                return String(s.id) === String(socket.user);
+                            });
+                            if(Array.isArray(found) && found[0]){
+                                nsp.to(socket.room).emit("disconnect_user_before_join",data);
+                            };
                             console.log("found class");
                             const currentClassStudents = res.students;
                             oldStudentsWithoutUser = currentClassStudents.filter(student => {
@@ -232,9 +248,9 @@ export default (server: express.Application) => {
                                                 socket.emit("classroomFilesError", "Files not found");
                                             } else {
 
-                                                const cssfileId = d.css;
-                                                const jsFileId = d.js;
-                                                const htmlFileId = d.html;
+                                                const cssfileId = d.css.id;
+                                                const jsFileId = d.js.id;
+                                                const htmlFileId = d.html.id;
                                                 const cssContent = d.css.content;
                                                 const htmlContent = d.html.content;
                                                 const jsContent = d.js.content;
@@ -825,10 +841,11 @@ export default (server: express.Application) => {
         }
 
         socket.on("editorChanged", (data: EditorChangedInterface) => {
+            // console.log("received signal to update editor",data);
             try {
-                classWeb.findOne({classroomId:data.class}, (err,res) => {
+                classWeb.findOne({classroomId:data.id}, (err,res) => {
                     if(err) socket.emit("error");
-                    if(res === null) socket.emit("class_not_found");
+                    if(res === null) socket.emit("editor_update_error","class not found");
                     if(res !== null){
                         if(data.file === "js"){
                             res.js.content = data.content;
@@ -841,14 +858,17 @@ export default (server: express.Application) => {
                         }
                         res.save((err,doc) => {
                             if(err) socket.emit("error");
-                            if(doc) nsp.emit("class_files_updated",{...data});
+                            if(doc) { 
+                                nsp.to(socket.room).emit("class_files_updated",{...data});
+                                // console.log("Class File Updated", doc);
+                            }
                         });
                     }
                 });
 
             } catch(e) {
                 console.log(e);
-                nsp.emit("error");
+                nsp.to(socket.room).emit("editor_update_error");
             } 
             
             // console.log(classfiles);
