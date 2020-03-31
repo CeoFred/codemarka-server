@@ -17,7 +17,7 @@ router.get("/user/:userid",check, getUserClassrooms);
 // // here we check if user is eligible to join a classroom
 router.get("/trending/", getTrending);
 
-router.get("/preview/:classroomid", classroomPreview);
+router.get("/preview/:classroomKid", classroomPreview);
 
 router.get("/search/:q", findClassRoom);
 

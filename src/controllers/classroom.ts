@@ -132,7 +132,7 @@ export const createClassRoom = (req: Request, res: Response, next: NextFunction)
                             const cssContent = fs.readFileSync(cssSource,"utf8");
                             const htmlContent = fs.readFileSync(htmlSource,"utf8");
 
-                            new classWeb({ classroomId: data._id, js: {id:jsfile,content:jsContent}, css: { id:cssfile,content:cssContent }, html: {id:htmlfile,content:htmlContent} }).save().then((file) => {
+                            new classWeb({ classroomKid:data.Kid,classroomId: data._id, js: {id:jsfile,content:jsContent}, css: { id:cssfile,content:cssContent }, html: {id:htmlfile,content:htmlContent} }).save().then((file) => {
                                 return  successResponseWithData(res, "success", nd);
 
                             }).catch(err => {
@@ -271,33 +271,33 @@ export const downloadClassfiles = (req: Request, res: Response): void => {
 };
 
 export const classroomPreview = (req: Request, res: Response): object => {
-    const { classroomid } = req.params;
+    const { classroomKid } = req.params;
     // todo -- track who previews files
 
-    if (classroomid && classroomid.trim().length < 24) {
+    if (classroomKid && classroomKid.trim().length < 24) {
         return apiResponse.ErrorResponse(res, "Invalid classroom id");
     }
 
     try {
 
-        classWeb.findOne({ classroomId: classroomid }).then((d: any) => {
+        classWeb.findOne({ classroomKid }).then((d: any) => {
 
             if (!d && d === null) {
                 return apiResponse.ErrorResponse(res, { "message": "files not found" });
             } else {
                         
-                const cssfileId = d.css;
-                const jsFileId = d.js;
-                const htmlFileId = d.html;
+                const cssfileId = d.css.id;
+                const jsFileId = d.js.id;
+                const htmlFileId = d.html.id;
                 const cssContent = d.css.content;
                 const htmlContent = d.html.content;
                 const jsContent = d.js.content;
                                         
-                const ht = {
+                const html = {
                     id: htmlFileId,
                     content: htmlContent
                 };
-                const cs = {
+                const css = {
                     id: cssfileId,
                     content: cssContent
                 };
@@ -305,12 +305,17 @@ export const classroomPreview = (req: Request, res: Response): object => {
                     id: jsFileId,
                     content: jsContent
                 };
-                return apiResponse.successResponseWithData(res, "success", { cs, ht, js, classroomid });
+                Classroom.findOne({Kid: classroomKid},(err,respo: ClassroomDocument) => {
+                    if(!err && respo){
+                        const name = respo.name;
+                        return apiResponse.successResponseWithData(res, "success", { css, html, js, classKid:classroomKid,name });
+                    }
+                });
             }
         });
 
     } catch (e) {
-
+        return apiResponse.ErrorResponse(res, { "message": "files not found" });
     }
 };
 

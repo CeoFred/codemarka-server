@@ -2,6 +2,8 @@ import mongoose from "mongoose";
 
 export type ClassroomDocument = mongoose.Document & {
     classroomId: string;
+    classroomKid: string;
+
     js: {
         content: string;
         id: number;
@@ -19,6 +21,10 @@ export type ClassroomDocument = mongoose.Document & {
 
 const classWebFiles = new mongoose.Schema({
     classroomId:{
+        type: String,
+        required: true
+    },
+    classroomKid:{
         type: String,
         required: true
     },

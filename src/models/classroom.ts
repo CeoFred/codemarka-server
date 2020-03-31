@@ -15,6 +15,7 @@ export type ClassroomDocument = mongoose.Document & {
     maxUsers: number;
     Kid: string;
     shortUrl: string;
+    name: string;
 };
 
 
