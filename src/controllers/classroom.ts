@@ -67,16 +67,16 @@ export const createClassRoom = (req: Request, res: Response, next: NextFunction)
                     return new Promise((resolve,reject) => {
                         let rs = randomString(4);
 
-                        classAliasUrl.findOne({shortUrl:`http://cmarka.xyz/${rs}`},(err, url) => {
+                        classAliasUrl.findOne({shortUrl:`https://cmarka.xyz/${rs}`},(err, url) => {
                             if(err) reject("Something went wrong while searching for urlAlias");
                             if(url){
                             //url exists
                                 resolve(generateClassUrlAlias(data));
                             } else {
-                                const url = new classAliasUrl({Kid: randomNumber(29),shortUrl: `http://cmarka.xyz/${rs}`,classroomKid:data.Kid});
+                                const url = new classAliasUrl({Kid: randomNumber(29),shortUrl: `https://cmarka.xyz/${rs}`,classroomKid:data.Kid});
                                 url.save((err,urlDoc) => {
                                     if(err) reject("Something went wrong while trying to save");
-                                    resolve(`http://cmarka.xyz/${rs}`);
+                                    resolve(`https://cmarka.xyz/${rs}`);
                                 });
                             }
                         });
