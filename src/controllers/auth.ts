@@ -54,7 +54,9 @@ export const accountRecovery = (req: Request, res: Response, next: NextFunction)
                 if(resp.googleid !== "" && resp.googleid !== null && resp.googleid !== undefined){
                     return apiResponse.ErrorResponse(res,"Try logging in with a google account associated with this email");
                 }
-            }}
+            }} else {
+                return apiResponse.ErrorResponse(res,"Whoops! Email does not exits, try signing up.");
+            }
             
             
             User.findByIdAndUpdate({ _id : userid },{ resetPasswordToken: token, resetPasswordExpires: Date.now() + 86400000  }, { upsert: true, new: true },(err,doc: UserDocument) => {
