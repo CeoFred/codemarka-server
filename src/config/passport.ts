@@ -30,60 +30,58 @@ passport.deserializeUser((kid, done) => {
 passport.use(new GitHubStrategy({
     clientID: process.env.GITHUB_CLIENT_ID,
     clientSecret: process.env.GITHUB_CLIENT_SECRET,
-    callbackURL: `${host}/auth/github/callback`,
-    passReqToCallback: true,
+    callbackURL: "/auth/github/callback",
     scope: ["user:email","read:user"]
 },
-function(req: any,accessToken, refreshToken, profile: any, done) {
-     
-    User.findOne({ github: profile.id }, (err, existingUser) => {
-        if (err) { return done(err); }
-        if (existingUser) {
-            console.log("Existing User");
-            const ip = req.connection.remoteAddress || req.headers["x-forwarded-for"];
-            existingUser.updateAfterLogin(ip,{accessToken,type: "google"});
+function(accessToken, refreshToken, profile: any, done) {
+    const githubid = profile.id;
+    const displayName = profile._json.login;
+    const githubemail = profile.emails[0].value;
+    const profilePhoto = profile._json.avatar_url;
+    //check email
 
-            return done(null, existingUser);
-        }
-        const pEmail = _.get(_.orderBy(profile.emails, ["primary", "verified"], ["desc", "desc"]), [0, "value"], null);
-        User.findOne({ email: pEmail }, (err, existingEmailUser) => {
-            if (err) { return done(err); }
-            if (existingEmailUser) {
-                done(err,existingEmailUser,{ msg: "There is already an account using this email address. Sign in to that account and link it with GitHub manually from Account Settings." });
-            } else {
-                console.log("new user");
-                console.log(profile);
+    //if email exist, check if it has a google id, if it does not( account was created with password), return false else
+    // if it does, return the user
 
-                function findUser(params: string): any {
-                    const originalUsername = params;
+    User.findOne({email:githubemail},(err,user) => {
 
-                    const generateRandomNumberWithUsername = () => {
-                        return originalUsername+randomNumber(3);
-                    };
+        if(err) done(err);
 
-                    User.findOne({username: params}).then(user => {
-                        if(user === null){
-                            return params;
-                        } else {
-                            return findUser(generateRandomNumberWithUsername());
-                        }
-                    });
-
-                }
-
+        if(user && user.githubid === "" || !user.githubid){
+            return done(null,null,{ message:"User exists with email"});
+        } 
+        else {
+            
+            User.findOne({ githubid,email: githubemail }, (err, existingUser) => {
+                if (err) { return done(err); }
+                if (existingUser) {
+                    // user exists, log in
+                    return done(null, existingUser);
+                }    
+                
+                //link account with google details;
+                
                 const user = new User();
-                user.email = pEmail;
-                user.github = profile.id;
-                user.username = findUser(profile.displayName);
-                user.tokens.push({ kind: "github", accessToken });
-                user.profile.name = profile.displayName;
-                user.profile.picture = profile._json.avatar_url;
-                user.profile.location = profile._json.location;
-                user.profile.website = profile._json.blog;
+                user.email = githubemail;
+                user.githubid = githubid;
+                user.tokens.push({
+                    kind: "github",
+                    accessToken,
+                    refreshToken,
+                });
+                user.kid = randomString(40);
+                
+            
+                user.isConfirmed = true;
+                user.username = displayName;
                 user.gravatar(20);
+
+                user.profile.name = profile.displayName;
+                user.profile.picture = profilePhoto;
                 user.save((err) => {
-                    if(err) done(err, user);
-                        
+                    //send Welcome mail;
+                    if(err) done(err,null);
+
                     let trial = 0;
                     let maxTrial = 2;
                     let sent = false;
@@ -95,8 +93,9 @@ function(req: any,accessToken, refreshToken, profile: any, done) {
                     <div style="margin:15px;padding:10px;border:1px solid grey;justify-content;">
                     <div style="text-align:center">
                     <img src='https://avatars1.githubusercontent.com/oa/1186156?s=140&u=722efebddbd96ad8bea99643d79408cad51e6d86&v=4' height="100" width="100"/>
+                    
                     </div>
-                    <h4><b>Hey ${profile.displayName},</b></h4>
+                    <h4><b>Hey ${displayName},</b></h4>
                     <br/>
 
                     <p>Thank you for confirming your account, we want to use this opportunity to welcome you to the
@@ -110,7 +109,7 @@ function(req: any,accessToken, refreshToken, profile: any, done) {
 
                     `;
 
-                        sgMail.setApiKey("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");
+                        sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
                         const msg = {
                             to: trimedEmail,
@@ -124,7 +123,7 @@ function(req: any,accessToken, refreshToken, profile: any, done) {
                             try {
                                 sgMail.send(msg,true,(err: any,resp: unknown) => {
                                     if(err){
-                                    // RECURSION
+                                        // RECURSION
                                         trial++;
                                   
                                         sendWelcomeEmailToUser(trimedEmail);
@@ -142,19 +141,18 @@ function(req: any,accessToken, refreshToken, profile: any, done) {
                             }
                        
                         } else {
-                        // TERMINATION
+                            // TERMINATION
                             sent = false;
                             done(null, user);
 
                         }
-                    
 
                     };
                     sendWelcomeEmailToUser(user.email);
-
                 });
-            }
-        });
+           
+            });
+        }
     });
     
 }
@@ -164,25 +162,33 @@ passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
     callbackURL: `${host}/auth/google/callback`,
-    passReqToCallback: true
-
 },
-function(req: any,accessToken, refreshToken, profile, done) {
+function(accessToken, refreshToken, profile, done) {
     const googleId = profile.id;
     const displayName = profile.displayName;
     const Googlemail = profile._json.email;
+    //check email
+
+    //if email exist, check if it has a google id, if it does not( account was created with password), return false else
+    // if it does, return the user
+
     User.findOne({email:Googlemail},(err,user) => {
+
         if(err) done(err);
-        if(user){
-            if(user && user.googleid) done(null,false,{ message:"User exists with email"});
-        } else {
+
+        // user used regular email and password for signup not google auth.
+        if(user && String(user.googleid) === "" || user.googleid === undefined || user.googleid === null) done(null,false,{ message:"User exists with email"});
+
+        else {
             
             User.findOne({ googleid:googleId,email: Googlemail }, (err, existingUser) => {
                 if (err) { return done(err); }
                 if (existingUser) {
                     // user exists, log in
                     return done(null, existingUser);
-                }     //link account with google details;
+                }    
+                
+                //link account with google details;
                 
                 const user = new User();
                 user.email = Googlemail;

@@ -5,15 +5,8 @@ import geo from "geoip-lite";
 export type UserDocument = mongoose.Document & {
     email: string;
     emailVerified: boolean;
-    snapchat: string;
-    facebook: string;
-    twitter: string;
     googleid: string;
-    github: string;
-    instagram: string;
-    linkedin: string;
-    steam: string;
-    quickbooks: string;
+    githubid: string;
     profile: {
         name: string;
         gender: string;
@@ -111,15 +104,14 @@ const userSchema = new mongoose.Schema({
     geoDetails: Object,
     emailVerified: Boolean,
 
-    snapchat: String,
-    facebook: String,
-    twitter: String,
-    googleid: String,
-    github: String,
-    instagram: String,
-    linkedin: String,
-    steam: String,
-    quickbooks: String,
+    googleid: {
+        type: String,
+        default: undefined
+    },
+    githubid: {
+        type: String,
+        default: undefined
+    },
     lastLoggedInIp: String,
     profile: {
         name: String,

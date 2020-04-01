@@ -432,6 +432,14 @@ export const postSignup = (req: Request, res: Response, next: NextFunction) => {
             	// generate OTP for confirmation
             let otp = randomNumber(4);
             const verificationToken = randomString(70);
+
+            User.findOne({email},(err,userf) => {
+                if (err) { return apiResponse.ErrorResponse(res, err); }
+
+                if(userf){
+                    return apiResponse.ErrorResponse(res, "Email already exists,try logging in");
+                }
+            });
             var user = new User(
                 {
                     username,

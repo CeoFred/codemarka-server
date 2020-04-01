@@ -121,7 +121,7 @@ export const createClassRoom = (req: Request, res: Response, next: NextFunction)
                             }
                         });
                     }
-                    const dire = `${__dirname}/../../main/classrooms/${data.Kid}/"}`;
+                    const dire = `${__dirname}/../../main/classrooms/${data.Kid}`;
                     
                     if (!fs.existsSync(dire)){
                         fs.mkdirSync(dire);
