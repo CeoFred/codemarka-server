@@ -442,8 +442,8 @@ export const postSignup = (req: Request, res: Response, next: NextFunction) => {
             });
             var user = new User(
                 {
-                    username,
-                    email,
+                    username: username.toLowerCase(),
+                    email: email.toLowerCase(),
                     confirmOTP: otp,
                     isConfirmed: false,
                     status:1,

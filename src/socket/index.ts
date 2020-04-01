@@ -490,7 +490,7 @@ export default (server: express.Application) => {
         });
 
         socket.on("invite_user", (user: any) => {
-            const userNameOrEmail = user.user;
+            const userNameOrEmail = String(user.user).toLowerCase();
             const classroomInfo = user.classData;
             let trial = 0;
             let maxTrial = 2;
@@ -579,16 +579,15 @@ export default (server: express.Application) => {
                        
                 } else {
                     // TERMINATION
-                    console.log("password reset mail exceeded trial");
                     sent = false;
-                    nsp.emit("error");
+                    nsp.emit("user_invite_failed","Failed to send invitation,try again!");
                     
                 }
             };
             
 
-            User.findOne({email: userNameOrEmail},(err, user) => {
-                if(err) socket.emit("error");
+            User.findOne({email: userNameOrEmail.toLowerCase()},(err, user) => {
+                if(err) socket.emit("classroom_error");
 
                 if(user !== null){
                     Classroom.findOne({Kid:classroomInfo.kid}, (err, res: any) => {
@@ -598,16 +597,16 @@ export default (server: express.Application) => {
                                 return String(s.id) === String(user._id);
                             });
                             if(Array.isArray(found) && found[0]){
-                                socket.emit("user_invite_failed","Already In class");
+                                socket.emit("user_invite_failed","User already In class");
                             }else {
-                                sendPasswordResetMail(user.username,user.email);
+                                sendPasswordResetMail(user.username.toLowerCase(),user.email);
                             }
                         }
                     });
                 } else if(user === null){
 
-                    User.findOne({ username: userNameOrEmail }, (err, user) => {
-                        if(err) socket.emit("error");
+                    User.findOne({ username: userNameOrEmail.toLowerCase() }, (err, user) => {
+                        if(err) socket.emit("classroom_error");
 
                         if(user !== null){
                             Classroom.findOne({Kid:classroomInfo.kid}, (err, res: any) => {
@@ -618,14 +617,14 @@ export default (server: express.Application) => {
 
                                     });
                                     if(Array.isArray(found) && found[0]){
-                                        socket.emit("user_invite_failed","Already In class");
+                                        socket.emit("user_invite_failed","User already In class");
                                     }else {
                                         sendPasswordResetMail(user.username,user.email);
                                     }
                                 }
                             });
                         } else {
-                            socket.emit("User_not_found_on_search");
+                            socket.emit("user_invite_failed","Whoops! User not found");
                         }
 
                     });
@@ -838,13 +837,14 @@ export default (server: express.Application) => {
             content: string;
             file: string;
             id: any;
+            kid: string;
         }
 
         socket.on("editorChanged", (data: EditorChangedInterface) => {
             // console.log("received signal to update editor",data);
             try {
-                classWeb.findOne({classroomId:data.id}, (err,res) => {
-                    if(err) socket.emit("error");
+                classWeb.findOne({classroomKid:data.kid}, (err,res) => {
+                    if(err) socket.emit("classroom_error");
                     if(res === null) socket.emit("editor_update_error","class not found");
                     if(res !== null){
                         if(data.file === "js"){
@@ -857,7 +857,7 @@ export default (server: express.Application) => {
                             res.html.content = data.content;
                         }
                         res.save((err,doc) => {
-                            if(err) socket.emit("error");
+                            if(err) socket.emit("classroom_error");
                             if(doc) { 
                                 nsp.to(socket.room).emit("class_files_updated",{...data});
                                 // console.log("Class File Updated", doc);

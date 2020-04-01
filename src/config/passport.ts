@@ -62,7 +62,7 @@ function(accessToken, refreshToken, profile: any, done) {
                 //link account with google details;
                 
                 const user = new User();
-                user.email = githubemail;
+                user.email = githubemail.toLowerCase();
                 user.githubid = githubid;
                 user.tokens.push({
                     kind: "github",
@@ -73,7 +73,7 @@ function(accessToken, refreshToken, profile: any, done) {
                 
             
                 user.isConfirmed = true;
-                user.username = displayName;
+                user.username = displayName.toLowerCase();
                 user.gravatar(20);
 
                 user.profile.name = profile.displayName;
@@ -191,7 +191,7 @@ function(accessToken, refreshToken, profile, done) {
                 //link account with google details;
                 
                 const user = new User();
-                user.email = Googlemail;
+                user.email = Googlemail.toLowerCase();
                 user.googleid = googleId;
                 user.tokens.push({
                     kind: "google",
@@ -202,10 +202,10 @@ function(accessToken, refreshToken, profile, done) {
                 
             
                 user.isConfirmed = true;
-                user.username = displayName;
+                user.username = displayName.toLowerCase();
                 user.gravatar(20);
 
-                user.profile.name = profile._json.name;
+                user.profile.name = profile._json.name.toLowerCase();
                 user.profile.gender = profile._json.gender;
                 user.profile.picture = profile._json.picture;
                 user.save((err) => {
