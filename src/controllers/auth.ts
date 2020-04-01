@@ -49,7 +49,13 @@ export const accountRecovery = (req: Request, res: Response, next: NextFunction)
             const buf = crypto.randomBytes(26);
             token = buf.toString("hex");
             let userid;
-            userid = resp._id;
+            if(resp){{
+                userid = resp._id;
+                if(resp.googleid !== "" && resp.googleid !== null && resp.googleid !== undefined){
+                    return apiResponse.ErrorResponse(res,"Try logging in with a google account associated with this email");
+                }
+            }}
+            
             
             User.findByIdAndUpdate({ _id : userid },{ resetPasswordToken: token, resetPasswordExpires: Date.now() + 86400000  }, { upsert: true, new: true },(err,doc: UserDocument) => {
                 if(err){
@@ -220,7 +226,7 @@ export const passwordReset = (req: Request | any, res: Response) => {
 <p>Created	${new Date()}</p>
                     `;
 
-                                sgMail.setApiKey("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");
+                                sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
                                 const msg = {
                                     to: trimedEmail,
@@ -468,7 +474,7 @@ export const postSignup = (req: Request, res: Response, next: NextFunction) => {
 
                     `;
 
-                    sgMail.setApiKey("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");
+                    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
                     const msg = {
                         to: trimedEmail,
@@ -594,7 +600,7 @@ export const emailVerification = (req: Request, res: Response, next: NextFunctio
 
                     `;
 
-                        sgMail.setApiKey("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");
+                        sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
                         const msg = {
                             to: trimedEmail,

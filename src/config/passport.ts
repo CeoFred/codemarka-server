@@ -233,7 +233,7 @@ function(req: any,accessToken, refreshToken, profile, done) {
 
                     `;
 
-                        sgMail.setApiKey("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");
+                        sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
                         const msg = {
                             to: trimedEmail,
