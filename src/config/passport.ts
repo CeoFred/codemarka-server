@@ -172,8 +172,9 @@ function(req: any,accessToken, refreshToken, profile, done) {
     const displayName = profile.displayName;
     const Googlemail = profile._json.email;
     User.findOne({email:Googlemail},(err,user) => {
-        if(user !== null && user.googleid === "" || user.googleid === null || user.googleid === undefined){
-            return done(null,false,{ message:"User exists with email"});
+        if(err) done(err);
+        if(user){
+            if(user && user.googleid) done(null,false,{ message:"User exists with email"});
         } else {
             
             User.findOne({ googleid:googleId,email: Googlemail }, (err, existingUser) => {
