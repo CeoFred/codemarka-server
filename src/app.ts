@@ -25,16 +25,16 @@ const MongoStore = connectStore(session);
 // Create Express server
 const app = express();
 
-// const whitelist = ["http://localhost:3000", "http://localhost:3001", "*"];
-// const corsOptions = {
-//     origin(origin: string, callback: Function) {
-//         if (whitelist.indexOf(origin) !== -1) {
-//             callback(null, true);
-//         } else {
-//             callback(new Error("Not allowed by CORS"));
-//         }
-//     }
-// };
+const whitelist = ["http://localhost:3000", "https://codemarka.dev", "https://cmarka.xyz"];
+const corsOptions = {
+    origin(origin: string, callback: Function) {
+        if (whitelist.indexOf(origin) !== -1) {
+            callback(null, true);
+        } else {
+            callback(new Error("Not allowed by CORS"));
+        }
+    }
+};
 
 /**
  * API keys and Passport configuration.

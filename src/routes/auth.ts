@@ -27,7 +27,7 @@ router.get("/github/callback", passport.authenticate("github", { failureRedirect
 router.get("/google", passport.authenticate("google", { scope: ["profile", "email", "https://www.googleapis.com/auth/plus.login"], prompt: "consent"}));
 
 //google auth callback
-router.get("/google/callback", passport.authenticate("google", { failureRedirect: "https://codemarka.dev/auth/signin?gauth=failed&retry=true" }), handelGoogleAuthCallback);
+router.get("/google/callback", passport.authenticate("google", { failureRedirect: "https://codemarka.dev/auth/signin?gauth=failed&retry=true&r=existing_user_with_email" }), handelGoogleAuthCallback);
 
 // update password
 router.patch("/user/password/update", validate("passwordUpdate"),postUpdatePassword);

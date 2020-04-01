@@ -121,6 +121,11 @@ export const createClassRoom = (req: Request, res: Response, next: NextFunction)
                             }
                         });
                     }
+                    const dire = `${__dirname}/../../main/classrooms/${data.Kid}/"}`;
+                    
+                    if (!fs.existsSync(dire)){
+                        fs.mkdirSync(dire);
+                    }
                     generateClassUrlAlias(data).then((dataUrl: string) => {
                         data.shortUrl = dataUrl;
                         data.save((err,nd) => {
@@ -143,12 +148,6 @@ export const createClassRoom = (req: Request, res: Response, next: NextFunction)
                     }).catch((err: string) => {
                         console.log(err);
                     });
-
-                    // data.shortUrl = shortUrl;
-                    // data.save((err) => {
-                    // 
-
-                    // });
 
                 }).catch((err: Error) => next(err.message));
 
@@ -206,18 +205,29 @@ export const downloadClassfiles = (req: Request, res: Response): void => {
     const dire = `${__dirname}/../../main/classrooms/${classroomid}/${classroomid+ "-codemarka"+".zip"}`;
     const root = `${__dirname}/../../main/classrooms/${classroomid}/`;
 
-    if(fs.existsSync(dire)) {
-        fs.unlinkSync(dire);
-        console.log("File exists,deleted.");
+    try {
+        if (fs.existsSync(dire) === true) {
+            //file exists
+            console.log("File exists");
+            fs.unlinkSync(dire);
+        }
+    } catch(err) {
+        console.error(err);
+        return;
     }
 
     classWeb.findOne({classroomId: classroomid},(err, res) => {
         if(err) return;
         if(res){
             // create files from database;
-            fs.writeFileSync(`${root}/${res.html.id}.html`,res.html.content);
-            fs.writeFileSync(`${root}/${res.css.id}.css`,res.css.content);
-            fs.writeFileSync(`${root}/${res.js.id}.js`,res.js.content);
+            try {
+                
+                fs.appendFileSync(`${root}/${res.html.id}.html`,res.html.content);
+                fs.appendFileSync(`${root}/${res.css.id}.css`,res.css.content);
+                fs.appendFileSync(`${root}/${res.js.id}.js`,res.js.content);
+            } catch (err) {
+                return false;
+            }
         }
     });
     // create a file to stream archive data to.
@@ -231,7 +241,6 @@ export const downloadClassfiles = (req: Request, res: Response): void => {
     output.on("close", function() {
         return res.download(dire, (e) => {
             if(e) return false;
-            console.log("Finished");
         });
     });
  

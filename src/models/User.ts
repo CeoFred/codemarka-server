@@ -8,7 +8,7 @@ export type UserDocument = mongoose.Document & {
     snapchat: string;
     facebook: string;
     twitter: string;
-    google: string;
+    googleid: string;
     github: string;
     instagram: string;
     linkedin: string;
@@ -45,6 +45,7 @@ export type UserDocument = mongoose.Document & {
     geoDetails: object;
     emailConfirmed: () => void;
     gravatarUrl: string;
+    kid: any;
     updateAfterLogin: (ip: string | string[],token: any) => void;
     hashPasswordResetAndValidateToken: (password: string, token: string) => boolean;
 };
@@ -59,6 +60,7 @@ export interface AuthToken {
 const userSchema = new mongoose.Schema({
     email: { type: String, unique: true },
     password: String,
+    kid:String,
     resetPasswordToken: {
         type:String,
         default:""
@@ -112,7 +114,7 @@ const userSchema = new mongoose.Schema({
     snapchat: String,
     facebook: String,
     twitter: String,
-    google: String,
+    googleid: String,
     github: String,
     instagram: String,
     linkedin: String,
@@ -133,10 +135,22 @@ const userSchema = new mongoose.Schema({
  */
 userSchema.pre("save", function save(next: any) {
     const user = this as UserDocument;
-    if (user.isModified("password")) { return next(); }
-    user.password = bcrypt.hashSync(user.password, 10);
-    console.log("pass modified",user.password);
+    // if (user.isModified("password")) { return next(); }
+    // user.password = bcrypt.hashSync(user.password, 10);
+    // console.log("pass modified",user.password);
+    // next();
+    
+    // check if password is present and is modified.
+    if ( user.password && user.isModified("password") ) {
+
+        // call your hashPassword method here which will return the hashed password.
+        user.password = bcrypt.hashSync(user.password, 10);
+
+    }
+
+    // everything is done, so let's call the next callback.
     next();
+
 });
 
 /**

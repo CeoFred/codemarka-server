@@ -7,7 +7,7 @@ import passport from "passport";
 import sgMail  from "@sendgrid/mail";
 
 import {User} from "../models/User";
-import { randomNumber } from "../helpers/utility";
+import { randomNumber,randomString } from "../helpers/utility";
 
 const { OAuth2Strategy: GoogleStrategy } = google;
 const { Strategy: GitHubStrategy } = github;
@@ -17,11 +17,11 @@ const prod = ENVIRONMENT === "production";
 
 const host = prod ? "https://code-marka.herokuapp.com" : "http://localhost:2001";
 passport.serializeUser((user: any, done) => {
-    done(null, user.id);
+    done(null, user.kid);
 });
 
-passport.deserializeUser((id, done) => {
-    User.findById(id, (err, user) => {
+passport.deserializeUser((kid, done) => {
+    User.findOne({kid}, (err, user) => {
         done(err, user);
     });
 });
@@ -168,45 +168,42 @@ passport.use(new GoogleStrategy({
 
 },
 function(req: any,accessToken, refreshToken, profile, done) {
-    
-    
-    User.findOne({ google: profile.id }, (err, existingUser) => {
-        if (err) { return done(err); }
-        if (existingUser) {
-            // user exists
-            return done(null, existingUser);
-        }   
-
-        User.findOne({ email: profile.emails[0].value }, (err, existingEmailUser) => {
-            if (err) { return done(err); }
-            if (existingEmailUser) {
-                const ip = req.connection.remoteAddress || req.headers["x-forwarded-for"];
-                existingUser.updateAfterLogin(ip,{accessToken,type: "google"});
-
-                return done(null,existingEmailUser);
-            } else  {
-                //link account with google details;
+    const googleId = profile.id;
+    const displayName = profile.displayName;
+    const Googlemail = profile._json.email;
+    User.findOne({email:Googlemail},(err,user) => {
+        if(user !== null && user.googleid === "" || user.googleid === null || user.googleid === undefined){
+            return done(null,false,{ message:"User exists with email"});
+        } else {
+            
+            User.findOne({ googleid:googleId,email: Googlemail }, (err, existingUser) => {
+                if (err) { return done(err); }
+                if (existingUser) {
+                    // user exists, log in
+                    return done(null, existingUser);
+                }     //link account with google details;
                 
                 const user = new User();
-                user.email = profile.emails[0].value;
-                user.google = profile.id;
+                user.email = Googlemail;
+                user.googleid = googleId;
                 user.tokens.push({
                     kind: "google",
                     accessToken,
                     refreshToken,
                 });
+                user.kid = randomString(40);
                 
             
                 user.isConfirmed = true;
-                user.username = profile.displayName;
+                user.username = displayName;
                 user.gravatar(20);
 
-                user.profile.name = profile.displayName;
+                user.profile.name = profile._json.name;
                 user.profile.gender = profile._json.gender;
                 user.profile.picture = profile._json.picture;
                 user.save((err) => {
                     //send Welcome mail;
-                    if(err) done(err,user);
+                    if(err) done(err,false);
 
                     let trial = 0;
                     let maxTrial = 2;
@@ -249,7 +246,7 @@ function(req: any,accessToken, refreshToken, profile, done) {
                             try {
                                 sgMail.send(msg,true,(err: any,resp: unknown) => {
                                     if(err){
-                                    // RECURSION
+                                        // RECURSION
                                         trial++;
                                   
                                         sendWelcomeEmailToUser(trimedEmail);
@@ -267,18 +264,18 @@ function(req: any,accessToken, refreshToken, profile, done) {
                             }
                        
                         } else {
-                        // TERMINATION
+                            // TERMINATION
                             sent = false;
                             done(null, user);
 
                         }
-                    
 
                     };
                     sendWelcomeEmailToUser(user.email);
                 });
-            }
-        });
+           
+            });
+        }
     });
 }
 ));

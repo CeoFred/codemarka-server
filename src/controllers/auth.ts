@@ -193,21 +193,78 @@ export const passwordReset = (req: Request | any, res: Response) => {
 
             if(doc && doc !== null){
                 try {
-                    console.log(newPassword);
-                    doc.password = bcrypt.hashSync(newPassword, 10);
-                    console.log(doc.password);
+                    doc.password = newPassword;
                     doc.resetPasswordToken = "";
                     doc.resetPasswordExpires = "";
                     doc.save((err,user) => {
-                        console.log(user);
-                        bcrypt.compare(newPassword, user.password, (err, isMatch: boolean) => {
-                            console.log(err,isMatch);
-                        });
+                        
                         if (err) {
                             return apiResponse.ErrorResponse(res,"Failed to update password");
 
                         } else {
-                            return apiResponse.successResponse(res,"Password reset successful");     
+                            
+                            let trial = 0;
+                            let maxTrial = 2;
+                            let sent = false;
+                            const sendMailToNewUser = (email: string) => {
+
+                                const trimedEmail = email.trim();
+
+                                const emailTemplate = `
+	
+<b>Password Change Confirmation</b>
+<p>Your password was successfully changed.</p>
+
+<p>Username	${email}</p>
+<p>IP Address	${req.connection.remoteAddress || req.headers["x-forwarded-for"]}</p>
+<p>Created	${new Date()}</p>
+                    `;
+
+                                sgMail.setApiKey("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");
+
+                                const msg = {
+                                    to: trimedEmail,
+                                    from: "codemarka-support@codemarak.dev",
+                                    subject: "Password reset Confirmation",
+                                    text: "password reset confirmation",
+                                    html: emailTemplate,
+                                };
+
+                                if(trial <= maxTrial){
+                                    try {
+                                        sgMail.send(msg,true,(err: any,resp: unknown) => {
+                                            if(err){
+                                                // RECURSION
+                                                trial++;
+                                                console.log("retrying..",trial);
+                                  
+                                                sendMailToNewUser(trimedEmail);
+                                            } else {
+                                
+                                                // BASE
+                                                console.log("sent mail to",trimedEmail);
+                                                sent = true;
+                                                return apiResponse.successResponse(res,"Password reset successful");     
+
+                                            }
+                                
+                                        });
+                                    } catch (e) {
+                                        console.log(e);
+                                        return apiResponse.ErrorResponse(res,"Whoops!  Something went wrong");
+
+                                    }
+                       
+                                } else {
+                                    // TERMINATION
+                                    console.log("exceeded trial");
+                                    sent = false;
+                                    return apiResponse.successResponse(res,"Hurray! One last thing, we sent a confirmation mail , please check your inbox.");
+                                }
+                    
+
+                            };
+                            sendMailToNewUser(doc.email);
                         }
                     });
                 } catch (error) {
@@ -371,15 +428,16 @@ export const postSignup = (req: Request, res: Response, next: NextFunction) => {
                 {
                     username,
                     email,
-                    password,
                     confirmOTP: otp,
                     isConfirmed: false,
                     status:1,
                     emailVerificationToken:verificationToken,
-                    techStack:techStack || ""
+                    techStack:techStack || "",
+                    kid: randomNumber(40)
                 }
             );
             user.gravatar(20);
+            user.password = password;
 
 
             user.save(function (err,data) {
@@ -474,7 +532,7 @@ export const handelGoogleAuthCallback  = (req: any | Request, res: Response) => 
     
     const user =  req.user._id;
     const username = req.user.username;
-    console.log(req.session);
+    console.log(req.user);
 
     let userData = {
         _id: user,
