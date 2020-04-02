@@ -177,8 +177,9 @@ function(accessToken, refreshToken, profile, done) {
         if(err) done(err);
 
         // user used regular email and password for signup not google auth.
-        if(user && String(user.googleid) === "" || user.googleid === undefined || user.googleid === null) done(null,false,{ message:"User exists with email"});
-
+        if(user && user.googleid === "" || !user.googleid){
+            return done(null,null,{ message:"User exists with email"});
+        }
         else {
             
             User.findOne({ googleid:googleId,email: Googlemail }, (err, existingUser) => {

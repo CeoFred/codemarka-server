@@ -52,13 +52,13 @@ export default (server: express.Application) => {
                     if(user && user !== null){
                         Classroom.findById(data.classroom_id, (err, res: any) => {
                            
-                            const students = res.students;
-                            let found = students.filter((s: any) => {
-                                return String(s.id) === String(socket.user);
-                            });
-                            if(Array.isArray(found) && found[0]){
-                                nsp.to(socket.room).emit("disconnect_user_before_join",data);
-                            };
+                            // const students = res.students;
+                            // let found = students.filter((s: any) => {
+                            //     return String(s.id) === String(socket.user);
+                            // });
+                            // if(Array.isArray(found) && found[0]){
+                            //     nsp.to(socket.room).emit("disconnect_user_before_join",data);
+                            // };
                        
                             if(res && res !== null){
                                     
@@ -567,20 +567,20 @@ export default (server: express.Application) => {
                                 // BASE
                                 console.log("sent mail to",email);
                                 sent = true;
-                                nsp.emit("invite_sent");
+                                nsp.to(socket.room).emit("invite_sent");
 
                             }
                                 
                         });
                     } catch (e) {
-                        nsp.emit("error");
+                        nsp.to(socket.room).emit("error");
                      
                     }
                        
                 } else {
                     // TERMINATION
                     sent = false;
-                    nsp.emit("user_invite_failed","Failed to send invitation,try again!");
+                    nsp.to(socket.room).emit("user_invite_failed","Failed to send invitation,try again!");
                     
                 }
             };
@@ -789,7 +789,7 @@ export default (server: express.Application) => {
             user: string;
 
             time: Date;
-
+            kid: string;
             messageColor: string;
         }
 
@@ -806,7 +806,7 @@ export default (server: express.Application) => {
                         color: data.messageColor,
                         oTime: data.time
                     };
-                    Classroom.findOneAndUpdate({ Kid: data.class, status: 2 },
+                    Classroom.findOneAndUpdate({ Kid: data.kid, status: 2 },
                         {
                             $push: {
                                 messages: msgObject
@@ -818,10 +818,11 @@ export default (server: express.Application) => {
                                 console.log(err);
                             } else {
                                 //do stuff
-                                nsp.emit("nM",
+                                nsp.to(socket.room).emit("nM",
                                     {
                                         ...msgObject
                                     });
+                                console.log("sending message");
                             }
                         }
                     );
