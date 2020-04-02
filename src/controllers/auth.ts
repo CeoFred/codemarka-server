@@ -444,12 +444,12 @@ export const postSignup = (req: Request, res: Response, next: NextFunction) => {
                 {
                     username: username.toLowerCase(),
                     email: email.toLowerCase(),
-                    confirmOTP: otp,
+                    confirmOTP: verificationToken,
                     isConfirmed: false,
                     status:1,
                     emailVerificationToken:verificationToken,
                     techStack:techStack || "",
-                    kid: randomNumber(40)
+                    kid: randomString(40)
                 }
             );
             user.gravatar(20);
@@ -462,24 +462,41 @@ export const postSignup = (req: Request, res: Response, next: NextFunction) => {
                 let trial = 0;
                 let maxTrial = 2;
                 let sent = false;
-                const vLink = `https://code-maraka.herokuapp.com/auth/account/user/verify/${verificationToken}/${user._id}`;
+                const vLink = `https://code-marka.herokuapp.com/auth/account/user/verify/${verificationToken}/${user._id}`;
                 console.log(vLink);
                 const sendMailToNewUser = (email: string) => {
 
                     const trimedEmail = email.trim();
 
                     const emailTemplate = `
-                    <div style="margin:15px;padding:10px;border:1px solid grey;justify-content;">
+                <div style="margin:25px;border:1px solid grey;text-align:left;">
+                <div style="background-color: #273444!important;padding:30px;text-align:center;margin-bottom:30px">   
+                <img src="https://res.cloudinary.com/ogwugo-people/image/upload/v1585816806/codemark__logo.png"/>
+                </div>
                     <h4><b>Hi ${username},</b></h4>
-                    <br/>
+                    Welcome to Codemarka!
+                    </br>
+                    To continue signing up, please confirm that we got your email right by clicking the link below.
+                     If the link is not clickable, copy and paste the URL in a new browser window:
+                     </br>
+                     ${vLink}
+                    </br>
+                    The link is valid for 14 days, after that you will have to start the registration process from the beginning.
+                    </br>
+                    If you did not request sign up to codemarka, you can safely ignore this email or visit <a href="https://codemarka.dev/?ref=mail">codemarka</a> to find out more about
+                    what we have to offer, it might interest you.
+                    </br>
+                If you have any questions about the service, feel free to contact us anytime at support@codemarka.dev.
+                    </br>
+                    </br>
 
-                    <p>Please verify your email address used in creating an account on codemarka.
-                    Click on the link below to activate your account.
-                    </p>
+Thanks for joining Codemarka!
+</br>
+Happy Learning,
+ The Codemarka Team
+ https://codemarka.dev
 
-                    <br/>
-
-                    <p><a href='${vLink}'>${vLink}</a></p>
+                 
                     </div>
 
                     `;
