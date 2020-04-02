@@ -444,7 +444,7 @@ export const postSignup = (req: Request, res: Response, next: NextFunction) => {
                 {
                     username: username.toLowerCase(),
                     email: email.toLowerCase(),
-                    confirmOTP: verificationToken,
+                    confirmOTP: 1,
                     isConfirmed: false,
                     status:1,
                     emailVerificationToken:verificationToken,
