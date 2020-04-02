@@ -469,9 +469,9 @@ export const postSignup = (req: Request, res: Response, next: NextFunction) => {
                     const trimedEmail = email.trim();
 
                     const emailTemplate = `
-                <div style="margin:25px;border:1px solid grey;text-align:left;">
-                <div style="background-color: #273444!important;padding:30px;text-align:center;margin-bottom:30px">   
-                <img src="https://res.cloudinary.com/ogwugo-people/image/upload/v1585816806/codemark__logo.png"/>
+                <div style="padding:20px;">
+                <div style="width:100%;background-color: #273444!important;padding:30px;text-align:center;margin-bottom:30px">   
+                <img height="100" width="100" src="https://res.cloudinary.com/ogwugo-people/image/upload/v1585816806/codemark__logo.png"/>
                 </div>
                     <h4><b>Hi ${username},</b></h4>
                     Welcome to Codemarka!
