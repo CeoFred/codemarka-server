@@ -47,49 +47,47 @@ function(accessToken, refreshToken, profile: any, done) {
 
         if(err) done(err);
 
-        if(user && user.githubid === "" || !user.githubid){
-            return done(null,null,{ message:"User exists with email"});
-        } 
-        else {
-            
-            User.findOne({ githubid,email: githubemail }, (err, existingUser) => {
-                if (err) { return done(err); }
-                if (existingUser) {
-                    // user exists, log in
-                    return done(null, existingUser);
-                }    
+        if(user !== null){
+            if(user.githubid === "" || !user.githubid) done(null,null,{ message:"User exists with email"});
+        }           
+        User.findOne({ githubid,email: githubemail }, (err, existingUser) => {
+            if (err) { return done(err); }
+            if (existingUser) {
+                // user exists, log in
+                return done(null, existingUser);
+            }    
                 
-                //link account with google details;
+            //link account with google details;
                 
-                const user = new User();
-                user.email = githubemail.toLowerCase();
-                user.githubid = githubid;
-                user.tokens.push({
-                    kind: "github",
-                    accessToken,
-                    refreshToken,
-                });
-                user.kid = randomString(40);
+            const user = new User();
+            user.email = githubemail.toLowerCase();
+            user.githubid = githubid;
+            user.tokens.push({
+                kind: "github",
+                accessToken,
+                refreshToken,
+            });
+            user.kid = randomString(40);
                 
             
-                user.isConfirmed = true;
-                user.username = displayName.toLowerCase();
-                user.gravatar(20);
+            user.isConfirmed = true;
+            user.username = displayName.toLowerCase();
+            user.gravatar(20);
 
-                user.profile.name = profile.displayName;
-                user.profile.picture = profilePhoto;
-                user.save((err) => {
-                    //send Welcome mail;
-                    if(err) done(err,null);
+            user.profile.name = profile.displayName;
+            user.profile.picture = profilePhoto;
+            user.save((err) => {
+                //send Welcome mail;
+                if(err) done(err,null);
 
-                    let trial = 0;
-                    let maxTrial = 2;
-                    let sent = false;
-                    const sendWelcomeEmailToUser = (email: string): void => {
+                let trial = 0;
+                let maxTrial = 2;
+                let sent = false;
+                const sendWelcomeEmailToUser = (email: string): void => {
 
-                        const trimedEmail = email.trim();
+                    const trimedEmail = email.trim();
 
-                        const emailTemplate = `
+                    const emailTemplate = `
                     <div style="margin:15px;padding:10px;border:1px solid grey;justify-content;">
                     <div style="text-align:center">
                     <img src='https://avatars1.githubusercontent.com/oa/1186156?s=140&u=722efebddbd96ad8bea99643d79408cad51e6d86&v=4' height="100" width="100"/>
@@ -109,50 +107,49 @@ function(accessToken, refreshToken, profile: any, done) {
 
                     `;
 
-                        sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+                    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
-                        const msg = {
-                            to: trimedEmail,
-                            from: "Codemarka@codemarak.dev",
-                            subject: "Welcome To Codemarka",
-                            text: "Welcome to codemarka!",
-                            html: emailTemplate,
-                        };
-
-                        if(trial <= maxTrial){
-                            try {
-                                sgMail.send(msg,true,(err: any,resp: unknown) => {
-                                    if(err){
-                                        // RECURSION
-                                        trial++;
-                                  
-                                        sendWelcomeEmailToUser(trimedEmail);
-                                    } else {
-                                
-                                        // BASE
-                                        sent = true;
-                                        done(null, user);
-
-                                    }
-                                
-                                });
-                            } catch (e) {
-                                done(e,user);
-                            }
-                       
-                        } else {
-                            // TERMINATION
-                            sent = false;
-                            done(null, user);
-
-                        }
-
+                    const msg = {
+                        to: trimedEmail,
+                        from: "Codemarka@codemarak.dev",
+                        subject: "Welcome To Codemarka",
+                        text: "Welcome to codemarka!",
+                        html: emailTemplate,
                     };
-                    sendWelcomeEmailToUser(user.email);
-                });
-           
+
+                    if(trial <= maxTrial){
+                        try {
+                            sgMail.send(msg,true,(err: any,resp: unknown) => {
+                                if(err){
+                                    // RECURSION
+                                    trial++;
+                                  
+                                    sendWelcomeEmailToUser(trimedEmail);
+                                } else {
+                                
+                                    // BASE
+                                    sent = true;
+                                    done(null, user);
+
+                                }
+                                
+                            });
+                        } catch (e) {
+                            done(e,user);
+                        }
+                       
+                    } else {
+                        // TERMINATION
+                        sent = false;
+                        done(null, user);
+
+                    }
+
+                };
+                sendWelcomeEmailToUser(user.email);
             });
-        }
+           
+        });
     });
     
 }
@@ -177,50 +174,49 @@ function(accessToken, refreshToken, profile, done) {
         if(err) done(err);
 
         // user used regular email and password for signup not google auth.
-        if(user && user.googleid === "" || !user.googleid){
-            return done(null,null,{ message:"User exists with email"});
+        if(user){
+            if(user.googleid === "" || !user.googleid) done(null,null,{ message:"User exists with email"});
         }
-        else {
             
-            User.findOne({ googleid:googleId,email: Googlemail }, (err, existingUser) => {
-                if (err) { return done(err); }
-                if (existingUser) {
-                    // user exists, log in
-                    return done(null, existingUser);
-                }    
+        User.findOne({ googleid:googleId,email: Googlemail }, (err, existingUser) => {
+            if (err) { return done(err); }
+            if (existingUser) {
+                // user exists, log in
+                return done(null, existingUser);
+            }    
                 
-                //link account with google details;
+            //link account with google details;
                 
-                const user = new User();
-                user.email = Googlemail.toLowerCase();
-                user.googleid = googleId;
-                user.tokens.push({
-                    kind: "google",
-                    accessToken,
-                    refreshToken,
-                });
-                user.kid = randomString(40);
+            const user = new User();
+            user.email = Googlemail.toLowerCase();
+            user.googleid = googleId;
+            user.tokens.push({
+                kind: "google",
+                accessToken,
+                refreshToken,
+            });
+            user.kid = randomString(40);
                 
             
-                user.isConfirmed = true;
-                user.username = displayName.toLowerCase();
-                user.gravatar(20);
+            user.isConfirmed = true;
+            user.username = displayName.toLowerCase();
+            user.gravatar(20);
 
-                user.profile.name = profile._json.name.toLowerCase();
-                user.profile.gender = profile._json.gender;
-                user.profile.picture = profile._json.picture;
-                user.save((err) => {
-                    //send Welcome mail;
-                    if(err) done(err,false);
+            user.profile.name = profile._json.name.toLowerCase();
+            user.profile.gender = profile._json.gender;
+            user.profile.picture = profile._json.picture;
+            user.save((err) => {
+                //send Welcome mail;
+                if(err) done(err,false);
 
-                    let trial = 0;
-                    let maxTrial = 2;
-                    let sent = false;
-                    const sendWelcomeEmailToUser = (email: string): void => {
+                let trial = 0;
+                let maxTrial = 2;
+                let sent = false;
+                const sendWelcomeEmailToUser = (email: string): void => {
 
-                        const trimedEmail = email.trim();
+                    const trimedEmail = email.trim();
 
-                        const emailTemplate = `
+                    const emailTemplate = `
                     <div style="margin:15px;padding:10px;border:1px solid grey;justify-content;">
                     <div style="text-align:center">
                     <img src='https://avatars1.githubusercontent.com/oa/1186156?s=140&u=722efebddbd96ad8bea99643d79408cad51e6d86&v=4' height="100" width="100"/>
@@ -240,50 +236,49 @@ function(accessToken, refreshToken, profile, done) {
 
                     `;
 
-                        sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+                    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
-                        const msg = {
-                            to: trimedEmail,
-                            from: "Codemarka@codemarak.dev",
-                            subject: "Welcome To Codemarka",
-                            text: "Welcome to codemarka!",
-                            html: emailTemplate,
-                        };
-
-                        if(trial <= maxTrial){
-                            try {
-                                sgMail.send(msg,true,(err: any,resp: unknown) => {
-                                    if(err){
-                                        // RECURSION
-                                        trial++;
-                                  
-                                        sendWelcomeEmailToUser(trimedEmail);
-                                    } else {
-                                
-                                        // BASE
-                                        sent = true;
-                                        done(null, user);
-
-                                    }
-                                
-                                });
-                            } catch (e) {
-                                done(e,user);
-                            }
-                       
-                        } else {
-                            // TERMINATION
-                            sent = false;
-                            done(null, user);
-
-                        }
-
+                    const msg = {
+                        to: trimedEmail,
+                        from: "Codemarka@codemarak.dev",
+                        subject: "Welcome To Codemarka",
+                        text: "Welcome to codemarka!",
+                        html: emailTemplate,
                     };
-                    sendWelcomeEmailToUser(user.email);
-                });
-           
+
+                    if(trial <= maxTrial){
+                        try {
+                            sgMail.send(msg,true,(err: any,resp: unknown) => {
+                                if(err){
+                                    // RECURSION
+                                    trial++;
+                                  
+                                    sendWelcomeEmailToUser(trimedEmail);
+                                } else {
+                                
+                                    // BASE
+                                    sent = true;
+                                    done(null, user);
+
+                                }
+                                
+                            });
+                        } catch (e) {
+                            done(e,user);
+                        }
+                       
+                    } else {
+                        // TERMINATION
+                        sent = false;
+                        done(null, user);
+
+                    }
+
+                };
+                sendWelcomeEmailToUser(user.email);
             });
-        }
+           
+        });
     });
 }
 ));
