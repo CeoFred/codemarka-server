@@ -471,30 +471,35 @@ export const postSignup = (req: Request, res: Response, next: NextFunction) => {
                     const emailTemplate = `
                 <div style="padding:20px;">
                 <div style="width:100%;background-color: #273444!important;padding:30px;text-align:center;margin-bottom:30px">   
-                <img height="100" width="100" src="https://res.cloudinary.com/ogwugo-people/image/upload/v1585816806/codemark__logo.png"/>
+                <img style="height:auto;width:auto" src="https://res.cloudinary.com/ogwugo-people/image/upload/v1585816806/codemark__logo.png"/>
                 </div>
                     <h4><b>Hi ${username},</b></h4>
                     Welcome to Codemarka!
-                    </br>
+                    <p>
                     To continue signing up, please confirm that we got your email right by clicking the link below.
                      If the link is not clickable, copy and paste the URL in a new browser window:
-                     </br>
+                     </p>
                      ${vLink}
-                    </br>
+                    <p>
                     The link is valid for 14 days, after that you will have to start the registration process from the beginning.
-                    </br>
+                    </p>
                     If you did not request sign up to codemarka, you can safely ignore this email or visit <a href="https://codemarka.dev/?ref=mail">codemarka</a> to find out more about
                     what we have to offer, it might interest you.
-                    </br>
+                    <p>
                 If you have any questions about the service, feel free to contact us anytime at support@codemarka.dev.
-                    </br>
-                    </br>
-
+                    </p>
+                    <p>
 Thanks for joining Codemarka!
-</br>
+</p>
+<p>
 Happy Learning,
- The Codemarka Team
- https://codemarka.dev
+</p>
+<p>
+The Codemarka Team
+</p>
+</p>
+https://codemarka.dev
+</p>
 
                  
                     </div>
