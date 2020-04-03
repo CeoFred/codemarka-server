@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import crypto from "crypto";
 
 export type ClassroomDocument = mongoose.Document & {
     owner: string;
@@ -16,6 +17,7 @@ export type ClassroomDocument = mongoose.Document & {
     Kid: string;
     shortUrl: string;
     name: string;
+    gravatar: (p: number) => void;
 };
 
 
@@ -87,8 +89,17 @@ const classroomSchema = new mongoose.Schema({
     },
     students: [Object],
     pinnedMessages: [Object],
+    gravatarUrl: String,
     maxUsers: Number    ,
 }, { timestamps: true });
 
+/**
+ * Helper method for getting user's gravatar.
+ */
+classroomSchema.methods.gravatar = function (size: number = 200): void {
+    
+    const md5 = crypto.createHash("md5").update(this.name).digest("hex");
+    this.gravatarUrl = `https://gravatar.com/avatar/${md5}?s=${size}&d=retro`;
+};
 
 export const Classroom = mongoose.model<ClassroomDocument>("Classroom", classroomSchema);

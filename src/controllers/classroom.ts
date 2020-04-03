@@ -94,8 +94,11 @@ export const createClassRoom = (req: Request, res: Response, next: NextFunction)
                     status: notStarted,
                     owner: userid,
                     location,
+                    
                     maxUsers: userAccountType === "regular" ? MAX_CASSROOM_MEMBERS_REGULAR : MAX_CLASSROOM_MEMBERS_PREMUIM
                 });
+
+                newclassroom.gravatar(23);
 
 
                 newclassroom.save().then((data: ClassroomDocument) => {
