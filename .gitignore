@@ -12,7 +12,7 @@ pids
 logs
 results
 tmp
-
+.env
 # classroom files
 main/classrooms/**
 

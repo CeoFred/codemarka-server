@@ -590,6 +590,29 @@ export const handelGoogleAuthCallback  = (req: any | Request, res: Response) => 
     return res.redirect(`${CLIENT_URLS.GOOGLE_AUTH_SUCCESS_CLIENT}/${token}/${user}`);
 };
 
+export const handelGitHubAuthCallback  = (req: any | Request, res: Response) => {
+    
+    const user =  req.user._id;
+    const username = req.user.username;
+    console.log(req.user);
+
+    let userData = {
+        _id: user,
+        username: username
+    };
+    //Prepare JWT token for authentication
+    const jwtPayload = userData;
+
+    const jwtData = {
+        expiresIn: process.env.JWT_TIMEOUT_DURATION,
+    };
+
+    const secret = process.env.JWT_SECRET;
+    //Generated JWT token with Payload and secret.
+    const token  = jwt.sign(jwtPayload, secret, jwtData);
+
+    return res.redirect(`${CLIENT_URLS.GOOGLE_AUTH_SUCCESS_CLIENT}/${token}/${user}`);
+};
 
 export const emailVerification = (req: Request, res: Response, next: NextFunction) => {
     const userid = req.params.user;

@@ -176,21 +176,6 @@ export const createClassRoom = (req: Request, res: Response, next: NextFunction)
 
 };
 
-// export const getDetails = (req: Request, res: Response) => {
-//     const id = req.params.id;
-//     Classroom.findById(id)
-//         .exec()
-//         .then((data: any) => {
-//             return  res.status(200).json(data);
-//         })
-//         .catch((err: any) => {
-//             return res.status(500).json({
-//                 error: err
-//             });
-//         });
-
-// };
-
 export const getClassroomFromLocation = (req: Request, res: Response): void => {
     const location = req.params.location;
     Classroom.find({ location }).exec().then((data: object) => res.json({ data })).catch((err: Error) => res.status(404).json(err));
@@ -238,6 +223,7 @@ export const downloadClassfiles = (req: Request, res: Response): void => {
                 fs.appendFileSync(`${root}/${res.css.id}.css`,res.css.content);
                 fs.appendFileSync(`${root}/${res.js.id}.js`,res.js.content);
             } catch (err) {
+                console.log(err);
                 return false;
             }
         }
@@ -280,7 +266,7 @@ export const downloadClassfiles = (req: Request, res: Response): void => {
  
  
     // append files from a sub-directory, putting its contents at the root of archive
-    archive.directory(root, "dist");
+    archive.directory(root, false);
  
 
     archive.finalize().then(() => {
