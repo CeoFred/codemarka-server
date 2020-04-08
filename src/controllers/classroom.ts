@@ -202,7 +202,7 @@ export const downloadClassfiles = (req: Request, res: Response): void => {
     const dire = `${__dirname}/../../main/classrooms/${classroomid}/${classroomid+".zip"}`;
     const root = `${__dirname}/../../main/classrooms/${classroomid}/`;
     if (!fs.existsSync(root)){
-        fs.mkdirSync(dire,{ recursive: true });
+        fs.mkdirSync(root,{ recursive: true });
     }
     try {
         if (fs.existsSync(dire) === true) {
