@@ -7,7 +7,7 @@ import passport from "passport";
 import sgMail  from "@sendgrid/mail";
 
 import {User} from "../models/User";
-import { randomNumber,randomString } from "../helpers/utility";
+import { randomString } from "../helpers/utility";
 
 const { OAuth2Strategy: GoogleStrategy } = google;
 const { Strategy: GitHubStrategy } = github;
@@ -30,7 +30,7 @@ passport.deserializeUser((kid, done) => {
 passport.use(new GitHubStrategy({
     clientID: process.env.GITHUB_CLIENT_ID,
     clientSecret: process.env.GITHUB_CLIENT_SECRET,
-    callbackURL: "/auth/github/callback",
+    callbackURL: `${host}/auth/github/callback`,
     scope: ["user:email","read:user"]
 },
 function(accessToken, refreshToken, profile: any, done) {

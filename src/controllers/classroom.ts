@@ -101,6 +101,7 @@ export const createClassRoom = (req: Request, res: Response, next: NextFunction)
                 newclassroom.gravatar(23);
 
 
+
                 newclassroom.save().then((data: ClassroomDocument) => {
                     const jsfile = randomNumber(15);
                     const htmlfile = randomNumber(15);
@@ -135,7 +136,8 @@ export const createClassRoom = (req: Request, res: Response, next: NextFunction)
                             if(err){ 
                                 return apiResponse.ErrorResponse(res,"Whoops! Something went wrong");
                             }
-                            console.log(nd);
+                            // console.log(nd);
+                            // console.log(dataUrl);
                             const jsContent = fs.readFileSync(jsSource,"utf8");
                             const cssContent = fs.readFileSync(cssSource,"utf8");
                             const htmlContent = fs.readFileSync(htmlSource,"utf8");
@@ -144,15 +146,15 @@ export const createClassRoom = (req: Request, res: Response, next: NextFunction)
                                 return  successResponseWithData(res, "success", nd);
 
                             }).catch(err => {
-                                return next(err);
+                                return apiResponse.ErrorResponse(res,"Whoops! Something went wrong");
                             });
                         });
 
                     }).catch((err: string) => {
-                        console.log(err);
+                        return apiResponse.ErrorResponse(res,"Whoops! Something went wrong");
                     });
 
-                }).catch((err: Error) => next(err.message));
+                }).catch((err: Error) => apiResponse.ErrorResponse(res,"Whoops! Something went wrong"));
 
             }
         }).catch(() => {

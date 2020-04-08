@@ -33,7 +33,6 @@ const classroomSchema = new mongoose.Schema({
     topic:{
         type: String,
         required: true,
-        maxlength:30
     },
     startDate:{
         type: Date,
