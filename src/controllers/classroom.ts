@@ -199,7 +199,7 @@ export const findClassRoom = (req: Request, res: Response): any => {
 export const downloadClassfiles = (req: Request, res: Response): void => {
     const { classroomid } = req.params;
 
-    const dire = `${__dirname}/../../main/classrooms/${classroomid}/${classroomid+ "-codemarka"+".zip"}`;
+    const dire = `${__dirname}/../../main/classrooms/${classroomid}/${classroomid+".zip"}`;
     const root = `${__dirname}/../../main/classrooms/${classroomid}/`;
 
     try {
@@ -228,8 +228,9 @@ export const downloadClassfiles = (req: Request, res: Response): void => {
             }
         }
     });
+    
     // create a file to stream archive data to.
-    var output = fs.createWriteStream(dire);
+    var output = fs.createWriteStream(`${process.cwd()}/../main/classrooms/${classroomid}/${classroomid}.zip`);
     var archive = archiver("zip", {
         zlib: { level: 9 } // Sets the compression level.
     });
