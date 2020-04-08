@@ -115,13 +115,13 @@ export const createClassRoom = (req: Request, res: Response, next: NextFunction)
                     if (visibility === "Public") {
                         User.findOneAndUpdate({_id: userid},{$inc: {publicClassCreated: 1}},(err,doc: UserDocument) => {
                             if(err){ 
-                                return apiResponse.ErrorResponse(res,"Whoops! Something went wrong");
+                                return apiResponse.ErrorResponse(res,"Whoops! Something went wrong while trying to update user public class created.");
                             }
                         });
                     } else {
                         User.findOneAndUpdate({_id: userid},{$inc: {privateClassCreated: 1}},(err,doc: UserDocument) => {
                             if(err){ 
-                                return apiResponse.ErrorResponse(res,"Whoops! Something went wrong");
+                                return apiResponse.ErrorResponse(res,"Whoops! Something went wrong while trying to update user private class created");
                             }
                         });
                     }
@@ -134,7 +134,8 @@ export const createClassRoom = (req: Request, res: Response, next: NextFunction)
                         data.shortUrl = dataUrl;
                         data.save((err,nd) => {
                             if(err){ 
-                                return apiResponse.ErrorResponse(res,"Whoops! Something went wrong");
+                                console.log(err);
+                                return apiResponse.ErrorResponse(res,"Whoops! Something went wrong while trying to save class shortURL");
                             }
                             // console.log(nd);
                             // console.log(dataUrl);
@@ -146,15 +147,20 @@ export const createClassRoom = (req: Request, res: Response, next: NextFunction)
                                 return  successResponseWithData(res, "success", nd);
 
                             }).catch(err => {
-                                return apiResponse.ErrorResponse(res,"Whoops! Something went wrong");
+                                console.log(err);
+                                return apiResponse.ErrorResponse(res,"Whoops! Something went wrong while trying to create classroom web files.");
                             });
                         });
 
                     }).catch((err: string) => {
-                        return apiResponse.ErrorResponse(res,"Whoops! Something went wrong");
+                        console.log(err);
+                        return apiResponse.ErrorResponse(res,"Whoops! Something went wrong while trying to generate shortURL");
                     });
 
-                }).catch((err: Error) => apiResponse.ErrorResponse(res,"Whoops! Something went wrong"));
+                }).catch((err: Error) => {
+                    console.log(err);
+                    return apiResponse.ErrorResponse(res,"Whoops! Something went wrong while trying to save classroom data to model");
+                });
 
             }
         }).catch(() => {
@@ -163,6 +169,7 @@ export const createClassRoom = (req: Request, res: Response, next: NextFunction)
 
        
     } catch (error) {
+        console.log(error);
         return apiResponse.ErrorResponse(res,"Somthing went wrong");
         
     }
