@@ -398,22 +398,19 @@ export const fecthClassByUrlAlias = (req: Request, res: Response, next: NextFunc
     const { id } = req.params;
     const url = `https://cmarka.xyz/${id}`;
     console.log(url);
-    if(req.hostname.includes("localhost") || req.hostname.includes("cmarka.xyz")){
-        classAliasUrl.findOneAndUpdate({shortUrl: url},{$inc:{visits:1}}).then(data => {
-            if(data){
-                if(req.hostname.includes("localhost")){
-                    return apiResponse.successResponseWithData(res, "Success", `http://localhost:3000/c/classroom/${data.classroomKid}`);
-                } 
-                return apiResponse.successResponseWithData(res, "Success", `https://codemarka.dev/c/classroom/${data.classroomKid}`);
+    console.log(req.hostname);
+    classAliasUrl.findOneAndUpdate({shortUrl: url},{$inc:{visits:1}}).then(data => {
+        if(data){
+            if(req.hostname.includes("localhost")){
+                return apiResponse.successResponseWithData(res, "Success", `http://localhost:3000/c/classroom/${data.classroomKid}`);
+            } 
+            return apiResponse.successResponseWithData(res, "Success", `https://codemarka.dev/c/classroom/${data.classroomKid}`);
 
-            }
-            return apiResponse.ErrorResponse(res,"URL not found");
-        }).catch(err => {
-            return apiResponse.ErrorResponse(res, err);
-        });
-    } else {
-        return apiResponse.ErrorResponse(res,"CRSF Toekn Invalid!");
-    }
+        }
+        return apiResponse.ErrorResponse(res,"URL not found");
+    }).catch(err => {
+        return apiResponse.ErrorResponse(res, err);
+    });
 };
 
 // verify if a classroom belongs to a user
