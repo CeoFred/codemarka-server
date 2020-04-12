@@ -90,6 +90,7 @@ const classroomSchema = new mongoose.Schema({
     pinnedMessages: [Object],
     gravatarUrl: String,
     maxUsers: Number    ,
+    Usersjoined: [Object]
 }, { timestamps: true });
 
 /**

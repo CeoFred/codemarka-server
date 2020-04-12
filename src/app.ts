@@ -9,6 +9,7 @@ import cors from "cors";
 import passport from "passport";
 import session from "express-session";
 import connectStore from "connect-mongo";
+import multer from "multer";
 
 import mongoose from "./config/db";
 import "./config/passport";
@@ -17,9 +18,18 @@ import { SESS_NAME, SESS_SECRET , SESS_LIFETIME } from "./util/secrets";
 
 import auth from "./routes/auth";
 import classroom from "./routes/classroom";
+import community from "./routes/community";
 
 import { NextFunction, Request, Response } from "express";
 
+var storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, "public");
+    },
+    filename: function (req, file, cb) {
+        cb(null, Date.now() + "-" +file.originalname );
+    }
+});
 const MongoStore = connectStore(session);
 
 // Create Express server
@@ -70,7 +80,7 @@ app.set("port", process.env.PORT || process.env.OPENSHIFT_NODEJS_PORT || 8080);
 
 app.use(compression());
 app.use(methodOverride());
-app.use(cors());
+app.use(cors(corsOptions));
 
 app.use(lusca.xframe("SAMEORIGIN"));
 app.disable("x-powered-by");
@@ -80,7 +90,8 @@ app.use(express.static(path.join(__dirname, "public"), { maxAge: 31557600000 }))
 
 // routes as middlewares
 app.use("/auth", cors(), auth);
-app.use("/classroom", classroom);
+app.use("/classroom",cors(), classroom);
+app.use("/community",cors(), community);
 
 
 app.get("/", (req, res) => {

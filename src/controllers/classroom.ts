@@ -232,7 +232,7 @@ export const downloadClassfiles = (req: Request, res: Response): void => {
     });
     
     // create a file to stream archive data to.
-    var output = fs.createWriteStream(`${process.cwd()}/../main/classrooms/${classroomid}/${classroomid}.zip`);
+    var output = fs.createWriteStream(dire);
     var archive = archiver("zip", {
         zlib: { level: 9 } // Sets the compression level.
     });

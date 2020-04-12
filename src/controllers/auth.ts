@@ -8,17 +8,15 @@ import { Request, Response, NextFunction } from "express";
 import { WriteError } from "mongodb";
 import { validationResult } from "express-validator";
 import crypto from "crypto";
-import bcrypt from "bcryptjs";
 import { successMessage } from "../helpers/response";
 import { randomNumber,randomString } from "../helpers/utility";
-// import {constants} from "../helpers/constants";
 
 import jwt from "jsonwebtoken";
 import * as apiResponse from "../helpers/apiResponse";
 import * as CLIENT_URLS from "../config/url";
 
 
-const options = { algorithm: "HS256", noTimestamp: false, audience: "users", issuer: "colab", subject: "auth", expiresIn: "7d" };
+const options = { algorithm: "HS256", noTimestamp: false, audience: "users", issuer: "codemarka", subject: "auth", expiresIn: "7d" };
 /** 
  *
  *Account recovery for user 
