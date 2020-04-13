@@ -6,8 +6,13 @@ export type CommunityDocumentTemp = mongoose.Document & {
     communityName: string;
     communityAcronym: string;
     telephone: string;
+    completed: boolean;
     physicalAddress: string;
     publicWebsite: string;
+    meetupLink: string;
+    instagramLink: string;
+    facebookUrl: string;
+    twitterUrl: string;
     Logo: string;
     affiliation: string;
     city: string;
@@ -29,11 +34,14 @@ const communityTempScehema = new mongoose.Schema({
         type: String,
         required: false
     },
-    facebookUrl: {
-        default: true,
-        type: Boolean,
-        required: false
+    completed: {
+        default: false
     },
+    facebookUrl: {
+        required: false,
+        type: String
+    },
+    Logo: String,
     isConfirmed: {
         default: true,
         type: Boolean,

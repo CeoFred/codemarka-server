@@ -6,8 +6,9 @@ import { validationResult } from "express-validator";
 
 import * as apiResponse from "../helpers/apiResponse";
 import { CommunityDocumentTemp, CommunityTemp } from "../models/CommunityTemp";
+import { CommunityDocument, Community } from "../models/Community";
+
 import { randomString } from "../helpers/utility";
-import { dataUri } from "../config/multer";
 
 const cloudi = cloudinary.v2;
 
@@ -91,7 +92,6 @@ export const communityOrganizersTemp = ( req: Request,res: Response,next: NextFu
 };
 
 export const communityContactInformationTemp = ( req: Request,res: Response,next: NextFunction ): object|void => {
-    console.log(req.body);
     try {
         CommunityTemp.findOne({kid:req.params.kid},(err, response) => {
             if(err) {
@@ -125,29 +125,113 @@ export const communityContactInformationTemp = ( req: Request,res: Response,next
 };
 
 export const communityLogoTemp = (req: Request, res: Response): object|void => {
+    const path = req.file.path;
+
 
     if(req.file){
-        const file =  dataUri(req);
-        cloudi.uploader.upload(file).then(result => {
-            const image= result.url;
-            // console.log(result);
-            return apiResponse.successResponse(res,image);
-        }).catch(err => {
-            // console.log(err);
-            return apiResponse.ErrorResponse(res,err);
 
-        });
+        try {
+
+           
+            cloudi.uploader.upload(path).then(result => {
+                const image= result.url;
+                // console.log(result);
+                CommunityTemp.findOne({kid:req.params.kid},(err, response) => {
+                    if(err) {
+                        console.log(err.errmsg);
+                        return apiResponse.ErrorResponse(res,"Could not retrieve data");
+                    }
+                    if(response){
+                
+                        response.Logo = image;
+               
+
+                        response.save((err: WriteError,updatedTemp: CommunityDocumentTemp) => {
+                            if(err) {
+                                console.log(err.errmsg);
+                                return apiResponse.ErrorResponse(res,"Error updating data");
+                            }
+                            if(updatedTemp){
+                                console.log(updatedTemp);
+                                return apiResponse.successResponseWithData(res,"success",updatedTemp.kid);
+                            }
+                        });
+                    } else {
+                        return apiResponse.ErrorResponse(res,"Temp data not found");
+                    }
+
+                });
+            }).catch(err => {
+            // console.log(err);
+                return apiResponse.ErrorResponse(res,err);
+
+            });
+        } catch (error) {
+            
+        }
     }
 };
 
-export const communitySocailMediaTemp = (req: Request, res: Response): object => {
-    console.log(req.body);
-    return apiResponse.successResponse(res,"Reached");
+export const communitySocailMediaTemp = (req: Request, res: Response, next: NextFunction): object| void => {
+    const communityKid = req.params.kid;
+    try {
+        CommunityTemp.findOne({kid:communityKid},(err, response) => {
+            if(err) {
+                console.log(err.errmsg);
+                return apiResponse.ErrorResponse(res,"Could not retrieve data");
+            }
+            if(response){
+                
+                response.meetupLink = req.body.meetupUrl;
+                response.instagramLink = req.body.instagramUrl;
+                response.facebookUrl = req.body.facebookUrl;
+                response.twitterUrl = req.body.twitterUrl;
+                response.save((err: WriteError,updatedTemp: CommunityDocumentTemp) => {
+                    if(err) {
+                        console.log(err);
+                        return apiResponse.ErrorResponse(res,"Error updating data");
+                    }
+                    if(updatedTemp){
+                        console.log(updatedTemp);
+                        return apiResponse.successResponseWithData(res,"success",updatedTemp.kid);
+                    }
+                });
+            } else {
+                return apiResponse.ErrorResponse(res,"Temp data not found");
+            }
 
+        });
+    } catch (error) {
+        return next(error);
+    }
 };
 
-export const communityCreationFinal = (req: Request, res: Response): object => {
+export const communityCreationFinal = (req: Request, res: Response, next: NextFunction): object | void => {
+    const communityKid = req.params.kid;
+    try {
+        CommunityTemp.findOne({kid:communityKid},(err, response) => {
+            if(err) {
+                console.log(err.errmsg);
+                return apiResponse.ErrorResponse(res,"Could not retrieve data");
+            }
+            if(response){
+                response.completed = true;
+                response.save((err: WriteError,updatedTemp: CommunityDocumentTemp) => {
+                    if(err) {
+                        console.log(err);
+                        return apiResponse.ErrorResponse(res,"Error updating data");
+                    }
+                    if(updatedTemp){
+                        console.log(updatedTemp);
+                        return apiResponse.successResponseWithData(res,"success",updatedTemp.kid);
+                    }
+                });
+            } else {
+                return apiResponse.ErrorResponse(res,"Temp data not found");
+            }
 
-    console.log(req.body);
-    return apiResponse.successResponse(res,"Reached");
+        });
+    } catch (error) {
+        return next(error);
+    }
 };
