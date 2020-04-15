@@ -8,10 +8,20 @@ export type CommunityDocument = mongoose.Document & {
     emailVerified: boolean;
     password: string;
     tokens: any[];
-    name: string;
-    physicalLocation: string;
+    communityName: string;
+    communityAcronym: string;
+    telephone: string;
+    completed: boolean;
+    affiliation: string;
+    city: string;
+    country: string;
+    physicalAddress: string;
     publicWebsite: string;
     Logo: string;
+    meetupLink: string;
+    instagramLink: string;
+    facebookUrl: string;
+    twitterUrl: string;
     acronym: string;
     comparePassword: comparePasswordFunction;
     addToken: addToken;
@@ -27,6 +37,7 @@ export type CommunityDocument = mongoose.Document & {
     emailConfirmed: () => void;
     gravatarUrl: string;
     kid: any;
+    organizers: { lead: { email: string; fullname: string }; coLead: {email: string; fullname: string } };
     updateAfterLogin: (ip: string | string[],token: any) => void;
     hashPasswordResetAndValidateToken: (password: string, token: string) => boolean;
 };
@@ -60,12 +71,11 @@ const communityScehema = new mongoose.Schema({
         default:0
     },
     twitterUrl: {
-        unique:true,
         type: String
     },
     facebookUrl: {
         default: true,
-        type: Boolean
+        type: String
     },
     isConfirmed: {
         default: true,
@@ -83,11 +93,9 @@ const communityScehema = new mongoose.Schema({
 
     meetupLink: {
         type: String,
-        default: undefined
     },
     instagramLink: {
         type: String,
-        default: undefined
     },
     lastLoggedInIp: String,
     communityName: {
@@ -133,10 +141,6 @@ const communityScehema = new mongoose.Schema({
  */
 communityScehema.pre("save", function save(next: any) {
     const user = this as CommunityDocument;
-    // if (user.isModified("password")) { return next(); }
-    // user.password = bcrypt.hashSync(user.password, 10);
-    // console.log("pass modified",user.password);
-    // next();
     
     // check if password is present and is modified.
     if ( user.password && user.isModified("password") ) {
@@ -187,4 +191,4 @@ communityScehema.methods.gravatar = function (size: number = 200): void {
     this.gravatarUrl = `https://gravatar.com/avatar/${md5}?s=${size}&d=retro`;
 };
 
-export const Community = mongoose.model<CommunityDocument>("User", communityScehema);
+export const Community = mongoose.model<CommunityDocument>("Community", communityScehema);

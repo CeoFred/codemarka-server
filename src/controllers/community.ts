@@ -1,14 +1,18 @@
 /* eslint-disable @typescript-eslint/camelcase */
 import { Request, Response, NextFunction } from "express";
 import cloudinary  from "cloudinary";
+import mongoose from "mongoose";
 import { WriteError } from "mongodb";
 import { validationResult } from "express-validator";
+import jwt from "jsonwebtoken";
 
 import * as apiResponse from "../helpers/apiResponse";
-import { CommunityDocumentTemp, CommunityTemp } from "../models/CommunityTemp";
+import { CommunityTempDocument, CommunityTemp } from "../models/CommunityTemp";
 import { CommunityDocument, Community } from "../models/Community";
-
+import { User, UserDocument } from "../models/User";
 import { randomString } from "../helpers/utility";
+import { COMMUNITY_LOGIN } from "../config/url";
+import { sendMail } from "../config/mailer";
 
 const cloudi = cloudinary.v2;
 
@@ -17,6 +21,13 @@ cloudi.config({
     api_key: "884434965257465", 
     api_secret: "dk_QJWS3eBrzBWNo_xjN1RHz1AI" 
 });
+const ENVIRONMENT = process.env.NODE_ENV;
+const prod = ENVIRONMENT === "production";
+
+const serverHost = prod ? "https://code-marka.herokuapp.com" : "http://localhost:2001";
+const clientHost = prod ? "https://codemarka.dev" : "http://localhost:3000";
+
+
 export const uploadCommunityLogo = ( req: Request,res: Response ): object => {
     console.log(req.body);
     return apiResponse.successResponse(res,"Reached");
@@ -43,7 +54,7 @@ export const communityInfoTemp = ( req: Request,res: Response ,next: NextFunctio
         communityAccount.city = communityCity;
         communityAccount.country = communityCountry;
 
-        communityAccount.save((err: WriteError, response: CommunityDocumentTemp) => {
+        communityAccount.save((err: WriteError, response: CommunityTempDocument) => {
             if(err) {
                 console.log(err.errmsg);
                 return apiResponse.ErrorResponse(res,"Could not save data");
@@ -71,7 +82,7 @@ export const communityOrganizersTemp = ( req: Request,res: Response,next: NextFu
                 response.organizers.coLead.email = req.body.organizerTwoEmail;
                 response.organizers.coLead.email = req.body.organizerTwoFullName;
 
-                response.save((err: WriteError,updatedTemp: CommunityDocumentTemp) => {
+                response.save((err: WriteError,updatedTemp: CommunityTempDocument) => {
                     if(err) {
                         console.log(err.errmsg);
                         return apiResponse.ErrorResponse(res,"Error updating data");
@@ -104,7 +115,7 @@ export const communityContactInformationTemp = ( req: Request,res: Response,next
                 response.email = req.body.email;
                 response.telephone = req.body.telephone;
 
-                response.save((err: WriteError,updatedTemp: CommunityDocumentTemp) => {
+                response.save((err: WriteError,updatedTemp: CommunityTempDocument) => {
                     if(err) {
                         console.log(err.errmsg);
                         return apiResponse.ErrorResponse(res,"Error updating data");
@@ -143,16 +154,15 @@ export const communityLogoTemp = (req: Request, res: Response): object|void => {
                     }
                     if(response){
                 
-                        response.Logo = image;
+                        response.logoUrl = image;
                
 
-                        response.save((err: WriteError,updatedTemp: CommunityDocumentTemp) => {
+                        response.save((err: WriteError,updatedTemp: CommunityTempDocument) => {
                             if(err) {
                                 console.log(err.errmsg);
                                 return apiResponse.ErrorResponse(res,"Error updating data");
                             }
                             if(updatedTemp){
-                                console.log(updatedTemp);
                                 return apiResponse.successResponseWithData(res,"success",updatedTemp.kid);
                             }
                         });
@@ -186,7 +196,7 @@ export const communitySocailMediaTemp = (req: Request, res: Response, next: Next
                 response.instagramLink = req.body.instagramUrl;
                 response.facebookUrl = req.body.facebookUrl;
                 response.twitterUrl = req.body.twitterUrl;
-                response.save((err: WriteError,updatedTemp: CommunityDocumentTemp) => {
+                response.save((err: WriteError,updatedTemp: CommunityTempDocument) => {
                     if(err) {
                         console.log(err);
                         return apiResponse.ErrorResponse(res,"Error updating data");
@@ -208,6 +218,9 @@ export const communitySocailMediaTemp = (req: Request, res: Response, next: Next
 
 export const communityCreationFinal = (req: Request, res: Response, next: NextFunction): object | void => {
     const communityKid = req.params.kid;
+    const password = req.body.communityPassword;
+    const email = req.body.communityEmail;
+
     try {
         CommunityTemp.findOne({kid:communityKid},(err, response) => {
             if(err) {
@@ -216,15 +229,90 @@ export const communityCreationFinal = (req: Request, res: Response, next: NextFu
             }
             if(response){
                 response.completed = true;
-                response.save((err: WriteError,updatedTemp: CommunityDocumentTemp) => {
+                response.password = password;
+                response.email = email;
+                response.save((err: WriteError,updatedTemp: CommunityTempDocument) => {
                     if(err) {
-                        console.log(err);
                         return apiResponse.ErrorResponse(res,"Error updating data");
+                    } else if (updatedTemp) {
+                        Community.findOne({email},(err,coummunityAccountFound) => {
+                            if(coummunityAccountFound){
+                                return apiResponse.ErrorResponse(res,"Community Account already exists with email");
+                            } else if(!err && !coummunityAccountFound){
+                                User.findOne({email},(err,userAccountFound) => {
+                                    if(userAccountFound){
+                                        return apiResponse.ErrorResponse(res,"User Account already exists with email");
+                                    } else if(!err && !userAccountFound) {
+                                        const verificationToken = randomString(70);
+                                        let communityAccount =  new Community(updatedTemp);
+                                        communityAccount.kid = randomString(45);
+                                        communityAccount.isConfirmed= false;
+                                        communityAccount.status = true;
+                                        communityAccount.isNew = true;
+                                        communityAccount._id = mongoose.Types.ObjectId();
+                                        communityAccount.emailVerificationToken = verificationToken;
+
+                                        communityAccount.save((err,newCommunityAccount: CommunityDocument) => {
+                                            console.log(err);
+                                            if(err) apiResponse.ErrorResponse(res,"Error saving community Account");
+                        
+                                            else if (newCommunityAccount){                            
+                                                const vLink = `${serverHost}/community/account/verify/${verificationToken}/${newCommunityAccount.kid}`;
+                                                console.log(vLink);
+                                                const emailTemplate = `
+                                        <div style="padding:20px;">
+                                        <div style="width:100%;background-color: #273444!important;padding:30px;text-align:center;margin-bottom:30px">   
+                                        <img style="height:auto;width:auto" src="https://res.cloudinary.com/ogwugo-people/image/upload/v1585816806/codemark__logo.png"/>
+                                        </div>
+                                            <h4><b>Hello ${newCommunityAccount.communityName},</b></h4>
+                                            Welcome to Codemarka!
+                                            <p>
+                                             You've successfull created your community account,
+                                             To continue with the set-up, please confirm that we got your email right by clicking the link below.
+                                             If the link is not clickable, copy and paste the URL in a new browser window:
+                                             </p>
+                                             ${vLink}
+                                            <p>
+                                            The link is valid for 14 days, after that you will have to start the registration process from the beginning.
+                                            <b>We assume this is your community's official email , we would communicate with you via this medium if need be.<b/>
+                                            </p>
+                                            If you did not request sign up to codemarka, you can safely ignore this email or visit <a href="https://codemarka.dev/?ref=mail">codemarka</a> to find out more about
+                                            what we have to offer, it might interest you.
+                                            <p>
+                                        If you have any questions about the service, feel free to contact us anytime at support@codemarka.dev.
+                                            </p>
+                                            <p>
+                        Thanks for joining Codemarka Pro!
+                        </p>
+                        <p>
+                        Happy Learning,
+                        </p>
+                        <p>
+                        The Codemarka Team
+                        </p>
+                        </p>
+                        https://codemarka.dev
+                        </p>
+                        </div>
+                                            `;
+                                                sendMail(emailTemplate,"Complete Your Account set-up","codemarka@codemarka.dev",newCommunityAccount.email).then((sent: any) => {
+                                                    return apiResponse.successResponse(res,"Done");
+                                                }).catch((err: Error) => {
+                                                    return apiResponse.ErrorResponse(res,"Mail not sent,try again");
+                                                });
+
+                                            } else {
+                                                return apiResponse.ErrorResponse(res,"no returned data");
+                                            }
+                                        });
+                                    }
+                                });
+                            }
+                        });
                     }
-                    if(updatedTemp){
-                        console.log(updatedTemp);
-                        return apiResponse.successResponseWithData(res,"success",updatedTemp.kid);
-                    }
+
+                    
+                    
                 });
             } else {
                 return apiResponse.ErrorResponse(res,"Temp data not found");
@@ -234,4 +322,162 @@ export const communityCreationFinal = (req: Request, res: Response, next: NextFu
     } catch (error) {
         return next(error);
     }
+};
+
+export const communityAccountLogin = (req: Request, res: Response): object => {
+
+    try {
+  
+        const errors = validationResult(req);
+        const ip = req.connection.remoteAddress || req.headers["x-forwarded-for"];
+
+        if (!errors.isEmpty()) {
+            return apiResponse.ErrorResponse(res,errors.array());
+        }
+        else {
+
+            const { email, password } = req.body;
+            Community.findOne({email}).then((user) => {
+                if(user){
+                    	//Compare given password with db's hash.
+                    user.comparePassword(password,(err,same) => {
+                        if(same){
+                            //Check account confirmation.
+                            if(user.isConfirmed){
+                                // Check User's account active or not.
+                                if(user.status) {
+                                    let userData = {
+                                        kid: user.kid,
+                                        username: user.communityName,
+                                        token:"",
+                                        type:"community"
+                                    };
+                                    //Prepare JWT token for authentication
+                                    const jwtPayload = userData;
+                                    const jwtData = {
+                                        expiresIn: process.env.JWT_TIMEOUT_DURATION || "10days",
+                                    };
+
+                                    const secret = process.env.JWT_SECRET;
+                                    //Generated JWT token with Payload and secret.
+                                    userData.token = jwt.sign(jwtPayload, secret, jwtData);
+
+                                    user.updateAfterLogin(ip,{accessToken:userData.token,type: "login"});
+
+                                    // integrate IP change later
+                                 
+                                    return apiResponse.successResponseWithData(res,"Login Success.", userData);
+                                }else {
+                                    return apiResponse.unauthorizedResponse(res, "Account is not active. Please contact admin.");
+                                }
+                            }else{
+                                return apiResponse.unauthorizedResponse(res, "Account is not confirmed. Please confirm your account.");
+                            }
+                        }else{
+                            return apiResponse.unauthorizedResponse(res, "Email or Password wrong.");
+                        }
+                    });
+                }
+                else{
+                    return apiResponse.unauthorizedResponse(res, "Email does not exist, try signing up");
+                }
+            }).catch(err => {
+			    return apiResponse.unauthorizedResponse(res, "Email or Password wrong.");
+
+            });
+        }
+    } catch(e){
+        return apiResponse.ErrorResponse(res, e);
+    }
+};
+
+export const emailVerification = (req: Request, res: Response, next: NextFunction): object|void => {
+    const kid = req.params.kid;
+    const token = req.params.vid;
+
+    if(kid && kid.trim().length >= 23){
+        try {
+            Community.findOne({kid, emailVerificationToken: token,isConfirmed: false},(err, user) => {
+                
+                if(err){
+                    console.log(err);
+                    return apiResponse.ErrorResponse(res,"Something went wrong!");
+                }
+                if(user !== null){
+                    console.log("found");
+                    user.emailConfirmed();
+                    const username = user.communityName;
+                    //send Welcome mail;
+                    const emailTemplate = `
+                <div style="padding:20px;">
+                <div style="width:100%;background-color: #273444!important;padding:30px;text-align:center;margin-bottom:30px">   
+                <img style="height:auto;width:auto" src="https://res.cloudinary.com/ogwugo-people/image/upload/v1585816806/codemark__logo.png"/>
+                </div>
+                    
+                    <h4><b>Hey ${username},</b></h4>
+                    <br/>
+                    <p>Thank you for confirming your account, we want to use this opportunity to welcome you to the
+                    codemarka community. Having confirmed your account, you can now create or hosts classroom sessions right
+                    from your homepage, all the best!
+                    </p>
+                    <p>Login here to access your dashboard <a href='${COMMUNITY_LOGIN}?ref=confirm'>Login</a></p>
+                                        <p>
+Thanks for joining Codemarka Pro!
+</p>
+<p>
+Happy Learning,
+</p>
+<p>
+The Codemarka Team
+</p>
+</p>
+https://codemarka.dev
+</p>
+                    </div>
+
+                    `;
+                    sendMail(emailTemplate,"Welcome To Codemarka Pro","Community@codemarka.dev",user.email).then((sent: any) => {
+                        return res.redirect(clientHost+"/auth/signin/community?ref=mail&s=t");
+                    }).catch((err: Error) => {
+                        return res.redirect(clientHost+"/auth/signin/community?ref=mail&s=f");
+                    });
+                    
+                } else {
+                    return res.redirect(clientHost+"/account/confirmed/false/?sent=false&info=0&r=token-expired");
+                }
+            });
+        } catch (error) {
+            return res.redirect(clientHost+"/account/confirmed/false/?sent=false&info=0&r=null");
+        }
+    } else {
+        return res.redirect(clientHost+"/pages/error/?email_ver=false&info=0");
+
+
+    }
+
+};
+
+
+export const communityAuthtokenVerify = (req: Request, res: Response): object => {
+    try{
+        const { kid } = req.body.decoded;
+        Community.findOne( {kid}, (err, community) => {
+            if(err){
+                return apiResponse.ErrorResponse(res, "Wboops something went wrong");
+            } else {
+                if (community === null){
+                    return apiResponse.ErrorResponse(res,"No community Found");
+                }
+                const communityObject = {
+                    email: community.email,
+                    communityname: community.communityName,
+                    kid: community.kid
+                };
+                return apiResponse.successResponseWithData(res,"success",communityObject);
+            }
+        });
+    }
+    catch {
+        return apiResponse.ErrorResponse(res,"Something went wrong");
+    } 
 };

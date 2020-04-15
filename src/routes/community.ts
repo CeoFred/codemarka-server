@@ -1,4 +1,4 @@
-import {uploadCommunityLogo, communityCreationFinal,communityContactInformationTemp, communityInfoTemp, communityLogoTemp, communityOrganizersTemp, communitySocailMediaTemp } from "../controllers/community";
+import {emailVerification,uploadCommunityLogo, communityCreationFinal,communityContactInformationTemp, communityInfoTemp, communityLogoTemp, communityOrganizersTemp, communitySocailMediaTemp } from "../controllers/community";
 import express from "express";
 import { body } from "express-validator";
 
@@ -19,5 +19,8 @@ router.patch("/auth/create/organizers/temp/:kid",[ body("*").trim().escape()], c
 router.patch("/upload/logo", uploadCommunityLogo);
 
 router.post("/auth/create/final/:kid", communityCreationFinal);
+
+router.get("/account/verify/:vid/:kid",emailVerification);
+
 // all users
 export default router;

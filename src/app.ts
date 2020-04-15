@@ -35,7 +35,7 @@ const MongoStore = connectStore(session);
 // Create Express server
 const app = express();
 
-const whitelist = ["http://localhost:3000", "https://codemarka.dev", "https://cmarka.xyz"];
+const whitelist = ["http://localhost:2001", "http://localhost:3000", "https://codemarka.dev", "https://cmarka.xyz"];
 const corsOptions = {
     origin(origin: string, callback: Function) {
         if (whitelist.indexOf(origin) !== -1) {
@@ -80,7 +80,7 @@ app.set("port", process.env.PORT || process.env.OPENSHIFT_NODEJS_PORT || 8080);
 
 app.use(compression());
 app.use(methodOverride());
-app.use(cors(corsOptions));
+app.use(cors());
 
 app.use(lusca.xframe("SAMEORIGIN"));
 app.disable("x-powered-by");
@@ -91,7 +91,7 @@ app.use(express.static(path.join(__dirname, "public"), { maxAge: 31557600000 }))
 // routes as middlewares
 app.use("/auth", cors(), auth);
 app.use("/classroom",cors(), classroom);
-app.use("/community",cors(), community);
+app.use("/community", community);
 
 
 app.get("/", (req, res) => {

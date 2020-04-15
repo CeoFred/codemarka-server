@@ -1,77 +1,102 @@
 import mongoose from "mongoose";
 
-export type CommunityDocumentTemp = mongoose.Document & {
+export type CommunityTempDocument = mongoose.Document & {
     email: string;
+    emailVerified: boolean;
     password: string;
+    tokens: any[];
     communityName: string;
     communityAcronym: string;
     telephone: string;
     completed: boolean;
-    physicalAddress: string;
-    publicWebsite: string;
+    affiliation: string;
     meetupLink: string;
     instagramLink: string;
     facebookUrl: string;
     twitterUrl: string;
-    Logo: string;
-    affiliation: string;
     city: string;
     country: string;
+    physicalAddress: string;
+    publicWebsite: string;
+    logoUrl: string;
     acronym: string;
     status: boolean;
+    resetPasswordToken: string | "";
+    resetPasswordExpires: Date | "";
+    isConfirmed: boolean;
+    privateClassCreated: number;
+    publicClassCreated: number;
     gravatar: (size: number) => string;
+    emailVerificationToken: string;
+    geoDetails: object;
+    emailConfirmed: () => void;
     gravatarUrl: string;
     kid: any;
-    organizers: { lead: { fullname: string; email: string };coLead: { fullname: string; email: string } };
+    organizers: { lead: { email: string; fullname: string }; coLead: {email: string; fullname: string } };
+    updateAfterLogin: (ip: string | string[],token: any) => void;
+    hashPasswordResetAndValidateToken: (password: string, token: string) => boolean;
 };
 
 const communityTempScehema = new mongoose.Schema({
     email: { type: String, unique: false },
     password: String,
     kid:String,
+    resetPasswordToken: {
+        type:String,
+        default:""
+    },
+    resetPasswordExpires: {
+        type:Date,
+        default:""
+    },
+    tokens: Array,
+    publicClassCreated: {
+        type: Number,
+        default: 0
+    },
+    privateClassCreated: {
+        type: Number,
+        default:0
+    },
     twitterUrl: {
-        unique:false,
-        type: String,
-        required: false
-    },
-    completed: {
-        default: false
-    },
-    facebookUrl: {
-        required: false,
         type: String
     },
-    Logo: String,
+    facebookUrl: {
+        type: String
+    },
     isConfirmed: {
-        default: true,
-        type: Boolean,
-        required: false
+        default: false,
+        type: Boolean
     },
     logoUrl: String,
     physicalAddress : String,
-    telephone: String,
+    emailVerificationToken : {
+        type: String
+    },
     gravatarUrl: String,
+    lastloggedInIp: String,
+    geoDetails: Object,
+    emailVerified: Boolean,
+
     meetupLink: {
         type: String,
-        required: false
+        default: undefined
     },
     instagramLink: {
         type: String,
-        required: false
+        default: undefined
     },
+    lastLoggedInIp: String,
     communityName: {
         type: String,
-        required: false,
-        unique: false
+        required: false
     },
     communityAcronym: {   
         type: String,
-        required: false,
-        unique: false
+        required: false
     },
     publicWebsite: {      
-        type: String,
-        unique: false
+        type: String
     },
     affiliation:{
         required: false,
@@ -97,5 +122,4 @@ const communityTempScehema = new mongoose.Schema({
     }
 }, { timestamps: true });
 
-
-export const CommunityTemp = mongoose.model<CommunityDocumentTemp>("CommunnityTemp", communityTempScehema);
+export const CommunityTemp = mongoose.model<CommunityTempDocument>("CommunityTemp", communityTempScehema);

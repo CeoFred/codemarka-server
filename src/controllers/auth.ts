@@ -15,6 +15,7 @@ import jwt from "jsonwebtoken";
 import * as apiResponse from "../helpers/apiResponse";
 import * as CLIENT_URLS from "../config/url";
 
+import { communityAccountLogin,communityAuthtokenVerify } from "./community";
 
 const options = { algorithm: "HS256", noTimestamp: false, audience: "users", issuer: "codemarka", subject: "auth", expiresIn: "7d" };
 /** 
@@ -288,41 +289,9 @@ export const passwordReset = (req: Request | any, res: Response) => {
 
 };
 /**
- * Verify email using token
- */
-export const tokenVerify = (req: Request, res: Response, next: NextFunction) => {
-    
-    const t = req.body.token;
-    const uI = req.body.user;
-
-    User.findOneAndUpdate({_id:uI,emailVerificationToken:t},{emailVerified:true,emailVerificationToken:null}, (err, user) => {
-
-        if(err){
-            return apiResponse.ErrorResponse(res, "Wboops something went wrong");
-        } else {
-            
-            if (user === null){
-                return apiResponse.ErrorResponse(res,"No User Found");
-            }
-
-            if (user && uI == user._id) {
-                
-                
-                return apiResponse.successResponse(res,"Token verification success");
-
-            }else {
-                return apiResponse.ErrorResponse(res,"failed");
-            }
-
-
-        }
-    });
-};
-
-/**
  * Verify user authrication token
  */
-export const userAuthtokenVerify = (req: Request, res: Response, next: NextFunction) => {
+export const userAuthtokenVerify = (req: Request, res: Response) => {
     try{
         const { _id } = req.body.decoded;
         User.findOne( {_id}, (err, user) => {
@@ -330,7 +299,7 @@ export const userAuthtokenVerify = (req: Request, res: Response, next: NextFunct
                 return apiResponse.ErrorResponse(res, "Wboops something went wrong");
             } else {
                 if (user === null){
-                    return apiResponse.ErrorResponse(res,"No User Found");
+                    return communityAuthtokenVerify(req,res);
                 }
                 const userObject = {
                     email: user.email,
@@ -369,9 +338,10 @@ export const postLogin = (req: Request, res: Response) => {
                                 // Check User's account active or not.
                                 if(user.status) {
                                     let userData = {
-                                        _id: user._id,
+                                        kid: user.kid,
                                         username: user.username,
-                                        token:""
+                                        token:"",
+                                        type:"community"
                                     };
                                     //Prepare JWT token for authentication
                                     const jwtPayload = userData;
@@ -400,7 +370,7 @@ export const postLogin = (req: Request, res: Response) => {
                     });
                 }
                 else{
-                    return apiResponse.unauthorizedResponse(res, "Email does not exist, try signing up");
+                    return communityAccountLogin(req,res);
                 }
             }).catch(err => {
 			    return apiResponse.unauthorizedResponse(res, "Email or Password wrong.");
@@ -547,8 +517,6 @@ https://codemarka.dev
                         sent = false;
                         return apiResponse.successResponse(res,"Hurray! One last thing, we sent a confirmation mail , please check your inbox.");
                     }
-                    
-
                 };
                 sendMailToNewUser(email);
             });
