@@ -11,7 +11,7 @@ import { randomNumber ,randomString} from "../helpers/utility";
 import { successResponseWithData } from "../helpers/apiResponse";
 import { classWeb } from "../models/classWebFiles";
 import * as apiResponse from "../helpers/apiResponse";
-import * as modelHelper from "../helpers/userModel";
+import { Community, CommunityDocument } from '../models/Community';
 
 const notStarted = 1;
 const started = 2;
@@ -35,25 +35,21 @@ export const createClassRoom = (req: Request, res: Response, next: NextFunction)
     const { location, name, topic, startTime, startDate, description, classType, visibility } = req.body;
     
 
-    const userid: string = req.body.decoded._id;
+    const accountid: string = req.body.decoded.kid;
 
     // find user and validate classroom creation limit.
-    let userAccountType,privateClassroomsCreated,user;
+    let userAccountType: Number,privateClassroomsCreated,user;
 
     try {
-     
-        modelHelper.findUser(userid).then((respo: UserDocument) => {
-
-            if(respo){
-                user = respo;
+        function createClassroominit(user: UserDocument | CommunityDocument){
                 if (user) {
                     userAccountType = user.accountType;
                     privateClassroomsCreated = user.privateClassCreated;
                 } else {
                     return apiResponse.ErrorResponse(res,"User not found");
                 }
-
-                if (userAccountType && userAccountType === "regular") {
+                
+                if (userAccountType === 101) {
 
                     if (visibility === "Private") {
                         if (Number(privateClassroomsCreated) > MAX_PRIVATE_CLASSROOM_REGULAR) {
@@ -61,7 +57,6 @@ export const createClassRoom = (req: Request, res: Response, next: NextFunction)
                         }
                     }
                 }
-
                 
                 const generateClassUrlAlias = (data: any): any => {
                     return new Promise((resolve,reject) => {
@@ -82,7 +77,8 @@ export const createClassRoom = (req: Request, res: Response, next: NextFunction)
                         });
                     });
                 };
-                const newclassroom = new Classroom({
+
+                    const newclassroom = new Classroom({
                     name,
                     Kid: randomString(40),
                     topic,
@@ -92,16 +88,13 @@ export const createClassRoom = (req: Request, res: Response, next: NextFunction)
                     startTime,
                     startDate,
                     status: notStarted,
-                    owner: userid,
+                    owner: accountid,
                     location,
                     
-                    maxUsers: userAccountType === "regular" ? MAX_CASSROOM_MEMBERS_REGULAR : MAX_CLASSROOM_MEMBERS_PREMUIM
+                    maxUsers: userAccountType === 101 ? MAX_CASSROOM_MEMBERS_REGULAR : MAX_CLASSROOM_MEMBERS_PREMUIM
                 });
 
                 newclassroom.gravatar(23);
-
-
-
                 newclassroom.save().then((data: ClassroomDocument) => {
                     const jsfile = randomNumber(15);
                     const htmlfile = randomNumber(15);
@@ -113,15 +106,30 @@ export const createClassRoom = (req: Request, res: Response, next: NextFunction)
                     const htmlSource = `${__dirname}/../../main/boilerplates/basic--web--app/index.html`;
                     /// update user classrooms limit
                     if (visibility === "Public") {
-                        User.findOneAndUpdate({_id: userid},{$inc: {publicClassCreated: 1}},(err,doc: UserDocument) => {
+                        User.findOneAndUpdate({kid: accountid},{$inc: {publicClassCreated: 1}},(err,doc: UserDocument) => {
                             if(err){ 
                                 return apiResponse.ErrorResponse(res,"Whoops! Something went wrong while trying to update user public class created.");
                             }
+                            if(!doc){
+                                Community.findOneAndUpdate({kid: accountid},{$inc: {publicClassCreated: 1}},(err, doc: CommunityDocument) => {
+                                    if(err){ 
+                                return apiResponse.ErrorResponse(res,"Whoops! Something went wrong while trying to update user private class created");
+                                    }
+                                });
+                            }
                         });
                     } else {
-                        User.findOneAndUpdate({_id: userid},{$inc: {privateClassCreated: 1}},(err,doc: UserDocument) => {
+                        User.findOneAndUpdate({kid: accountid},{$inc: {privateClassCreated: 1}},(err,doc: UserDocument) => {
                             if(err){ 
                                 return apiResponse.ErrorResponse(res,"Whoops! Something went wrong while trying to update user private class created");
+                            }
+                            
+                            if(!doc){
+                                Community.findOneAndUpdate({kid: accountid},{$inc: {privateClassCreated: 1}},(err, doc: CommunityDocument) => {
+                                    if(err){ 
+                                return apiResponse.ErrorResponse(res,"Whoops! Something went wrong while trying to update user private class created");
+                            }
+                                });
                             }
                         });
                     }
@@ -161,10 +169,19 @@ export const createClassRoom = (req: Request, res: Response, next: NextFunction)
                     console.log(err);
                     return apiResponse.ErrorResponse(res,"Whoops! Something went wrong while trying to save classroom data to model");
                 });
+        }
+        User.findOne({kid:accountid}).then((respo: any) => {
 
+            if(respo){
+                return createClassroominit(respo);
+            } else {
+                Community.findOne({kid:accountid}).then((community: CommunityDocument) => {
+                   if(community) createClassroominit(community);
+                    return apiResponse.ErrorResponse(res,"Account not found");
+                })
             }
-        }).catch(() => {
-            return apiResponse.ErrorResponse(res,"User not found");
+        }).catch((err) => {
+            return apiResponse.ErrorResponse(res,"Something went wrong");
         });
 
        
@@ -354,7 +371,7 @@ export const verifyClassroom = (req: Request, res: Response, next: NextFunction)
 
 exports.endClassPermanently = (req: Request, res: Response) => {
     const id = req.params.classroomid;
-    Classroom.deleteOne({ _id: id }).exec()
+    Classroom.deleteOne({ kid: id }).exec()
         .then((result: object) => {
             res.status(200).json({
                 message: "Classroom Ended",
@@ -404,18 +421,18 @@ export const fecthClassByUrlAlias = (req: Request, res: Response, next: NextFunc
 
 // verify if a classroom belongs to a user
 export const verifyUserClassroom = (req: Request, res: Response, next: NextFunction): any => {
-    const { classid, userid } = req.params;
+    const { classid, accountid } = req.params;
 
     if (classid && classid.trim() !== ""
-        && userid && userid.trim() !== ""
+        && accountid && accountid.trim() !== ""
         && classid.length > 23
-        && userid.length > 23) {
+        && accountid.length > 23) {
         Classroom.findById(classid, (err, doc: ClassroomDocument) => {
             if (err) {
                 return next(err);
             }
             if (doc && doc !== null) {
-                if (doc.owner === userid) {
+                if (doc.owner === accountid) {
                     return apiResponse.successResponse(res, "sucess verifying");
                 } else {
                     return apiResponse.unauthorizedResponse(res, "failed verification");
@@ -432,9 +449,9 @@ export const verifyUserClassroom = (req: Request, res: Response, next: NextFunct
 
 // fetch all classroom by user
 export const getUserClassrooms = (req: Request, res: Response, next: NextFunction): any => {
-    const { userid } = req.params;
+    const { accountid } = req.params;
 
-    Classroom.find(({ owner: userid }), "classType numberInClass status visits likes topic description location", (err: Error, doc: ClassroomDocument) => {
+    Classroom.find(({ owner: accountid }), "classType numberInClass status visits likes topic description location", (err: Error, doc: ClassroomDocument) => {
         if (err) {
             return next(err);
         }
@@ -454,7 +471,7 @@ exports.updateClassInformation = (req: Request, res: Response) => {
         updateOps[ops.propName] = ops.value;
     }
 
-    Classroom.update({ _id: id }, { $set: updateOps })
+    Classroom.update({ kid: id }, { $set: updateOps })
         .exec()
         .then(() => {
             res.status(200).json({

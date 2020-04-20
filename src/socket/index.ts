@@ -2,7 +2,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { chat } from "./config";
 import express from "express";
-import fs from "fs";
 import moment from "moment";
 import uuidv4 from "uuid/v4";
 import sgMail  from "@sendgrid/mail";
@@ -11,6 +10,7 @@ import { Classroom, ClassroomDocument } from "../models/classroom";
 import { classWeb } from "../models/classWebFiles";
 
 import { User } from "../models/User";
+import { Community } from "../models/community";
 
 export default (server: express.Application) => {
     let activeSockets: string[] = [];
@@ -37,6 +37,7 @@ export default (server: express.Application) => {
             userId: string;
             classroom_id: string;
             username: string;
+            cdata: object;
         }
 
         socket.on("re_join",(data: JoinObj) => {
@@ -44,11 +45,12 @@ export default (server: express.Application) => {
             socket.user = data.userId;
             socket.room = data.classroom_id;
             socket.username = data.username;
-            
+            socket.classinfo = data.cdata;
+
             socket.join(data.classroom_id, () => {
 
                 
-                User.findOne({ _id: data.userId }).then(user => {
+                User.findOne({ kid: data.userId }).then(user => {
                     if(user && user !== null){
                         Classroom.findById(data.classroom_id, (err, res: any) => {
                            
@@ -70,16 +72,15 @@ export default (server: express.Application) => {
                         
                                 const currentClassStudents = res.students;
                                 oldStudentsWithoutUser = currentClassStudents.filter((student: any[]| any) => {
-                                    return String(student.id) !== String(data.userId);
+                                    return String(student.kid) !== String(data.userId);
                                 });
 
                                 const studentObj = {
                                     id: String(user._id),
                                     username: user.username,
                                     role: "1",
-
+                                    kid: user.kid,
                                     stack: user.techStack,
-
                                     avatar: user.gravatarUrl
                                 };
  
@@ -153,10 +154,12 @@ export default (server: express.Application) => {
             socket.user = data.userId;
             socket.room = data.classroom_id;
             socket.username = data.username;
+            socket.classinfo = data.cdata;
+
             socket.userModel;
             let oldStudentsWithoutUser: any[] = [];
             // find user and update
-            User.findOne({ _id: data.userId }).then(user => {
+            User.findOne({ kid: data.userId }).then(user => {
                 let studentObj;
 
                 if (user && user !== null) {
@@ -173,19 +176,18 @@ export default (server: express.Application) => {
                             if(Array.isArray(found) && found[0]){
                                 nsp.to(socket.room).emit("disconnect_user_before_join",data);
                             };
-                            console.log("found class");
+                            console.log("found class",students);
                             const currentClassStudents = res.students;
                             oldStudentsWithoutUser = currentClassStudents.filter(student => {
-                                return String(student.id) !== String(data.userId);
+                                return String(student.kid) !== String(data.userId);
                             });
 
                             studentObj = {
                                 id: String(user._id),
                                 username: user.username,
                                 role: "1",
-
+                                kid: user.kid,
                                 stack: user.techStack,
-
                                 avatar: user.gravatarUrl,
                                 socketId: socket.id
                             };
@@ -296,6 +298,7 @@ export default (server: express.Application) => {
             });
 
         });
+
         socket.on("start_class",(userid: string) => {
             Classroom.findOneAndUpdate({ _id: socket.room, owner: userid },{
                 status:2
@@ -327,6 +330,7 @@ export default (server: express.Application) => {
             });
 
         });
+
         socket.on("block_user",(user: any) => {
             const classroom = socket.room;
             const userToBlock =  user.id;
@@ -757,11 +761,11 @@ export default (server: express.Application) => {
             Classroom.findById(socket.room, (err, room: ClassroomDocument) => {
 
                 if (err) {
-
+                    console.log('error',err);
                 } else if (room && room !== null) {
+                    console.log("found",room);
                     // find user in student field array
                     room.students.forEach((user: { id: any }, i) => {
-                        if (user.id == socket.user) {
                             let newclassusers: any[];
 
                             newclassusers = room.students.filter((s: any, i) => {
@@ -776,7 +780,6 @@ export default (server: express.Application) => {
                                 console.log(`${socket.username} disconnected`);
 
                             });
-                        }
                     });
                 }
 
@@ -795,7 +798,7 @@ export default (server: express.Application) => {
 
         socket.on("newMessage", (data: NewMessageInterface) => {
             
-            User.findOne({ _id: data.user }).then(u => {
+            User.findOne({ kid: data.user }).then(u => {
                 if (u) {
                     const msgId = uuidv4();
                     const msgObject = {

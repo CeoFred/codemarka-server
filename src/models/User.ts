@@ -16,7 +16,7 @@ export type UserDocument = mongoose.Document & {
     };
     password: string;
     tokens: any[];
-    accountType: string;
+    accountType: number;
     name: string;
     gender: string;
     location: string;
@@ -89,8 +89,8 @@ const userSchema = new mongoose.Schema({
     website: String,
     picture: String,
     accountType: {
-        default: "regular",
-        type: String
+        default: 101,
+        type: Number
     },
     confirmOTP: {
         type: Number

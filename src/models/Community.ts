@@ -10,6 +10,7 @@ export type CommunityDocument = mongoose.Document & {
     tokens: any[];
     communityName: string;
     communityAcronym: string;
+    accountType:number;
     telephone: string;
     completed: boolean;
     affiliation: string;
@@ -101,16 +102,13 @@ const communityScehema = new mongoose.Schema({
     communityName: {
         type: String,
         required: true,
-        unique: true
-    },
+        },
     communityAcronym: {   
         type: String,
         required: true,
-        unique: true
     },
     publicWebsite: {      
         type: String,
-        unique: true
     },
     affiliation:{
         required: true,
@@ -133,6 +131,10 @@ const communityScehema = new mongoose.Schema({
             fullname: String,
             email: String
         }
+    },
+    accountType: {
+        default: 102,
+        type: Number
     }
 }, { timestamps: true });
 
@@ -175,7 +177,6 @@ const updateAfterLogin = function(ip: any,token: object): void {
 
 const emailConfirmed = function(): void {
     this.isConfirmed = true;
-    this.save();
 };
 
 communityScehema.methods.comparePassword = comparePassword;

@@ -15,7 +15,7 @@ import jwt from "jsonwebtoken";
 import * as apiResponse from "../helpers/apiResponse";
 import * as CLIENT_URLS from "../config/url";
 
-import { communityAccountLogin,communityAuthtokenVerify } from "./community";
+import { communityAccountLogin,communityAuthtokenVerify,CommunityAuthLogout } from "./community";
 
 const options = { algorithm: "HS256", noTimestamp: false, audience: "users", issuer: "codemarka", subject: "auth", expiresIn: "7d" };
 /** 
@@ -293,8 +293,8 @@ export const passwordReset = (req: Request | any, res: Response) => {
  */
 export const userAuthtokenVerify = (req: Request, res: Response) => {
     try{
-        const { _id } = req.body.decoded;
-        User.findOne( {_id}, (err, user) => {
+        const { kid } = req.body;
+        User.findOne( {kid}, (err, user) => {
             if(err){
                 return apiResponse.ErrorResponse(res, "Wboops something went wrong");
             } else {
@@ -303,8 +303,11 @@ export const userAuthtokenVerify = (req: Request, res: Response) => {
                 }
                 const userObject = {
                     email: user.email,
-                    username: user.username,
-                    _id: user._id
+                    displayName: user.username,
+                    kid: user.kid,
+                    displayImg: user.gravatarUrl,
+                    token: req.body.token,
+                    accountType:101
                 };
                 return apiResponse.successResponseWithData(res,"success",userObject);
             }
@@ -330,7 +333,6 @@ export const postLogin = (req: Request, res: Response) => {
             const { email, password } = req.body;
             User.findOne({email}).then((user) => {
                 if(user){
-                    	//Compare given password with db's hash.
                     user.comparePassword(password,(err,same) => {
                         if(same){
                             //Check account confirmation.
@@ -339,9 +341,9 @@ export const postLogin = (req: Request, res: Response) => {
                                 if(user.status) {
                                     let userData = {
                                         kid: user.kid,
-                                        username: user.username,
-                                        token:"",
-                                        type:"community"
+                                        displayName: user.username,
+                                        type:"regular",
+                                        token:""
                                     };
                                     //Prepare JWT token for authentication
                                     const jwtPayload = userData;
@@ -754,23 +756,28 @@ export const postDeleteAccount = (req: Request, res: Response, next: NextFunctio
 
 export const logout = async (req: Request,res: Response) => {
     
-    const { _id } = req.body.decoded;
+    const { kid } = req.body.decoded;
     const otoken = req.body.token;
     
-    User.findOne({ _id:_id },(err,user) => {
-        if(err) return apiResponse.ErrorResponse(res,"Whoops! Something went wrong");
-        if(user && user !== null) {
+    User.findOne({ kid },(err,user) => {
+        if(err) {
+            console.log(err);
+            return apiResponse.ErrorResponse(res,"Whoops! Something went wrong");
+        }
+        if(user) {
             let tokens = user.tokens;
 
             tokens = tokens.filter(token => {
                 return token.accessToken !== otoken && token.type;
             });
 
-            User.findByIdAndUpdate(_id,{tokens},(err,user) => {
+            User.findOneAndUpdate(kid,{tokens},(err,user) => {
                 if (err) return apiResponse.ErrorResponse(res,"Whoops! Something went wrong");
 
                 return apiResponse.successResponse(res,"Logged out successfully");
             });
+        } else {
+            return CommunityAuthLogout(req,res);
         }
     });
 

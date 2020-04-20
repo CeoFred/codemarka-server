@@ -9,7 +9,7 @@ import jwt from "jsonwebtoken";
 import * as apiResponse from "../helpers/apiResponse";
 import { CommunityTempDocument, CommunityTemp } from "../models/CommunityTemp";
 import { CommunityDocument, Community } from "../models/Community";
-import { User, UserDocument } from "../models/User";
+import { User } from "../models/User";
 import { randomString } from "../helpers/utility";
 import { COMMUNITY_LOGIN } from "../config/url";
 import { sendMail } from "../config/mailer";
@@ -103,6 +103,17 @@ export const communityOrganizersTemp = ( req: Request,res: Response,next: NextFu
 };
 
 export const communityContactInformationTemp = ( req: Request,res: Response,next: NextFunction ): object|void => {
+   const { address, email, telephone } = req.body;
+   let trimedIndex;
+
+   if([address,email,telephone].some((value,index) => {
+         if(value.trim() === ""){
+             trimedIndex = index
+            return true;
+        }
+   })){
+    return apiResponse.ErrorResponse(res,"All fields are required");
+   }    
     try {
         CommunityTemp.findOne({kid:req.params.kid},(err, response) => {
             if(err) {
@@ -225,7 +236,7 @@ export const communityCreationFinal = (req: Request, res: Response, next: NextFu
         CommunityTemp.findOne({kid:communityKid},(err, response) => {
             if(err) {
                 console.log(err.errmsg);
-                return apiResponse.ErrorResponse(res,"Could not retrieve data");
+                return apiResponse.ErrorResponse(res,"Whoops! Something went wrong,try again.");
             }
             if(response){
                 response.completed = true;
@@ -233,15 +244,15 @@ export const communityCreationFinal = (req: Request, res: Response, next: NextFu
                 response.email = email;
                 response.save((err: WriteError,updatedTemp: CommunityTempDocument) => {
                     if(err) {
-                        return apiResponse.ErrorResponse(res,"Error updating data");
+                        return apiResponse.ErrorResponse(res,"Whoops! Something went wrong, please contact support.");
                     } else if (updatedTemp) {
                         Community.findOne({email},(err,coummunityAccountFound) => {
                             if(coummunityAccountFound){
-                                return apiResponse.ErrorResponse(res,"Community Account already exists with email");
+                                return apiResponse.ErrorResponse(res,"Account already exists with email");
                             } else if(!err && !coummunityAccountFound){
                                 User.findOne({email},(err,userAccountFound) => {
                                     if(userAccountFound){
-                                        return apiResponse.ErrorResponse(res,"User Account already exists with email");
+                                        return apiResponse.ErrorResponse(res,"Account already exists with email");
                                     } else if(!err && !userAccountFound) {
                                         const verificationToken = randomString(70);
                                         let communityAccount =  new Community(updatedTemp);
@@ -254,7 +265,7 @@ export const communityCreationFinal = (req: Request, res: Response, next: NextFu
 
                                         communityAccount.save((err,newCommunityAccount: CommunityDocument) => {
                                             console.log(err);
-                                            if(err) apiResponse.ErrorResponse(res,"Error saving community Account");
+                                            if(err) apiResponse.ErrorResponse(res,"Whoops! Something went wrong, contact support.");
                         
                                             else if (newCommunityAccount){                            
                                                 const vLink = `${serverHost}/community/account/verify/${verificationToken}/${newCommunityAccount.kid}`;
@@ -298,11 +309,11 @@ export const communityCreationFinal = (req: Request, res: Response, next: NextFu
                                                 sendMail(emailTemplate,"Complete Your Account set-up","codemarka@codemarka.dev",newCommunityAccount.email).then((sent: any) => {
                                                     return apiResponse.successResponse(res,"Done");
                                                 }).catch((err: Error) => {
-                                                    return apiResponse.ErrorResponse(res,"Mail not sent,try again");
+                                                    return apiResponse.successResponse(res,"Whoops! Something went wrong.");
                                                 });
 
                                             } else {
-                                                return apiResponse.ErrorResponse(res,"no returned data");
+                                                return apiResponse.ErrorResponse(res,"Whoops! Something went wrong,please refresh the browser to fix.");
                                             }
                                         });
                                     }
@@ -315,7 +326,7 @@ export const communityCreationFinal = (req: Request, res: Response, next: NextFu
                     
                 });
             } else {
-                return apiResponse.ErrorResponse(res,"Temp data not found");
+                return apiResponse.ErrorResponse(res,"Whoops! Try refrfeshing this tab.");
             }
 
         });
@@ -345,7 +356,6 @@ export const communityAccountLogin = (req: Request, res: Response): object => {
                             //Check account confirmation.
                             if(user.isConfirmed){
                                 // Check User's account active or not.
-                                if(user.status) {
                                     let userData = {
                                         kid: user.kid,
                                         username: user.communityName,
@@ -367,9 +377,7 @@ export const communityAccountLogin = (req: Request, res: Response): object => {
                                     // integrate IP change later
                                  
                                     return apiResponse.successResponseWithData(res,"Login Success.", userData);
-                                }else {
-                                    return apiResponse.unauthorizedResponse(res, "Account is not active. Please contact admin.");
-                                }
+
                             }else{
                                 return apiResponse.unauthorizedResponse(res, "Account is not confirmed. Please confirm your account.");
                             }
@@ -405,7 +413,6 @@ export const emailVerification = (req: Request, res: Response, next: NextFunctio
                 }
                 if(user !== null){
                     console.log("found");
-                    user.emailConfirmed();
                     const username = user.communityName;
                     //send Welcome mail;
                     const emailTemplate = `
@@ -436,11 +443,24 @@ https://codemarka.dev
                     </div>
 
                     `;
-                    sendMail(emailTemplate,"Welcome To Codemarka Pro","Community@codemarka.dev",user.email).then((sent: any) => {
-                        return res.redirect(clientHost+"/auth/signin/community?ref=mail&s=t");
-                    }).catch((err: Error) => {
-                        return res.redirect(clientHost+"/auth/signin/community?ref=mail&s=f");
+                    user.isConfirmed = true;
+                    user.emailVerificationToken = null;
+
+                    user.save((err,doc) => {
+                        if(doc){
+                            console.log(doc);
+                            sendMail(emailTemplate,"Welcome To Codemarka Pro","Community@codemarka.dev",user.email).then((sent: any) => {
+                                return res.redirect(clientHost+"/auth/signin/community?ref=mail&s=t");
+                            }).catch((err: Error) => {
+                                return res.redirect(clientHost+"/auth/signin/community?ref=mail&s=f");
+                            });
+                        }  
+                        if (err) {
+                            console.log(err);
+                                return res.redirect(clientHost+"/auth/accounts/verification/failed");
+                        } 
                     });
+                    
                     
                 } else {
                     return res.redirect(clientHost+"/account/confirmed/false/?sent=false&info=0&r=token-expired");
@@ -460,18 +480,23 @@ https://codemarka.dev
 
 export const communityAuthtokenVerify = (req: Request, res: Response): object => {
     try{
-        const { kid } = req.body.decoded;
+        const { kid } = req.body;
+        
         Community.findOne( {kid}, (err, community) => {
             if(err){
                 return apiResponse.ErrorResponse(res, "Wboops something went wrong");
             } else {
+                console.log(community);
                 if (community === null){
-                    return apiResponse.ErrorResponse(res,"No community Found");
+                    return apiResponse.ErrorResponse(res,"Account not found");
                 }
                 const communityObject = {
                     email: community.email,
-                    communityname: community.communityName,
-                    kid: community.kid
+                    displayName: community.communityName,
+                    displayImg: community.Logo || null,
+                    kid: community.kid,
+                    token: req.body.token,
+                    accountType:102
                 };
                 return apiResponse.successResponseWithData(res,"success",communityObject);
             }
@@ -480,4 +505,28 @@ export const communityAuthtokenVerify = (req: Request, res: Response): object =>
     catch {
         return apiResponse.ErrorResponse(res,"Something went wrong");
     } 
+};
+
+export const CommunityAuthLogout = (req: Request, res: Response): object| void => {
+    const { kid } = req.body.decoded;
+    const otoken = req.body.token;
+    
+    Community.findOne({ kid },(err,community) => {
+        if(err) return apiResponse.ErrorResponse(res,"Whoops! Something went wrong");
+        if(community) {
+            let tokens = community.tokens;
+
+            tokens = tokens.filter(token => {
+                return token.accessToken !== otoken && token.type;
+            });
+
+            Community.findOneAndUpdate(kid,{tokens},(err,community) => {
+                if (err) return apiResponse.ErrorResponse(res,"Whoops! Something went wrong");
+
+                return apiResponse.successResponse(res,"Logged out successfully");
+            });
+        } else {
+             return apiResponse.successResponse(res,"Logged out successfully");
+        }
+    });
 };
