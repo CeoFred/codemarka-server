@@ -761,25 +761,25 @@ export default (server: express.Application) => {
             Classroom.findById(socket.room, (err, room: ClassroomDocument) => {
 
                 if (err) {
-                    console.log('error',err);
+                    console.log("error",err);
                 } else if (room && room !== null) {
                     console.log("found",room);
                     // find user in student field array
                     room.students.forEach((user: { id: any }, i) => {
-                            let newclassusers: any[];
+                        let newclassusers: any[];
 
-                            newclassusers = room.students.filter((s: any, i) => {
-                                return s.id != socket.user;
-                            });
+                        newclassusers = room.students.filter((s: any, i) => {
+                            return s.id != socket.user;
+                        });
 
-                            Classroom.findOneAndUpdate({ _id: socket.room }, { $inc: { numberInClass: -1 }, students: newclassusers }, { new: true }, (err, doc) => {
-                                if (err) console.log("error");
-                                if(socket.connected){
-                                    socket.disconnect();
-                                }
-                                console.log(`${socket.username} disconnected`);
+                        Classroom.findOneAndUpdate({ _id: socket.room }, { $inc: { numberInClass: -1 }, students: newclassusers }, { new: true }, (err, doc) => {
+                            if (err) console.log("error");
+                            if(socket.connected){
+                                socket.disconnect();
+                            }
+                            console.log(`${socket.username} disconnected`);
 
-                            });
+                        });
                     });
                 }
 

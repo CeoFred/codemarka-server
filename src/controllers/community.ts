@@ -103,17 +103,17 @@ export const communityOrganizersTemp = ( req: Request,res: Response,next: NextFu
 };
 
 export const communityContactInformationTemp = ( req: Request,res: Response,next: NextFunction ): object|void => {
-   const { address, email, telephone } = req.body;
-   let trimedIndex;
+    const { address, email, telephone } = req.body;
+    let trimedIndex;
 
-   if([address,email,telephone].some((value,index) => {
-         if(value.trim() === ""){
-             trimedIndex = index
+    if([address,email,telephone].some((value,index) => {
+        if(value.trim() === ""){
+            trimedIndex = index;
             return true;
         }
-   })){
-    return apiResponse.ErrorResponse(res,"All fields are required");
-   }    
+    })){
+        return apiResponse.ErrorResponse(res,"All fields are required");
+    }    
     try {
         CommunityTemp.findOne({kid:req.params.kid},(err, response) => {
             if(err) {
@@ -356,27 +356,27 @@ export const communityAccountLogin = (req: Request, res: Response): object => {
                             //Check account confirmation.
                             if(user.isConfirmed){
                                 // Check User's account active or not.
-                                    let userData = {
-                                        kid: user.kid,
-                                        username: user.communityName,
-                                        token:"",
-                                        type:"community"
-                                    };
+                                let userData = {
+                                    kid: user.kid,
+                                    username: user.communityName,
+                                    token:"",
+                                    type:"community"
+                                };
                                     //Prepare JWT token for authentication
-                                    const jwtPayload = userData;
-                                    const jwtData = {
-                                        expiresIn: process.env.JWT_TIMEOUT_DURATION || "10days",
-                                    };
+                                const jwtPayload = userData;
+                                const jwtData = {
+                                    expiresIn: process.env.JWT_TIMEOUT_DURATION || "10days",
+                                };
 
-                                    const secret = process.env.JWT_SECRET;
-                                    //Generated JWT token with Payload and secret.
-                                    userData.token = jwt.sign(jwtPayload, secret, jwtData);
+                                const secret = process.env.JWT_SECRET;
+                                //Generated JWT token with Payload and secret.
+                                userData.token = jwt.sign(jwtPayload, secret, jwtData);
 
-                                    user.updateAfterLogin(ip,{accessToken:userData.token,type: "login"});
+                                user.updateAfterLogin(ip,{accessToken:userData.token,type: "login"});
 
-                                    // integrate IP change later
+                                // integrate IP change later
                                  
-                                    return apiResponse.successResponseWithData(res,"Login Success.", userData);
+                                return apiResponse.successResponseWithData(res,"Login Success.", userData);
 
                             }else{
                                 return apiResponse.unauthorizedResponse(res, "Account is not confirmed. Please confirm your account.");
@@ -457,7 +457,7 @@ https://codemarka.dev
                         }  
                         if (err) {
                             console.log(err);
-                                return res.redirect(clientHost+"/auth/accounts/verification/failed");
+                            return res.redirect(clientHost+"/auth/accounts/verification/failed");
                         } 
                     });
                     
@@ -526,7 +526,7 @@ export const CommunityAuthLogout = (req: Request, res: Response): object| void =
                 return apiResponse.successResponse(res,"Logged out successfully");
             });
         } else {
-             return apiResponse.successResponse(res,"Logged out successfully");
+            return apiResponse.successResponse(res,"Logged out successfully");
         }
     });
 };

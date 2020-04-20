@@ -10,7 +10,7 @@ export type CommunityDocument = mongoose.Document & {
     tokens: any[];
     communityName: string;
     communityAcronym: string;
-    accountType:number;
+    accountType: number;
     telephone: string;
     completed: boolean;
     affiliation: string;
@@ -102,7 +102,7 @@ const communityScehema = new mongoose.Schema({
     communityName: {
         type: String,
         required: true,
-        },
+    },
     communityAcronym: {   
         type: String,
         required: true,

@@ -11,7 +11,7 @@ import { randomNumber ,randomString} from "../helpers/utility";
 import { successResponseWithData } from "../helpers/apiResponse";
 import { classWeb } from "../models/classWebFiles";
 import * as apiResponse from "../helpers/apiResponse";
-import { Community, CommunityDocument } from '../models/Community';
+import { Community, CommunityDocument } from "../models/Community";
 
 const notStarted = 1;
 const started = 2;
@@ -38,137 +38,137 @@ export const createClassRoom = (req: Request, res: Response, next: NextFunction)
     const accountid: string = req.body.decoded.kid;
 
     // find user and validate classroom creation limit.
-    let userAccountType: Number,privateClassroomsCreated,user;
+    let userAccountType: number,privateClassroomsCreated,user;
 
     try {
         function createClassroominit(user: UserDocument | CommunityDocument){
-                if (user) {
-                    userAccountType = user.accountType;
-                    privateClassroomsCreated = user.privateClassCreated;
-                } else {
-                    return apiResponse.ErrorResponse(res,"User not found");
-                }
+            if (user) {
+                userAccountType = user.accountType;
+                privateClassroomsCreated = user.privateClassCreated;
+            } else {
+                return apiResponse.ErrorResponse(res,"User not found");
+            }
                 
-                if (userAccountType === 101) {
+            if (userAccountType === 101) {
 
-                    if (visibility === "Private") {
-                        if (Number(privateClassroomsCreated) > MAX_PRIVATE_CLASSROOM_REGULAR) {
-                            return apiResponse.ErrorResponse(res,"You have reached your max private classroom limit for your account");
-                        }
+                if (visibility === "Private") {
+                    if (Number(privateClassroomsCreated) > MAX_PRIVATE_CLASSROOM_REGULAR) {
+                        return apiResponse.ErrorResponse(res,"You have reached your max private classroom limit for your account");
                     }
                 }
+            }
                 
-                const generateClassUrlAlias = (data: any): any => {
-                    return new Promise((resolve,reject) => {
-                        let rs = randomString(4);
+            const generateClassUrlAlias = (data: any): any => {
+                return new Promise((resolve,reject) => {
+                    let rs = randomString(4);
 
-                        classAliasUrl.findOne({shortUrl:`https://cmarka.xyz/${rs}`},(err, url) => {
-                            if(err) reject("Something went wrong while searching for urlAlias");
-                            if(url){
+                    classAliasUrl.findOne({shortUrl:`https://cmarka.xyz/${rs}`},(err, url) => {
+                        if(err) reject("Something went wrong while searching for urlAlias");
+                        if(url){
                             //url exists
-                                resolve(generateClassUrlAlias(data));
-                            } else {
-                                const url = new classAliasUrl({Kid: randomNumber(29),shortUrl: `https://cmarka.xyz/${rs}`,classroomKid:data.Kid});
-                                url.save((err,urlDoc) => {
-                                    if(err) reject("Something went wrong while trying to save");
-                                    resolve(`https://cmarka.xyz/${rs}`);
-                                });
-                            }
-                        });
-                    });
-                };
-
-                    const newclassroom = new Classroom({
-                    name,
-                    Kid: randomString(40),
-                    topic,
-                    description,
-                    classVisibility: visibility,
-                    classType,
-                    startTime,
-                    startDate,
-                    status: notStarted,
-                    owner: accountid,
-                    location,
-                    
-                    maxUsers: userAccountType === 101 ? MAX_CASSROOM_MEMBERS_REGULAR : MAX_CLASSROOM_MEMBERS_PREMUIM
-                });
-
-                newclassroom.gravatar(23);
-                newclassroom.save().then((data: ClassroomDocument) => {
-                    const jsfile = randomNumber(15);
-                    const htmlfile = randomNumber(15);
-                    const cssfile = randomNumber(15);
-
-                    // create editors for class
-                    const jsSource = `${__dirname}/../../main/boilerplates/basic--web--app/index.js`;
-                    const cssSource = `${__dirname}/../../main/boilerplates/basic--web--app/index.css`;
-                    const htmlSource = `${__dirname}/../../main/boilerplates/basic--web--app/index.html`;
-                    /// update user classrooms limit
-                    if (visibility === "Public") {
-                        User.findOneAndUpdate({kid: accountid},{$inc: {publicClassCreated: 1}},(err,doc: UserDocument) => {
-                            if(err){ 
-                                return apiResponse.ErrorResponse(res,"Whoops! Something went wrong while trying to update user public class created.");
-                            }
-                            if(!doc){
-                                Community.findOneAndUpdate({kid: accountid},{$inc: {publicClassCreated: 1}},(err, doc: CommunityDocument) => {
-                                    if(err){ 
-                                return apiResponse.ErrorResponse(res,"Whoops! Something went wrong while trying to update user private class created");
-                                    }
-                                });
-                            }
-                        });
-                    } else {
-                        User.findOneAndUpdate({kid: accountid},{$inc: {privateClassCreated: 1}},(err,doc: UserDocument) => {
-                            if(err){ 
-                                return apiResponse.ErrorResponse(res,"Whoops! Something went wrong while trying to update user private class created");
-                            }
-                            
-                            if(!doc){
-                                Community.findOneAndUpdate({kid: accountid},{$inc: {privateClassCreated: 1}},(err, doc: CommunityDocument) => {
-                                    if(err){ 
-                                return apiResponse.ErrorResponse(res,"Whoops! Something went wrong while trying to update user private class created");
-                            }
-                                });
-                            }
-                        });
-                    }
-                    const dire = `${__dirname}/../../main/classrooms/${data.Kid}/`;
-                    
-                    if (!fs.existsSync(dire)){
-                        fs.mkdirSync(dire,{ recursive: true });
-                    }
-                    generateClassUrlAlias(data).then((dataUrl: string) => {
-                        data.shortUrl = dataUrl;
-                        data.save((err,nd) => {
-                            if(err){ 
-                                console.log(err);
-                                return apiResponse.ErrorResponse(res,"Whoops! Something went wrong while trying to save class shortURL");
-                            }
-                            // console.log(nd);
-                            // console.log(dataUrl);
-                            const jsContent = fs.readFileSync(jsSource,"utf8");
-                            const cssContent = fs.readFileSync(cssSource,"utf8");
-                            const htmlContent = fs.readFileSync(htmlSource,"utf8");
-
-                            new classWeb({ classroomKid:data.Kid,classroomId: data._id, js: {id:jsfile,content:jsContent}, css: { id:cssfile,content:cssContent }, html: {id:htmlfile,content:htmlContent} }).save().then((file) => {
-                                return  successResponseWithData(res, "success", nd);
-
-                            }).catch(err => {
-                                console.log(err);
-                                return apiResponse.ErrorResponse(res,"Whoops! Something went wrong while trying to create classroom web files.");
+                            resolve(generateClassUrlAlias(data));
+                        } else {
+                            const url = new classAliasUrl({Kid: randomNumber(29),shortUrl: `https://cmarka.xyz/${rs}`,classroomKid:data.Kid});
+                            url.save((err,urlDoc) => {
+                                if(err) reject("Something went wrong while trying to save");
+                                resolve(`https://cmarka.xyz/${rs}`);
                             });
-                        });
+                        }
+                    });
+                });
+            };
 
-                    }).catch((err: string) => {
-                        console.log(err);
-                        return apiResponse.ErrorResponse(res,"Whoops! Something went wrong while trying to generate shortURL");
+            const newclassroom = new Classroom({
+                name,
+                Kid: randomString(40),
+                topic,
+                description,
+                classVisibility: visibility,
+                classType,
+                startTime,
+                startDate,
+                status: notStarted,
+                owner: accountid,
+                location,
+                    
+                maxUsers: userAccountType === 101 ? MAX_CASSROOM_MEMBERS_REGULAR : MAX_CLASSROOM_MEMBERS_PREMUIM
+            });
+
+            newclassroom.gravatar(23);
+            newclassroom.save().then((data: ClassroomDocument) => {
+                const jsfile = randomNumber(15);
+                const htmlfile = randomNumber(15);
+                const cssfile = randomNumber(15);
+
+                // create editors for class
+                const jsSource = `${__dirname}/../../main/boilerplates/basic--web--app/index.js`;
+                const cssSource = `${__dirname}/../../main/boilerplates/basic--web--app/index.css`;
+                const htmlSource = `${__dirname}/../../main/boilerplates/basic--web--app/index.html`;
+                /// update user classrooms limit
+                if (visibility === "Public") {
+                    User.findOneAndUpdate({kid: accountid},{$inc: {publicClassCreated: 1}},(err,doc: UserDocument) => {
+                        if(err){ 
+                            return apiResponse.ErrorResponse(res,"Whoops! Something went wrong while trying to update user public class created.");
+                        }
+                        if(!doc){
+                            Community.findOneAndUpdate({kid: accountid},{$inc: {publicClassCreated: 1}},(err, doc: CommunityDocument) => {
+                                if(err){ 
+                                    return apiResponse.ErrorResponse(res,"Whoops! Something went wrong while trying to update user private class created");
+                                }
+                            });
+                        }
+                    });
+                } else {
+                    User.findOneAndUpdate({kid: accountid},{$inc: {privateClassCreated: 1}},(err,doc: UserDocument) => {
+                        if(err){ 
+                            return apiResponse.ErrorResponse(res,"Whoops! Something went wrong while trying to update user private class created");
+                        }
+                            
+                        if(!doc){
+                            Community.findOneAndUpdate({kid: accountid},{$inc: {privateClassCreated: 1}},(err, doc: CommunityDocument) => {
+                                if(err){ 
+                                    return apiResponse.ErrorResponse(res,"Whoops! Something went wrong while trying to update user private class created");
+                                }
+                            });
+                        }
+                    });
+                }
+                const dire = `${__dirname}/../../main/classrooms/${data.Kid}/`;
+                    
+                if (!fs.existsSync(dire)){
+                    fs.mkdirSync(dire,{ recursive: true });
+                }
+                generateClassUrlAlias(data).then((dataUrl: string) => {
+                    data.shortUrl = dataUrl;
+                    data.save((err,nd) => {
+                        if(err){ 
+                            console.log(err);
+                            return apiResponse.ErrorResponse(res,"Whoops! Something went wrong while trying to save class shortURL");
+                        }
+                        // console.log(nd);
+                        // console.log(dataUrl);
+                        const jsContent = fs.readFileSync(jsSource,"utf8");
+                        const cssContent = fs.readFileSync(cssSource,"utf8");
+                        const htmlContent = fs.readFileSync(htmlSource,"utf8");
+
+                        new classWeb({ classroomKid:data.Kid,classroomId: data._id, js: {id:jsfile,content:jsContent}, css: { id:cssfile,content:cssContent }, html: {id:htmlfile,content:htmlContent} }).save().then((file) => {
+                            return  successResponseWithData(res, "success", nd);
+
+                        }).catch(err => {
+                            console.log(err);
+                            return apiResponse.ErrorResponse(res,"Whoops! Something went wrong while trying to create classroom web files.");
+                        });
                     });
 
-                }).catch((err: Error) => {
+                }).catch((err: string) => {
                     console.log(err);
-                    return apiResponse.ErrorResponse(res,"Whoops! Something went wrong while trying to save classroom data to model");
+                    return apiResponse.ErrorResponse(res,"Whoops! Something went wrong while trying to generate shortURL");
                 });
+
+            }).catch((err: Error) => {
+                console.log(err);
+                return apiResponse.ErrorResponse(res,"Whoops! Something went wrong while trying to save classroom data to model");
+            });
         }
         User.findOne({kid:accountid}).then((respo: any) => {
 
@@ -176,9 +176,9 @@ export const createClassRoom = (req: Request, res: Response, next: NextFunction)
                 return createClassroominit(respo);
             } else {
                 Community.findOne({kid:accountid}).then((community: CommunityDocument) => {
-                   if(community) createClassroominit(community);
+                    if(community) createClassroominit(community);
                     return apiResponse.ErrorResponse(res,"Account not found");
-                })
+                });
             }
         }).catch((err) => {
             return apiResponse.ErrorResponse(res,"Something went wrong");
