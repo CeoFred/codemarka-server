@@ -14,15 +14,19 @@ export type ClassroomDocument = mongoose.Document & {
     startTime: any;
     startDate: any;
     maxUsers: number;
-    Kid: string;
+    visits: number;
+    location: number;
+    kid: string;
     shortUrl: string;
     name: string;
     gravatar: (p: number) => void;
+    description: string;
+    topic: string;
 };
 
 
 const classroomSchema = new mongoose.Schema({
-    Kid: {
+    kid: {
         type: String,
         required: true
     },

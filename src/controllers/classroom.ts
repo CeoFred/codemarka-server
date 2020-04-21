@@ -36,7 +36,6 @@ export const createClassRoom = (req: Request, res: Response, next: NextFunction)
     
 
     const accountid: string = req.body.decoded.kid;
-
     // find user and validate classroom creation limit.
     let userAccountType: number,privateClassroomsCreated,user;
 
@@ -68,8 +67,9 @@ export const createClassRoom = (req: Request, res: Response, next: NextFunction)
                             //url exists
                             resolve(generateClassUrlAlias(data));
                         } else {
-                            const url = new classAliasUrl({Kid: randomNumber(29),shortUrl: `https://cmarka.xyz/${rs}`,classroomKid:data.Kid});
+                            const url = new classAliasUrl({Kid: randomNumber(29),shortUrl: `https://cmarka.xyz/${rs}`,classroomKid:data.kid});
                             url.save((err,urlDoc) => {
+                                console.log(err);
                                 if(err) reject("Something went wrong while trying to save");
                                 resolve(`https://cmarka.xyz/${rs}`);
                             });
@@ -80,7 +80,7 @@ export const createClassRoom = (req: Request, res: Response, next: NextFunction)
 
             const newclassroom = new Classroom({
                 name,
-                Kid: randomString(40),
+                kid: randomString(40),
                 topic,
                 description,
                 classVisibility: visibility,
@@ -133,7 +133,7 @@ export const createClassRoom = (req: Request, res: Response, next: NextFunction)
                         }
                     });
                 }
-                const dire = `${__dirname}/../../main/classrooms/${data.Kid}/`;
+                const dire = `${__dirname}/../../main/classrooms/${data.kid}/`;
                     
                 if (!fs.existsSync(dire)){
                     fs.mkdirSync(dire,{ recursive: true });
@@ -151,7 +151,7 @@ export const createClassRoom = (req: Request, res: Response, next: NextFunction)
                         const cssContent = fs.readFileSync(cssSource,"utf8");
                         const htmlContent = fs.readFileSync(htmlSource,"utf8");
 
-                        new classWeb({ classroomKid:data.Kid,classroomId: data._id, js: {id:jsfile,content:jsContent}, css: { id:cssfile,content:cssContent }, html: {id:htmlfile,content:htmlContent} }).save().then((file) => {
+                        new classWeb({ classroomKid:data.kid,classroomId: data._id, js: {id:jsfile,content:jsContent}, css: { id:cssfile,content:cssContent }, html: {id:htmlfile,content:htmlContent} }).save().then((file) => {
                             return  successResponseWithData(res, "success", nd);
 
                         }).catch(err => {
@@ -176,8 +176,11 @@ export const createClassRoom = (req: Request, res: Response, next: NextFunction)
                 return createClassroominit(respo);
             } else {
                 Community.findOne({kid:accountid}).then((community: CommunityDocument) => {
-                    if(community) createClassroominit(community);
+                    if(community) {
+                       return createClassroominit(community);
+                    } else {
                     return apiResponse.ErrorResponse(res,"Account not found");
+                    }
                 });
             }
         }).catch((err) => {
@@ -332,7 +335,7 @@ export const classroomPreview = (req: Request, res: Response): object => {
                     id: jsFileId,
                     content: jsContent
                 };
-                Classroom.findOne({Kid: classroomKid},(err,respo: ClassroomDocument) => {
+                Classroom.findOne({kid: classroomKid},(err,respo: ClassroomDocument) => {
                     if(!err && respo){
                         const name = respo.name;
                         return apiResponse.successResponseWithData(res, "success", { css, html, js, classKid:classroomKid,name });
@@ -353,7 +356,7 @@ export const verifyClassroom = (req: Request, res: Response, next: NextFunction)
         return apiResponse.ErrorResponse(res, "Invalid classroom id");
     }
 
-    Classroom.findOneAndUpdate({ Kid: classroom }, { $inc: { visits: 1 } }).then(d => {
+    Classroom.findOneAndUpdate({ kid: classroom }, { $inc: { visits: 1 } }).then(d => {
         if (d && d.status === started) {
             return apiResponse.successResponseWithData(res, "success", d);
         } else if (d && d.status === notStarted) {
@@ -388,9 +391,24 @@ exports.endClassPermanently = (req: Request, res: Response) => {
 export const getTrending = (req: Request, res: Response): object => {
 
 
-    return Classroom.find({ status: started, classVisibility: "Public" }).limit(12).sort({ visits: -1 }).then(d => {
-        
-        return apiResponse.successResponseWithData(res, "Success", d);
+    return Classroom.find({ status: started, classVisibility: "Public" }).limit(12).sort({ visits: -1 }).then((d: ClassroomDocument[]) => {
+        let filteredClassrooms: any[] = [];
+        if(d){
+            filteredClassrooms = d.map((room: ClassroomDocument) => {
+                return {
+                    visits: room.visits,
+                    likes: room.likes,
+                    students: room.students,
+                    location: room.location,
+                    name: room.name,
+                    description: room.description,
+                    top: room.topic,
+                    kid: room.kid,
+                    topic: room.topic
+                }
+            });
+        };
+        return apiResponse.successResponseWithData(res, "Success", filteredClassrooms);
 
     }).catch(e => {
         return apiResponse.ErrorResponse(res, e);

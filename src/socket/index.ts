@@ -9,8 +9,8 @@ import sgMail  from "@sendgrid/mail";
 import { Classroom, ClassroomDocument } from "../models/classroom";
 import { classWeb } from "../models/classWebFiles";
 
-import { User } from "../models/User";
-import { Community } from "../models/community";
+import { User, UserDocument } from "../models/User";
+import { Community, CommunityDocument } from "../models/Community";
 
 export default (server: express.Application) => {
     let activeSockets: string[] = [];
@@ -37,7 +37,7 @@ export default (server: express.Application) => {
             userId: string;
             classroom_id: string;
             username: string;
-            cdata: object;
+            cdata: ClassroomDocument;
         }
 
         socket.on("re_join",(data: JoinObj) => {
@@ -48,19 +48,18 @@ export default (server: express.Application) => {
             socket.classinfo = data.cdata;
 
             socket.join(data.classroom_id, () => {
-
-                
-                User.findOne({ kid: data.userId }).then(user => {
-                    if(user && user !== null){
+                function proceedToRejoinUser(user: any){
+                    
                         Classroom.findById(data.classroom_id, (err, res: any) => {
                            
-                            // const students = res.students;
-                            // let found = students.filter((s: any) => {
-                            //     return String(s.id) === String(socket.user);
-                            // });
-                            // if(Array.isArray(found) && found[0]){
-                            //     nsp.to(socket.room).emit("disconnect_user_before_join",data);
-                            // };
+                            const students = res.students;
+                            let found = students.filter((s: any) => {
+                                return String(s.kid) === String(socket.user);
+                            });
+
+                            if(Array.isArray(found) && found[0]){
+                                nsp.to(socket.room).emit("disconnect_user_before_join",data);
+                            };
                        
                             if(res && res !== null){
                                     
@@ -77,11 +76,11 @@ export default (server: express.Application) => {
 
                                 const studentObj = {
                                     id: String(user._id),
-                                    username: user.username,
+                                    username: user.username || user.communityName,
                                     role: "1",
                                     kid: user.kid,
-                                    stack: user.techStack,
-                                    avatar: user.gravatarUrl
+                                    stack: user.techStack || "communityAccount",
+                                    avatar: user.gravatarUrl || "communityAvatar"
                                 };
  
                                 oldStudentsWithoutUser.push(studentObj);
@@ -141,8 +140,20 @@ export default (server: express.Application) => {
                                 });
                             }
                         });
+                }
+                
+                User.findOne({ kid: data.userId }).then(user => {
+                    if(user){
+                        return proceedToRejoinUser(user);
+                    } else {
+                        Community.findOne({ kid: data.userId }).then((communityAccountDocument: CommunityDocument) => {
+                            if(communityAccountDocument){
+                            return proceedToRejoinUser(communityAccountDocument);
+                            }
+                        }).catch((err) => {
+                            socket.emit("error","Failed to join classroom");
+                        });
                     }
-
                 });
                
             }); 
@@ -161,10 +172,8 @@ export default (server: express.Application) => {
             // find user and update
             User.findOne({ kid: data.userId }).then(user => {
                 let studentObj;
-
-                if (user && user !== null) {
-
-                    // check if user is already in classm, filter and push new user object
+                function proceedTojoinUser(user: any){
+                                        // check if user is already in classm, filter and push new user object
                     Classroom.findById(data.classroom_id, (err, res) => {
                         if (err) throw err;
                         
@@ -176,7 +185,7 @@ export default (server: express.Application) => {
                             if(Array.isArray(found) && found[0]){
                                 nsp.to(socket.room).emit("disconnect_user_before_join",data);
                             };
-                            console.log("found class",students);
+                            console.log("found class");
                             const currentClassStudents = res.students;
                             oldStudentsWithoutUser = currentClassStudents.filter(student => {
                                 return String(student.kid) !== String(data.userId);
@@ -184,11 +193,11 @@ export default (server: express.Application) => {
 
                             studentObj = {
                                 id: String(user._id),
-                                username: user.username,
+                                username: user.username || user.communityName,
                                 role: "1",
                                 kid: user.kid,
-                                stack: user.techStack,
-                                avatar: user.gravatarUrl,
+                                stack: user.techStack || "communityAccount",
+                                avatar: user.gravatarUrl || user.Logo,
                                 socketId: socket.id
                             };
  
@@ -196,7 +205,7 @@ export default (server: express.Application) => {
 
 
                             const updatedStudentList = oldStudentsWithoutUser;
-
+                            console.log(updatedStudentList);
                             Classroom.findOneAndUpdate({ _id: data.classroom_id },
                                 {
 
@@ -290,6 +299,18 @@ export default (server: express.Application) => {
 
                     });
 
+                }
+                if (user) {
+                    proceedTojoinUser(user);
+
+                } else {
+                     Community.findOne({ kid: data.userId }).then((communityAccountDocument: CommunityDocument) => {
+                            if(communityAccountDocument){
+                            return proceedTojoinUser(communityAccountDocument);
+                            }
+                        }).catch((err) => {
+                            socket.emit("error","Failed to join classroom");
+                        });
                 }
             }).catch(err => {
 
@@ -594,7 +615,7 @@ export default (server: express.Application) => {
                 if(err) socket.emit("classroom_error");
 
                 if(user !== null){
-                    Classroom.findOne({Kid:classroomInfo.kid}, (err, res: any) => {
+                    Classroom.findOne({kid:classroomInfo.kid}, (err, res: any) => {
                         if(res){
                             const students = res.students;
                             let found = students.filter((s: any) => {
@@ -613,7 +634,7 @@ export default (server: express.Application) => {
                         if(err) socket.emit("classroom_error");
 
                         if(user !== null){
-                            Classroom.findOne({Kid:classroomInfo.kid}, (err, res: any) => {
+                            Classroom.findOne({kid:classroomInfo.kid}, (err, res: any) => {
                                 if(res){
                                     const students = res.students;
                                     let found = students.filter((s: any) => {
@@ -661,6 +682,7 @@ export default (server: express.Application) => {
             const username = data.user.username;
             const id = data.user.id;
             const role = data.new_role;
+            let newadminkid: string;
             // query classroom classroom and update 
             // console.log(`Incoming role toogle data ${data}`);
 
@@ -676,7 +698,8 @@ export default (server: express.Application) => {
 
                         if (String(student.id) === String(id)) {
                             // console.log(`fOUND STUDENT AND UPDATING CLASS ROLE TO ${role}`)
-                            return { id, role, username };
+                            newadminkid = student.kid;
+                            return { ...student,role };
                         } else {
                             // console.log(`Found student not to be updaed = ${student}`);
                             return student;
@@ -723,7 +746,7 @@ export default (server: express.Application) => {
                         { new: true }).then((d: any) => {
 
                         nsp.to(socket.room).emit("newuser_role",
-                            { id: id, role, assignedBy: socket.user, newusers: d.students });
+                            {kid:newadminkid, id: id, role, assignedBy: socket.user, newusers: d.students });
                     });
 
                 }
@@ -753,39 +776,6 @@ export default (server: express.Application) => {
             });
         });
 
-        socket.on("leave", (data: JoinObj) => {
-            // socket.leave(data.classroom_id)
-            delete clients[socket.id];
-            socket.leave(socket.room);
-
-            Classroom.findById(socket.room, (err, room: ClassroomDocument) => {
-
-                if (err) {
-                    console.log("error",err);
-                } else if (room && room !== null) {
-                    console.log("found",room);
-                    // find user in student field array
-                    room.students.forEach((user: { id: any }, i) => {
-                        let newclassusers: any[];
-
-                        newclassusers = room.students.filter((s: any, i) => {
-                            return s.id != socket.user;
-                        });
-
-                        Classroom.findOneAndUpdate({ _id: socket.room }, { $inc: { numberInClass: -1 }, students: newclassusers }, { new: true }, (err, doc) => {
-                            if (err) console.log("error");
-                            if(socket.connected){
-                                socket.disconnect();
-                            }
-                            console.log(`${socket.username} disconnected`);
-
-                        });
-                    });
-                }
-
-            });
-
-        });
         interface NewMessageInterface {
             message: string;
             class: string;
@@ -798,6 +788,7 @@ export default (server: express.Application) => {
 
         socket.on("newMessage", (data: NewMessageInterface) => {
             
+
             User.findOne({ kid: data.user }).then(u => {
                 if (u) {
                     const msgId = uuidv4();
@@ -809,7 +800,7 @@ export default (server: express.Application) => {
                         color: data.messageColor,
                         oTime: data.time
                     };
-                    Classroom.findOneAndUpdate({ Kid: data.kid, status: 2 },
+                    Classroom.findOneAndUpdate({ kid: data.class, status: 2 },
                         {
                             $push: {
                                 messages: msgObject
@@ -819,17 +810,19 @@ export default (server: express.Application) => {
                         function (err, doc: object) {
                             if (err) {
                                 console.log(err);
-                            } else {
+                            } else if (doc) {
                                 //do stuff
                                 nsp.to(socket.room).emit("nM",
                                     {
                                         ...msgObject
                                     });
-                                console.log("sending message");
+                                console.log("sent msg");
                             }
                         }
                     );
 
+                } else {
+                    console.log("user that sent message is not registered");
                 }
 
             });
@@ -845,12 +838,18 @@ export default (server: express.Application) => {
         }
 
         socket.on("editorChanged", (data: EditorChangedInterface) => {
-            // console.log("received signal to update editor",data);
             try {
                 classWeb.findOne({classroomKid:data.kid}, (err,res) => {
-                    if(err) socket.emit("classroom_error");
-                    if(res === null) socket.emit("editor_update_error","class not found");
-                    if(res !== null){
+
+                    if(err) {
+                        socket.emit("classroom_error");
+                        console.log(err);
+                    };
+                    if(res === null) {
+                        socket.emit("editor_update_error","class not found");
+                        console.log("class not found",res)
+                    }
+                    if(res){
                         if(data.file === "js"){
                             res.js.content = data.content;
                         }
@@ -861,7 +860,10 @@ export default (server: express.Application) => {
                             res.html.content = data.content;
                         }
                         res.save((err,doc) => {
-                            if(err) socket.emit("classroom_error");
+                            if(err) {
+                                socket.emit("classroom_error");
+                                console.log("Error updating editors remotely",err);
+                            }
                             if(doc) { 
                                 nsp.to(socket.room).emit("class_files_updated",{...data});
                                 // console.log("Class File Updated", doc);
@@ -872,7 +874,7 @@ export default (server: express.Application) => {
 
             } catch(e) {
                 console.log(e);
-                nsp.to(socket.room).emit("editor_update_error");
+                nsp.to(socket.room).emit("editor_update_error","Failed to Update On Remote Server");
             } 
             
             // console.log(classfiles);
@@ -907,22 +909,21 @@ export default (server: express.Application) => {
                 timeSent: moment().format("LT"),
                 msgId: uuidv4()
             });
-
             Classroom.findById(socket.room, (err, room: ClassroomDocument) => {
 
                 if (err) {
 
                 } else if (room && room !== null) {
                     // find user in student field array
-                    room.students.forEach((user: { id: any }, i) => {
-                        if (user.id == socket.user) {
+                    room.students.forEach((user: { kid: string }, i) => {
+                        if (user.kid == socket.user) {
                             let newclassusers: any[];
 
                             newclassusers = room.students.filter((s: any, i) => {
-                                return s.id != socket.user;
+                                return s.kid != socket.user;
                             });
 
-                            Classroom.findOneAndUpdate({ _id: socket.room }, { $inc: { numberInClass: -1 }, students: newclassusers }, { new: true }, (err, doc) => {
+                            Classroom.findOneAndUpdate({ _id: socket.room }, {  numberInClass: newclassusers.length , students: newclassusers }, { new: true }, (err, doc) => {
                                 if (err) console.log("error");
                             });
                         }
