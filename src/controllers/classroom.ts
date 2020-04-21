@@ -177,9 +177,9 @@ export const createClassRoom = (req: Request, res: Response, next: NextFunction)
             } else {
                 Community.findOne({kid:accountid}).then((community: CommunityDocument) => {
                     if(community) {
-                       return createClassroominit(community);
+                        return createClassroominit(community);
                     } else {
-                    return apiResponse.ErrorResponse(res,"Account not found");
+                        return apiResponse.ErrorResponse(res,"Account not found");
                     }
                 });
             }
@@ -405,7 +405,7 @@ export const getTrending = (req: Request, res: Response): object => {
                     top: room.topic,
                     kid: room.kid,
                     topic: room.topic
-                }
+                };
             });
         };
         return apiResponse.successResponseWithData(res, "Success", filteredClassrooms);
