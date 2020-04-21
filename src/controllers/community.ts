@@ -17,9 +17,9 @@ import { sendMail } from "../config/mailer";
 const cloudi = cloudinary.v2;
 
 cloudi.config({ 
-    cloud_name: "ogwugo-people", 
-    api_key: "884434965257465", 
-    api_secret: "dk_QJWS3eBrzBWNo_xjN1RHz1AI" 
+    cloud_name: "codemarka", 
+    api_key: "831423733611478", 
+    api_secret: "EsmTcI2hBcDKLRzYwxkEuxopU4o" 
 });
 const ENVIRONMENT = process.env.NODE_ENV;
 const prod = ENVIRONMENT === "production";
