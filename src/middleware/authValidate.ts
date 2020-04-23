@@ -1,7 +1,7 @@
 import {  check,sanitize,body,sanitizeBody } from "express-validator";
 import { User} from "../models/User";
 // import * as apiResponse from '../helpers/apiResponse';
-const returnSignupValidation = () => {
+const returnSignupValidation = (): any => {
     return [ 
         // eslint-disable-next-line @typescript-eslint/camelcase
         sanitize("email").normalizeEmail({ gmail_remove_dots: false }),

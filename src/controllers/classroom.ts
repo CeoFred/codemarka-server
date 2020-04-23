@@ -11,7 +11,7 @@ import { randomNumber ,randomString} from "../helpers/utility";
 import { successResponseWithData } from "../helpers/apiResponse";
 import { classWeb } from "../models/classWebFiles";
 import * as apiResponse from "../helpers/apiResponse";
-import * as modelHelper from "../helpers/userModel";
+import { Community, CommunityDocument } from "../models/Community";
 
 const notStarted = 1;
 const started = 2;
@@ -35,136 +35,156 @@ export const createClassRoom = (req: Request, res: Response, next: NextFunction)
     const { location, name, topic, startTime, startDate, description, classType, visibility } = req.body;
     
 
-    const userid: string = req.body.decoded._id;
-
+    const accountid: string = req.body.decoded.kid;
     // find user and validate classroom creation limit.
-    let userAccountType,privateClassroomsCreated,user;
+    let userAccountType: number,privateClassroomsCreated,user;
 
     try {
-     
-        modelHelper.findUser(userid).then((respo: UserDocument) => {
+        function createClassroominit(user: UserDocument | CommunityDocument){
+            if (user) {
+                userAccountType = user.accountType;
+                privateClassroomsCreated = user.privateClassCreated;
+            } else {
+                return apiResponse.ErrorResponse(res,"User not found");
+            }
+                
+            if (userAccountType === 101) {
+
+                if (visibility === "Private") {
+                    if (Number(privateClassroomsCreated) > MAX_PRIVATE_CLASSROOM_REGULAR) {
+                        return apiResponse.ErrorResponse(res,"You have reached your max private classroom limit for your account");
+                    }
+                }
+            }
+                
+            const generateClassUrlAlias = (data: any): any => {
+                return new Promise((resolve,reject) => {
+                    let rs = randomString(4);
+
+                    classAliasUrl.findOne({shortUrl:`https://cmarka.xyz/${rs}`},(err, url) => {
+                        if(err) reject("Something went wrong while searching for urlAlias");
+                        if(url){
+                            //url exists
+                            resolve(generateClassUrlAlias(data));
+                        } else {
+                            const url = new classAliasUrl({Kid: randomNumber(29),shortUrl: `https://cmarka.xyz/${rs}`,classroomKid:data.kid});
+                            url.save((err,urlDoc) => {
+                                console.log(err);
+                                if(err) reject("Something went wrong while trying to save");
+                                resolve(`https://cmarka.xyz/${rs}`);
+                            });
+                        }
+                    });
+                });
+            };
+
+            const newclassroom = new Classroom({
+                name,
+                kid: randomString(40),
+                topic,
+                description,
+                classVisibility: visibility,
+                classType,
+                startTime,
+                startDate,
+                status: notStarted,
+                owner: accountid,
+                location,
+                    
+                maxUsers: userAccountType === 101 ? MAX_CASSROOM_MEMBERS_REGULAR : MAX_CLASSROOM_MEMBERS_PREMUIM
+            });
+
+            newclassroom.gravatar(23);
+            newclassroom.save().then((data: ClassroomDocument) => {
+                const jsfile = randomNumber(15);
+                const htmlfile = randomNumber(15);
+                const cssfile = randomNumber(15);
+
+                // create editors for class
+                const jsSource = `${__dirname}/../../main/boilerplates/basic--web--app/index.js`;
+                const cssSource = `${__dirname}/../../main/boilerplates/basic--web--app/index.css`;
+                const htmlSource = `${__dirname}/../../main/boilerplates/basic--web--app/index.html`;
+                /// update user classrooms limit
+                if (visibility === "Public") {
+                    User.findOneAndUpdate({kid: accountid},{$inc: {publicClassCreated: 1}},(err,doc: UserDocument) => {
+                        if(err){ 
+                            return apiResponse.ErrorResponse(res,"Whoops! Something went wrong while trying to update user public class created.");
+                        }
+                        if(!doc){
+                            Community.findOneAndUpdate({kid: accountid},{$inc: {publicClassCreated: 1}},(err, doc: CommunityDocument) => {
+                                if(err){ 
+                                    return apiResponse.ErrorResponse(res,"Whoops! Something went wrong while trying to update user private class created");
+                                }
+                            });
+                        }
+                    });
+                } else {
+                    User.findOneAndUpdate({kid: accountid},{$inc: {privateClassCreated: 1}},(err,doc: UserDocument) => {
+                        if(err){ 
+                            return apiResponse.ErrorResponse(res,"Whoops! Something went wrong while trying to update user private class created");
+                        }
+                            
+                        if(!doc){
+                            Community.findOneAndUpdate({kid: accountid},{$inc: {privateClassCreated: 1}},(err, doc: CommunityDocument) => {
+                                if(err){ 
+                                    return apiResponse.ErrorResponse(res,"Whoops! Something went wrong while trying to update user private class created");
+                                }
+                            });
+                        }
+                    });
+                }
+                const dire = `${__dirname}/../../main/classrooms/${data.kid}/`;
+                    
+                if (!fs.existsSync(dire)){
+                    fs.mkdirSync(dire,{ recursive: true });
+                }
+                generateClassUrlAlias(data).then((dataUrl: string) => {
+                    data.shortUrl = dataUrl;
+                    data.save((err,nd) => {
+                        if(err){ 
+                            console.log(err);
+                            return apiResponse.ErrorResponse(res,"Whoops! Something went wrong while trying to save class shortURL");
+                        }
+                        // console.log(nd);
+                        // console.log(dataUrl);
+                        const jsContent = fs.readFileSync(jsSource,"utf8");
+                        const cssContent = fs.readFileSync(cssSource,"utf8");
+                        const htmlContent = fs.readFileSync(htmlSource,"utf8");
+
+                        new classWeb({ classroomKid:data.kid,classroomId: data._id, js: {id:jsfile,content:jsContent}, css: { id:cssfile,content:cssContent }, html: {id:htmlfile,content:htmlContent} }).save().then((file) => {
+                            return  successResponseWithData(res, "success", nd);
+
+                        }).catch(err => {
+                            console.log(err);
+                            return apiResponse.ErrorResponse(res,"Whoops! Something went wrong while trying to create classroom web files.");
+                        });
+                    });
+
+                }).catch((err: string) => {
+                    console.log(err);
+                    return apiResponse.ErrorResponse(res,"Whoops! Something went wrong while trying to generate shortURL");
+                });
+
+            }).catch((err: Error) => {
+                console.log(err);
+                return apiResponse.ErrorResponse(res,"Whoops! Something went wrong while trying to save classroom data to model");
+            });
+        }
+        User.findOne({kid:accountid}).then((respo: any) => {
 
             if(respo){
-                user = respo;
-                if (user) {
-                    userAccountType = user.accountType;
-                    privateClassroomsCreated = user.privateClassCreated;
-                } else {
-                    return apiResponse.ErrorResponse(res,"User not found");
-                }
-
-                if (userAccountType && userAccountType === "regular") {
-
-                    if (visibility === "Private") {
-                        if (Number(privateClassroomsCreated) > MAX_PRIVATE_CLASSROOM_REGULAR) {
-                            return apiResponse.ErrorResponse(res,"You have reached your max private classroom limit for your account");
-                        }
-                    }
-                }
-
-                
-                const generateClassUrlAlias = (data: any): any => {
-                    return new Promise((resolve,reject) => {
-                        let rs = randomString(4);
-
-                        classAliasUrl.findOne({shortUrl:`https://cmarka.xyz/${rs}`},(err, url) => {
-                            if(err) reject("Something went wrong while searching for urlAlias");
-                            if(url){
-                            //url exists
-                                resolve(generateClassUrlAlias(data));
-                            } else {
-                                const url = new classAliasUrl({Kid: randomNumber(29),shortUrl: `https://cmarka.xyz/${rs}`,classroomKid:data.Kid});
-                                url.save((err,urlDoc) => {
-                                    if(err) reject("Something went wrong while trying to save");
-                                    resolve(`https://cmarka.xyz/${rs}`);
-                                });
-                            }
-                        });
-                    });
-                };
-                const newclassroom = new Classroom({
-                    name,
-                    Kid: randomString(40),
-                    topic,
-                    description,
-                    classVisibility: visibility,
-                    classType,
-                    startTime,
-                    startDate,
-                    status: notStarted,
-                    owner: userid,
-                    location,
-                    
-                    maxUsers: userAccountType === "regular" ? MAX_CASSROOM_MEMBERS_REGULAR : MAX_CLASSROOM_MEMBERS_PREMUIM
-                });
-
-                newclassroom.gravatar(23);
-
-
-
-                newclassroom.save().then((data: ClassroomDocument) => {
-                    const jsfile = randomNumber(15);
-                    const htmlfile = randomNumber(15);
-                    const cssfile = randomNumber(15);
-
-                    // create editors for class
-                    const jsSource = `${__dirname}/../../main/boilerplates/basic--web--app/index.js`;
-                    const cssSource = `${__dirname}/../../main/boilerplates/basic--web--app/index.css`;
-                    const htmlSource = `${__dirname}/../../main/boilerplates/basic--web--app/index.html`;
-                    /// update user classrooms limit
-                    if (visibility === "Public") {
-                        User.findOneAndUpdate({_id: userid},{$inc: {publicClassCreated: 1}},(err,doc: UserDocument) => {
-                            if(err){ 
-                                return apiResponse.ErrorResponse(res,"Whoops! Something went wrong while trying to update user public class created.");
-                            }
-                        });
+                return createClassroominit(respo);
+            } else {
+                Community.findOne({kid:accountid}).then((community: CommunityDocument) => {
+                    if(community) {
+                        return createClassroominit(community);
                     } else {
-                        User.findOneAndUpdate({_id: userid},{$inc: {privateClassCreated: 1}},(err,doc: UserDocument) => {
-                            if(err){ 
-                                return apiResponse.ErrorResponse(res,"Whoops! Something went wrong while trying to update user private class created");
-                            }
-                        });
+                        return apiResponse.ErrorResponse(res,"Account not found");
                     }
-                    const dire = `${__dirname}/../../main/classrooms/${data.Kid}/`;
-                    
-                    if (!fs.existsSync(dire)){
-                        fs.mkdirSync(dire,{ recursive: true });
-                    }
-                    generateClassUrlAlias(data).then((dataUrl: string) => {
-                        data.shortUrl = dataUrl;
-                        data.save((err,nd) => {
-                            if(err){ 
-                                console.log(err);
-                                return apiResponse.ErrorResponse(res,"Whoops! Something went wrong while trying to save class shortURL");
-                            }
-                            // console.log(nd);
-                            // console.log(dataUrl);
-                            const jsContent = fs.readFileSync(jsSource,"utf8");
-                            const cssContent = fs.readFileSync(cssSource,"utf8");
-                            const htmlContent = fs.readFileSync(htmlSource,"utf8");
-
-                            new classWeb({ classroomKid:data.Kid,classroomId: data._id, js: {id:jsfile,content:jsContent}, css: { id:cssfile,content:cssContent }, html: {id:htmlfile,content:htmlContent} }).save().then((file) => {
-                                return  successResponseWithData(res, "success", nd);
-
-                            }).catch(err => {
-                                console.log(err);
-                                return apiResponse.ErrorResponse(res,"Whoops! Something went wrong while trying to create classroom web files.");
-                            });
-                        });
-
-                    }).catch((err: string) => {
-                        console.log(err);
-                        return apiResponse.ErrorResponse(res,"Whoops! Something went wrong while trying to generate shortURL");
-                    });
-
-                }).catch((err: Error) => {
-                    console.log(err);
-                    return apiResponse.ErrorResponse(res,"Whoops! Something went wrong while trying to save classroom data to model");
                 });
-
             }
-        }).catch(() => {
-            return apiResponse.ErrorResponse(res,"User not found");
+        }).catch((err) => {
+            return apiResponse.ErrorResponse(res,"Something went wrong");
         });
 
        
@@ -185,7 +205,7 @@ export const findClassRoom = (req: Request, res: Response): any => {
     const { q } = req.params;
     if (q && q.trim() !== "") {
         const reqexQ = new RegExp(q, "i");
-        Classroom.find({ name: reqexQ }, "name location", (err, d: ClassroomDocument[]| any) => {
+        Classroom.find({ $or: [ { "name": reqexQ},{ "topic" :reqexQ }] }, "name location topic kid", (err, d: ClassroomDocument[]| any) => {
             if (d && err === null && d.status !== 3) {
                 
                 return apiResponse.successResponseWithData(res, "Success", d);
@@ -232,7 +252,7 @@ export const downloadClassfiles = (req: Request, res: Response): void => {
     });
     
     // create a file to stream archive data to.
-    var output = fs.createWriteStream(`${process.cwd()}/../main/classrooms/${classroomid}/${classroomid}.zip`);
+    var output = fs.createWriteStream(dire);
     var archive = archiver("zip", {
         zlib: { level: 9 } // Sets the compression level.
     });
@@ -315,7 +335,7 @@ export const classroomPreview = (req: Request, res: Response): object => {
                     id: jsFileId,
                     content: jsContent
                 };
-                Classroom.findOne({Kid: classroomKid},(err,respo: ClassroomDocument) => {
+                Classroom.findOne({kid: classroomKid},(err,respo: ClassroomDocument) => {
                     if(!err && respo){
                         const name = respo.name;
                         return apiResponse.successResponseWithData(res, "success", { css, html, js, classKid:classroomKid,name });
@@ -336,7 +356,7 @@ export const verifyClassroom = (req: Request, res: Response, next: NextFunction)
         return apiResponse.ErrorResponse(res, "Invalid classroom id");
     }
 
-    Classroom.findOneAndUpdate({ Kid: classroom }, { $inc: { visits: 1 } }).then(d => {
+    Classroom.findOneAndUpdate({ kid: classroom }, { $inc: { visits: 1 } }).then(d => {
         if (d && d.status === started) {
             return apiResponse.successResponseWithData(res, "success", d);
         } else if (d && d.status === notStarted) {
@@ -354,7 +374,7 @@ export const verifyClassroom = (req: Request, res: Response, next: NextFunction)
 
 exports.endClassPermanently = (req: Request, res: Response) => {
     const id = req.params.classroomid;
-    Classroom.deleteOne({ _id: id }).exec()
+    Classroom.deleteOne({ kid: id }).exec()
         .then((result: object) => {
             res.status(200).json({
                 message: "Classroom Ended",
@@ -371,9 +391,24 @@ exports.endClassPermanently = (req: Request, res: Response) => {
 export const getTrending = (req: Request, res: Response): object => {
 
 
-    return Classroom.find({ status: started, classVisibility: "Public" }).limit(12).sort({ visits: -1 }).then(d => {
-        
-        return apiResponse.successResponseWithData(res, "Success", d);
+    return Classroom.find({ status: started, classVisibility: "Public" }).limit(12).sort({ visits: -1 }).then((d: ClassroomDocument[]) => {
+        let filteredClassrooms: any[] = [];
+        if(d){
+            filteredClassrooms = d.map((room: ClassroomDocument) => {
+                return {
+                    visits: room.visits,
+                    likes: room.likes,
+                    students: room.students,
+                    location: room.location,
+                    name: room.name,
+                    description: room.description,
+                    top: room.topic,
+                    kid: room.kid,
+                    topic: room.topic
+                };
+            });
+        };
+        return apiResponse.successResponseWithData(res, "Success", filteredClassrooms);
 
     }).catch(e => {
         return apiResponse.ErrorResponse(res, e);
@@ -404,18 +439,18 @@ export const fecthClassByUrlAlias = (req: Request, res: Response, next: NextFunc
 
 // verify if a classroom belongs to a user
 export const verifyUserClassroom = (req: Request, res: Response, next: NextFunction): any => {
-    const { classid, userid } = req.params;
+    const { classid, accountid } = req.params;
 
     if (classid && classid.trim() !== ""
-        && userid && userid.trim() !== ""
+        && accountid && accountid.trim() !== ""
         && classid.length > 23
-        && userid.length > 23) {
+        && accountid.length > 23) {
         Classroom.findById(classid, (err, doc: ClassroomDocument) => {
             if (err) {
                 return next(err);
             }
             if (doc && doc !== null) {
-                if (doc.owner === userid) {
+                if (doc.owner === accountid) {
                     return apiResponse.successResponse(res, "sucess verifying");
                 } else {
                     return apiResponse.unauthorizedResponse(res, "failed verification");
@@ -432,9 +467,9 @@ export const verifyUserClassroom = (req: Request, res: Response, next: NextFunct
 
 // fetch all classroom by user
 export const getUserClassrooms = (req: Request, res: Response, next: NextFunction): any => {
-    const { userid } = req.params;
+    const { accountid } = req.params;
 
-    Classroom.find(({ owner: userid }), "classType numberInClass status visits likes topic description location", (err: Error, doc: ClassroomDocument) => {
+    Classroom.find(({ owner: accountid }), "classType numberInClass status visits likes topic description location", (err: Error, doc: ClassroomDocument) => {
         if (err) {
             return next(err);
         }
@@ -454,7 +489,7 @@ exports.updateClassInformation = (req: Request, res: Response) => {
         updateOps[ops.propName] = ops.value;
     }
 
-    Classroom.update({ _id: id }, { $set: updateOps })
+    Classroom.update({ kid: id }, { $set: updateOps })
         .exec()
         .then(() => {
             res.status(200).json({

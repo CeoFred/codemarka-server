@@ -2,43 +2,43 @@ import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import mongoose from "mongoose";
 import geo from "geoip-lite";
-export type UserDocument = mongoose.Document & {
+
+export type CommunityDocument = mongoose.Document & {
     email: string;
     emailVerified: boolean;
-    googleid: string;
-    githubid: string;
-    profile: {
-        name: string;
-        gender: string;
-        location: string;
-        website: string;
-        picture: string;
-    };
     password: string;
     tokens: any[];
+    communityName: string;
+    communityAcronym: string;
     accountType: number;
-    name: string;
-    gender: string;
-    location: string;
-    website: string;
-    picture: string;
-    username: string;
+    telephone: string;
+    completed: boolean;
+    affiliation: string;
+    city: string;
+    country: string;
+    physicalAddress: string;
+    publicWebsite: string;
+    Logo: string;
+    meetupLink: string;
+    instagramLink: string;
+    facebookUrl: string;
+    twitterUrl: string;
+    acronym: string;
     comparePassword: comparePasswordFunction;
     addToken: addToken;
     status: boolean;
     resetPasswordToken: string | "";
     resetPasswordExpires: Date | "";
-    techStack: string;
     isConfirmed: boolean;
     privateClassCreated: number;
     publicClassCreated: number;
-    confirmOTP: number;
     gravatar: (size: number) => string;
     emailVerificationToken: string;
     geoDetails: object;
     emailConfirmed: () => void;
     gravatarUrl: string;
     kid: any;
+    organizers: { lead: { email: string; fullname: string }; coLead: {email: string; fullname: string } };
     updateAfterLogin: (ip: string | string[],token: any) => void;
     hashPasswordResetAndValidateToken: (password: string, token: string) => boolean;
 };
@@ -50,7 +50,7 @@ export interface AuthToken {
     kind: string;
 }
 
-const userSchema = new mongoose.Schema({
+const communityScehema = new mongoose.Schema({
     email: { type: String, unique: true },
     password: String,
     kid:String,
@@ -71,31 +71,19 @@ const userSchema = new mongoose.Schema({
         type: Number,
         default:0
     },
-    username: {
-        unique:true,
+    twitterUrl: {
         type: String
     },
-    status: {
+    facebookUrl: {
         default: true,
-        type: Boolean
+        type: String
     },
     isConfirmed: {
         default: true,
         type: Boolean
     },
-    firstName: String,
-    gender: String,
-    location: String,
-    website: String,
-    picture: String,
-    accountType: {
-        default: 101,
-        type: Number
-    },
-    confirmOTP: {
-        type: Number
-    },
-    techStack : String,
+    logoUrl: String,
+    physicalAddress : String,
     emailVerificationToken : {
         type: String
     },
@@ -104,33 +92,57 @@ const userSchema = new mongoose.Schema({
     geoDetails: Object,
     emailVerified: Boolean,
 
-    googleid: {
+    meetupLink: {
         type: String,
-        default: undefined
     },
-    githubid: {
+    instagramLink: {
         type: String,
-        default: undefined
     },
     lastLoggedInIp: String,
-    profile: {
-        name: String,
-        gender: String,
-        location: String,
-        website: String,
-        picture: String
+    communityName: {
+        type: String,
+        required: true,
+    },
+    communityAcronym: {   
+        type: String,
+        required: true,
+    },
+    publicWebsite: {      
+        type: String,
+    },
+    affiliation:{
+        required: true,
+        type: String
+    },
+    city: {
+        required: true,
+        type: String
+    },
+    country: {     
+        required: true,
+        type: String
+    },
+    organizers:{
+        lead:{    
+            fullname: String,
+            email: String
+        },
+        coLead:{
+            fullname: String,
+            email: String
+        }
+    },
+    accountType: {
+        default: 102,
+        type: Number
     }
 }, { timestamps: true });
 
 /**
  * Password hash middleware.
  */
-userSchema.pre("save", function save(next: any) {
-    const user = this as UserDocument;
-    // if (user.isModified("password")) { return next(); }
-    // user.password = bcrypt.hashSync(user.password, 10);
-    // console.log("pass modified",user.password);
-    // next();
+communityScehema.pre("save", function save(next: any) {
+    const user = this as CommunityDocument;
     
     // check if password is present and is modified.
     if ( user.password && user.isModified("password") ) {
@@ -145,34 +157,6 @@ userSchema.pre("save", function save(next: any) {
 
 });
 
-/**
- * Password reset hash middleware
- */
-
-// const hashPasswordResetAndValidateToken = function (password: string, Resettoken: string): boolean {
-//     this.password = bcrypt.hashSync(password,10);
-//     let tokens = this.tokens;
-
-//     let foundToken =  tokens.filter((token: {type: string;accessToken: string}) => {
-//         return String(token.type) === "ActRecry" && token.accessToken === Resettoken;
-//     });
-
-//     if (Array.isArray(foundToken) && foundToken.length > 0){
-//         foundToken = true;
-//         tokens =  tokens.filter((token: {type: string; accessToken: string}) => {
-//             return String(token.type) !== "ActRecry" && token.accessToken !== Resettoken;
-//         }); 
-//     } else {
-//         foundToken = false;
-//     }
-
-//     this.tokens = tokens;
-//     console.log(this.password);
-//     console.log(password);
-
-//     this.save();
-//     return foundToken;
-// };
 
 const comparePassword: comparePasswordFunction = function (candidatePassword, cb) {
     bcrypt.compare(candidatePassword, this.password, (err: mongoose.Error, isMatch: boolean) => {
@@ -189,25 +173,23 @@ const updateAfterLogin = function(ip: any,token: object): void {
     let tokens = this.tokens;
     tokens.push(token);
     this.save();
-    
-
 };
+
 const emailConfirmed = function(): void {
     this.isConfirmed = true;
-    this.save();
 };
 
-userSchema.methods.comparePassword = comparePassword;
-userSchema.methods.emailConfirmed = emailConfirmed;
-userSchema.methods.updateAfterLogin = updateAfterLogin;
+communityScehema.methods.comparePassword = comparePassword;
+communityScehema.methods.emailConfirmed = emailConfirmed;
+communityScehema.methods.updateAfterLogin = updateAfterLogin;
 
 /**
  * Helper method for getting user's gravatar.
  */
-userSchema.methods.gravatar = function (size: number = 200): void {
+communityScehema.methods.gravatar = function (size: number = 200): void {
     
     const md5 = crypto.createHash("md5").update(this.email).digest("hex");
     this.gravatarUrl = `https://gravatar.com/avatar/${md5}?s=${size}&d=retro`;
 };
 
-export const User = mongoose.model<UserDocument>("User", userSchema);
+export const Community = mongoose.model<CommunityDocument>("Community", communityScehema);
