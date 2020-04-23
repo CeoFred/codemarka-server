@@ -205,7 +205,7 @@ export const findClassRoom = (req: Request, res: Response): any => {
     const { q } = req.params;
     if (q && q.trim() !== "") {
         const reqexQ = new RegExp(q, "i");
-        Classroom.find({ name: reqexQ }, "name location", (err, d: ClassroomDocument[]| any) => {
+        Classroom.find({ $or: [ { "name": reqexQ},{ "topic" :reqexQ }] }, "name location topic kid", (err, d: ClassroomDocument[]| any) => {
             if (d && err === null && d.status !== 3) {
                 
                 return apiResponse.successResponseWithData(res, "Success", d);

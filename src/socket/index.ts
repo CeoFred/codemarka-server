@@ -52,14 +52,7 @@ export default (server: express.Application) => {
                     
                     Classroom.findById(data.classroom_id, (err, res: any) => {
                            
-                        const students = res.students;
-                        let found = students.filter((s: any) => {
-                            return String(s.kid) === String(socket.user);
-                        });
-
-                        if(Array.isArray(found) && found[0]){
-                            nsp.to(socket.room).emit("disconnect_user_before_join",data);
-                        };
+                        
                        
                         if(res && res !== null){
                                     
@@ -76,7 +69,7 @@ export default (server: express.Application) => {
 
                             const studentObj = {
                                 id: String(user._id),
-                                username: user.username || user.communityName,
+                                username: user.username || user.communityName.toLowerCase(),
                                 role: "1",
                                 kid: user.kid,
                                 stack: user.techStack || "communityAccount",
@@ -100,7 +93,7 @@ export default (server: express.Application) => {
                                     by: "server",
                                     msg: data.userId + " reconnected",
                                     for: data.userId,
-                                    name: data.username,
+                                    name: data.username.toLowerCase(),
                                     type: "sJoin",
                                     msgId: uuidv4(),
                                     newuserslist: updatedStudentList
@@ -193,7 +186,7 @@ export default (server: express.Application) => {
 
                             studentObj = {
                                 id: String(user._id),
-                                username: user.username || user.communityName,
+                                username: user.username || user.communityName.toLowerCase(),
                                 role: "1",
                                 kid: user.kid,
                                 stack: user.techStack || "communityAccount",
@@ -246,7 +239,7 @@ export default (server: express.Application) => {
                                                 by: "server",
                                                 msg: data.userId + " joined",
                                                 for: data.userId,
-                                                name: data.username,
+                                                name: data.username.toLowerCase(),
                                                 type: "sJoin",
                                                 msgId: uuidv4(),
                                                 newuserslist: updatedStudentList,
@@ -515,7 +508,7 @@ export default (server: express.Application) => {
         });
 
         socket.on("invite_user", (user: any) => {
-            const userNameOrEmail = String(user.user).toLowerCase();
+            const email = String(user.user).toLowerCase();
             const classroomInfo = user.classData;
             let trial = 0;
             let maxTrial = 2;
@@ -611,15 +604,16 @@ export default (server: express.Application) => {
             };
             
 
-            User.findOne({email: userNameOrEmail.toLowerCase()},(err, user) => {
+            User.findOne({email: email.toLowerCase()},(err, user) => {
+
                 if(err) socket.emit("classroom_error");
 
-                if(user !== null){
+                if(user){
                     Classroom.findOne({kid:classroomInfo.kid}, (err, res: any) => {
                         if(res){
                             const students = res.students;
                             let found = students.filter((s: any) => {
-                                return String(s.id) === String(user._id);
+                                return String(s.kid) === String(user.kid);
                             });
                             if(Array.isArray(found) && found[0]){
                                 socket.emit("user_invite_failed","User already In class");
@@ -630,29 +624,29 @@ export default (server: express.Application) => {
                     });
                 } else if(user === null){
 
-                    User.findOne({ username: userNameOrEmail.toLowerCase() }, (err, user) => {
-                        if(err) socket.emit("classroom_error");
+                    Community.findOne({ email: email.toLowerCase() }, (err, user) => {
+                        if (err) socket.emit("classroom_error");
 
-                        if(user !== null){
-                            Classroom.findOne({kid:classroomInfo.kid}, (err, res: any) => {
-                                if(res){
+                        if (user) {
+                            Classroom.findOne({ kid: classroomInfo.kid }, (err, res: any) => {
+                                if (res) {
                                     const students = res.students;
                                     let found = students.filter((s: any) => {
-                                        return String(s.id) === String(user._id);
-
+                                        return String(s.kid) === String(user.kid);
                                     });
-                                    if(Array.isArray(found) && found[0]){
-                                        socket.emit("user_invite_failed","User already In class");
-                                    }else {
-                                        sendPasswordResetMail(user.username,user.email);
+                                    if (Array.isArray(found) && found[0]) {
+                                        socket.emit("user_invite_failed", "User already In class");
+                                    } else {
+                                        sendPasswordResetMail(user.communityName, user.email);
                                     }
                                 }
                             });
                         } else {
-                            socket.emit("user_invite_failed","Whoops! User not found");
+                            socket.emit("user_invite_failed", "Whoops! User not found");
                         }
-
                     });
+
+
                 }
                 
             });
@@ -787,42 +781,53 @@ export default (server: express.Application) => {
         }
 
         socket.on("newMessage", (data: NewMessageInterface) => {
-            
+            function sendSocketMessage(u: any): void {
 
-            User.findOne({ kid: data.user }).then(u => {
-                if (u) {
-                    const msgId = uuidv4();
-                    const msgObject = {
-                        timeSent: moment(data.time).format("LT"),
-                        msgId, name: u.username, 
-                        by: data.user, 
-                        msg: data.message,
-                        color: data.messageColor,
-                        oTime: data.time
-                    };
-                    Classroom.findOneAndUpdate({ kid: data.class, status: 2 },
-                        {
-                            $push: {
-                                messages: msgObject
-                            }
-                        },
-                        { upsert: true },
-                        function (err, doc: object) {
-                            if (err) {
-                                console.log(err);
-                            } else if (doc) {
-                                //do stuff
-                                nsp.to(socket.room).emit("nM",
-                                    {
-                                        ...msgObject
-                                    });
-                                console.log("sent msg");
-                            }
+                const msgId = uuidv4();
+                const msgObject = {
+                    timeSent: moment(data.time).format("LT"),
+                    msgId, 
+                    name: u.username || u.communityName,
+                    by: data.user,
+                    msg: data.message,
+                    color: data.messageColor,
+                    oTime: data.time
+                };
+                Classroom.findOneAndUpdate({ kid: data.class, status: 2 },
+                    {
+                        $push: {
+                            messages: msgObject
                         }
-                    );
+                    },
+                    { upsert: true },
+                    function (err, doc: object) {
+                        if (err) {
+                            console.log(err);
+                        } else if (doc) {
+                            //do stuff
+                            nsp.to(socket.room).emit("nM",
+                                {
+                                    ...msgObject
+                                });
+                            console.log("sent msg");
+                        }
+                    }
+                );
+            }
 
+            User.findOne({ kid: data.user }).then((u: UserDocument) => {
+                if (u) {
+                   return sendSocketMessage(u);
                 } else {
-                    console.log("user that sent message is not registered");
+                    Community.findOne({ kid: data.user },(err,acc: CommunityDocument) => {
+                        if(err){
+
+                        } else if(!acc){
+                            console.log("user that sent message is not registered");
+                        } else {
+                            return sendSocketMessage(acc);
+                        }
+                    });
                 }
 
             });
