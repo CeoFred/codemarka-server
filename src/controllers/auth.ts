@@ -536,12 +536,12 @@ https://codemarka.dev
 
 export const handelGoogleAuthCallback  = (req: any | Request, res: Response) => {
     
-    const user =  req.user._id;
+    const user =  req.user.kid;
     const username = req.user.username;
     console.log(req.user);
 
     let userData = {
-        _id: user,
+        kid: user,
         username: username
     };
     //Prepare JWT token for authentication
@@ -560,12 +560,12 @@ export const handelGoogleAuthCallback  = (req: any | Request, res: Response) => 
 
 export const handelGitHubAuthCallback  = (req: any | Request, res: Response) => {
     
-    const user =  req.user._id;
+    const user =  req.user.kid;
     const username = req.user.username;
     console.log(req.user);
 
     let userData = {
-        _id: user,
+        kid: user,
         username: username
     };
     //Prepare JWT token for authentication

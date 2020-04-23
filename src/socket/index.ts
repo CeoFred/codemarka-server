@@ -817,7 +817,7 @@ export default (server: express.Application) => {
 
             User.findOne({ kid: data.user }).then((u: UserDocument) => {
                 if (u) {
-                   return sendSocketMessage(u);
+                    return sendSocketMessage(u);
                 } else {
                     Community.findOne({ kid: data.user },(err,acc: CommunityDocument) => {
                         if(err){
