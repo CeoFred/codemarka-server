@@ -530,3 +530,79 @@ export const CommunityAuthLogout = (req: Request, res: Response): object| void =
         }
     });
 };
+
+
+export const getCommunities = (req: Request, res: Response): void => {
+    Community.find({}).sort({rating:1}).limit(10).exec((err, comm) => {
+        if(err){
+            return apiResponse.ErrorResponse(res,"Something went wrong");
+        }
+        if(comm){
+            console.log(comm);
+            let communities: any[] = [];
+            communities = comm.map((c: CommunityDocument) => {
+                return {
+                    name:c.communityName,
+                    acronym: c.communityAcronym,
+                    kid: c.kid,
+                    rating: c.rating,
+                    logo: c.Logo,
+                    members: c.members,
+                    reviews: c.reviews
+                }
+            })
+            return apiResponse.successResponseWithData(res,"success", communities);
+
+        }
+    });
+}
+
+/**
+ * Get a single community
+ */
+export const getCommunity = (req: Request, res: Response): void => {
+
+    Community.findOne({kid: req.params.kid},{_id:0}).exec((err, comm) => {
+        if (err) {
+            return apiResponse.ErrorResponse(res, "Something went wrong");
+        }
+        if (comm) {
+            return apiResponse.successResponseWithData(res, "success", comm);
+        }
+    });
+}
+
+
+/**
+ * Join a community as a memeber
+ *
+ */
+export const joinCommunity = (req: Request, res: Response): void => {
+
+}
+
+
+ /**
+  * 
+  * Leave a community as a member
+  */
+export const leaveCommunity = (req: Request, res: Response): void => {
+
+}
+
+  /**
+   * Rate a community
+   */
+
+   export const rateCommunity = (req: Request, res: Response): void => {
+
+   }
+
+   /**
+    * Get classrooms by community
+    * 
+    */
+
+export const getClassroomsByCommunity = (req: Request, res: Response): void => {
+
+}

@@ -12,6 +12,7 @@ export type CommunityDocument = mongoose.Document & {
     communityAcronym: string;
     accountType: number;
     telephone: string;
+    reviews: number;
     completed: boolean;
     affiliation: string;
     city: string;
@@ -20,6 +21,8 @@ export type CommunityDocument = mongoose.Document & {
     publicWebsite: string;
     Logo: string;
     meetupLink: string;
+    rating: number;
+    members: any[];
     instagramLink: string;
     facebookUrl: string;
     twitterUrl: string;
@@ -71,6 +74,13 @@ const communityScehema = new mongoose.Schema({
         type: Number,
         default:0
     },
+    rating: {
+        default:0,
+        type: Number,
+    },
+    members:{
+        type: Array
+    },
     twitterUrl: {
         type: String
     },
@@ -82,7 +92,14 @@ const communityScehema = new mongoose.Schema({
         default: true,
         type: Boolean
     },
-    logoUrl: String,
+    logoUrl: {
+        default:"https://res.cloudinary.com/codemarka/image/upload/v1587495267/dark_hxbt4a.png",
+        type: String
+    },
+    Logo: {
+        default: "https://res.cloudinary.com/codemarka/image/upload/v1587495267/dark_hxbt4a.png",
+        type: String
+    },
     physicalAddress : String,
     emailVerificationToken : {
         type: String
@@ -97,6 +114,10 @@ const communityScehema = new mongoose.Schema({
     },
     instagramLink: {
         type: String,
+    },
+    reviews: {
+        type: Number,
+        default: 0,
     },
     lastLoggedInIp: String,
     communityName: {
