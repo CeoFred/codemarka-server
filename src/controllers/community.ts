@@ -29,7 +29,6 @@ const clientHost = prod ? "https://codemarka.dev" : "http://localhost:3000";
 
 
 export const uploadCommunityLogo = ( req: Request,res: Response ): object => {
-    console.log(req.body);
     return apiResponse.successResponse(res,"Reached");
 
 };
@@ -56,7 +55,6 @@ export const communityInfoTemp = ( req: Request,res: Response ,next: NextFunctio
 
         communityAccount.save((err: WriteError, response: CommunityTempDocument) => {
             if(err) {
-                console.log(err.errmsg);
                 return apiResponse.ErrorResponse(res,"Could not save data");
             }
             if(response){
@@ -72,7 +70,7 @@ export const communityOrganizersTemp = ( req: Request,res: Response,next: NextFu
     try {
         CommunityTemp.findOne({kid:req.params.kid},(err, response) => {
             if(err) {
-                console.log(err.errmsg);
+                (err.errmsg);
                 return apiResponse.ErrorResponse(res,"Could not retrieve data");
             }
             if(response){
@@ -84,11 +82,9 @@ export const communityOrganizersTemp = ( req: Request,res: Response,next: NextFu
 
                 response.save((err: WriteError,updatedTemp: CommunityTempDocument) => {
                     if(err) {
-                        console.log(err.errmsg);
                         return apiResponse.ErrorResponse(res,"Error updating data");
                     }
                     if(updatedTemp){
-                        console.log(updatedTemp);
                         return apiResponse.successResponseWithData(res,"success",updatedTemp.kid);
                     }
                 });
@@ -117,7 +113,6 @@ export const communityContactInformationTemp = ( req: Request,res: Response,next
     try {
         CommunityTemp.findOne({kid:req.params.kid},(err, response) => {
             if(err) {
-                console.log(err.errmsg);
                 return apiResponse.ErrorResponse(res,"Could not retrieve data");
             }
             if(response){
@@ -128,11 +123,9 @@ export const communityContactInformationTemp = ( req: Request,res: Response,next
 
                 response.save((err: WriteError,updatedTemp: CommunityTempDocument) => {
                     if(err) {
-                        console.log(err.errmsg);
                         return apiResponse.ErrorResponse(res,"Error updating data");
                     }
                     if(updatedTemp){
-                        console.log(updatedTemp);
                         return apiResponse.successResponseWithData(res,"success",updatedTemp.kid);
                     }
                 });
@@ -157,10 +150,8 @@ export const communityLogoTemp = (req: Request, res: Response): object|void => {
            
             cloudi.uploader.upload(path).then(result => {
                 const image= result.url;
-                // console.log(result);
                 CommunityTemp.findOne({kid:req.params.kid},(err, response) => {
                     if(err) {
-                        console.log(err.errmsg);
                         return apiResponse.ErrorResponse(res,"Could not retrieve data");
                     }
                     if(response){
@@ -170,7 +161,6 @@ export const communityLogoTemp = (req: Request, res: Response): object|void => {
 
                         response.save((err: WriteError,updatedTemp: CommunityTempDocument) => {
                             if(err) {
-                                console.log(err.errmsg);
                                 return apiResponse.ErrorResponse(res,"Error updating data");
                             }
                             if(updatedTemp){
@@ -183,7 +173,6 @@ export const communityLogoTemp = (req: Request, res: Response): object|void => {
 
                 });
             }).catch(err => {
-            // console.log(err);
                 return apiResponse.ErrorResponse(res,err);
 
             });
@@ -198,7 +187,6 @@ export const communitySocailMediaTemp = (req: Request, res: Response, next: Next
     try {
         CommunityTemp.findOne({kid:communityKid},(err, response) => {
             if(err) {
-                console.log(err.errmsg);
                 return apiResponse.ErrorResponse(res,"Could not retrieve data");
             }
             if(response){
@@ -209,11 +197,9 @@ export const communitySocailMediaTemp = (req: Request, res: Response, next: Next
                 response.twitterUrl = req.body.twitterUrl;
                 response.save((err: WriteError,updatedTemp: CommunityTempDocument) => {
                     if(err) {
-                        console.log(err);
                         return apiResponse.ErrorResponse(res,"Error updating data");
                     }
                     if(updatedTemp){
-                        console.log(updatedTemp);
                         return apiResponse.successResponseWithData(res,"success",updatedTemp.kid);
                     }
                 });
@@ -235,7 +221,6 @@ export const communityCreationFinal = (req: Request, res: Response, next: NextFu
     try {
         CommunityTemp.findOne({kid:communityKid},(err, response) => {
             if(err) {
-                console.log(err.errmsg);
                 return apiResponse.ErrorResponse(res,"Whoops! Something went wrong,try again.");
             }
             if(response){
@@ -264,7 +249,6 @@ export const communityCreationFinal = (req: Request, res: Response, next: NextFu
                                         communityAccount.emailVerificationToken = verificationToken;
 
                                         communityAccount.save((err,newCommunityAccount: CommunityDocument) => {
-                                            console.log(err);
                                             if(err) apiResponse.ErrorResponse(res,"Whoops! Something went wrong, contact support.");
                         
                                             else if (newCommunityAccount){                            
@@ -408,11 +392,9 @@ export const emailVerification = (req: Request, res: Response, next: NextFunctio
             Community.findOne({kid, emailVerificationToken: token,isConfirmed: false},(err, user) => {
                 
                 if(err){
-                    console.log(err);
                     return apiResponse.ErrorResponse(res,"Something went wrong!");
                 }
                 if(user !== null){
-                    console.log("found");
                     const username = user.communityName;
                     //send Welcome mail;
                     const emailTemplate = `
@@ -448,7 +430,6 @@ https://codemarka.dev
 
                     user.save((err,doc) => {
                         if(doc){
-                            console.log(doc);
                             sendMail(emailTemplate,"Welcome To Codemarka Pro","Community@codemarka.dev",user.email).then((sent: any) => {
                                 return res.redirect(clientHost+"/auth/signin/community?ref=mail&s=t");
                             }).catch((err: Error) => {
@@ -456,7 +437,6 @@ https://codemarka.dev
                             });
                         }  
                         if (err) {
-                            console.log(err);
                             return res.redirect(clientHost+"/auth/accounts/verification/failed");
                         } 
                     });
@@ -486,7 +466,6 @@ export const communityAuthtokenVerify = (req: Request, res: Response): object =>
             if(err){
                 return apiResponse.ErrorResponse(res, "Wboops something went wrong");
             } else {
-                console.log(community);
                 if (community === null){
                     return apiResponse.ErrorResponse(res,"Account not found");
                 }
@@ -530,3 +509,78 @@ export const CommunityAuthLogout = (req: Request, res: Response): object| void =
         }
     });
 };
+
+
+export const getCommunities = (req: Request, res: Response): void => {
+    Community.find({}).sort({rating:1}).limit(10).exec((err, comm) => {
+        if(err){
+            return apiResponse.ErrorResponse(res,"Something went wrong");
+        }
+        if(comm){
+            let communities: any[] = [];
+            communities = comm.map((c: CommunityDocument) => {
+                return {
+                    name:c.communityName,
+                    acronym: c.communityAcronym,
+                    kid: c.kid,
+                    rating: c.rating,
+                    logo: c.Logo,
+                    members: c.members,
+                    reviews: c.reviews
+                }
+            })
+            return apiResponse.successResponseWithData(res,"success", communities);
+
+        }
+    });
+}
+
+/**
+ * Get a single community
+ */
+export const getCommunity = (req: Request, res: Response): void => {
+
+    Community.findOne({kid: req.params.kid},{_id:0}).exec((err, comm) => {
+        if (err) {
+            return apiResponse.ErrorResponse(res, "Something went wrong");
+        }
+        if (comm) {
+            return apiResponse.successResponseWithData(res, "success", comm);
+        }
+    });
+}
+
+
+/**
+ * Join a community as a memeber
+ *
+ */
+export const joinCommunity = (req: Request, res: Response): void => {
+
+}
+
+
+ /**
+  * 
+  * Leave a community as a member
+  */
+export const leaveCommunity = (req: Request, res: Response): void => {
+
+}
+
+  /**
+   * Rate a community
+   */
+
+   export const rateCommunity = (req: Request, res: Response): void => {
+
+   }
+
+   /**
+    * Get classrooms by community
+    * 
+    */
+
+export const getClassroomsByCommunity = (req: Request, res: Response): void => {
+
+}

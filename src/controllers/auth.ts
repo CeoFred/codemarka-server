@@ -43,7 +43,6 @@ export const accountRecovery = (req: Request, res: Response, next: NextFunction)
         // search email, update and send email
         
         User.findOne({email: formattedMail}).exec((err,resp) => {
-            // console.log(err,res);
             let token = "";
             const buf = crypto.randomBytes(26);
             token = buf.toString("hex");
@@ -257,14 +256,12 @@ export const passwordReset = (req: Request | any, res: Response) => {
                                 
                                         });
                                     } catch (e) {
-                                        console.log(e);
                                         return apiResponse.ErrorResponse(res,"Whoops!  Something went wrong");
 
                                     }
                        
                                 } else {
                                     // TERMINATION
-                                    console.log("exceeded trial");
                                     sent = false;
                                     return apiResponse.successResponse(res,"Hurray! One last thing, we sent a confirmation mail , please check your inbox.");
                                 }
@@ -275,7 +272,6 @@ export const passwordReset = (req: Request | any, res: Response) => {
                         }
                     });
                 } catch (error) {
-                    console.log(error);
                     return apiResponse.ErrorResponse(res,"Error updating password");
                 }
             } else {
@@ -500,7 +496,6 @@ https://codemarka.dev
                                     // BASE
                                     console.log("sent mail to",trimedEmail);
                                     sent = true;
-                                    console.log(user);
                                     return apiResponse.successResponse(res,"Hurray! One last thing, we sent a confirmation mail , please check your inbox.");
 
                                 }
@@ -508,7 +503,6 @@ https://codemarka.dev
                             });
                         } catch (e) {
                             next(e);
-                            console.log(e);
                             return apiResponse.ErrorResponse(res,"Whoops!  Something went wrong");
 
                         }
@@ -538,7 +532,6 @@ export const handelGoogleAuthCallback  = (req: any | Request, res: Response) => 
     
     const user =  req.user.kid;
     const username = req.user.username;
-    console.log(req.user);
 
     let userData = {
         kid: user,
@@ -562,7 +555,6 @@ export const handelGitHubAuthCallback  = (req: any | Request, res: Response) => 
     
     const user =  req.user.kid;
     const username = req.user.username;
-    console.log(req.user);
 
     let userData = {
         kid: user,
@@ -592,10 +584,8 @@ export const emailVerification = (req: Request, res: Response, next: NextFunctio
             let maxTrial = 2;
             let sent = false;
             User.findOne({_id: userid, emailVerificationToken: token,isConfirmed: false},(err, user) => {
-                console.log(user);
                 if(user !== null){
 
-                    console.log("found");
 
                     user.emailConfirmed();
                     const username = user.username;
@@ -645,17 +635,13 @@ export const emailVerification = (req: Request, res: Response, next: NextFunctio
                                     } else {
                                 
                                         // BASE
-                                        console.log("sent mail to",trimedEmail);
                                         sent = true;
-                                        console.log(user);
                                         return res.redirect("https://codemarka.dev/account/confirmed/true/?sent=true");
                                     }
                                 
                                 });
                             } catch (e) {
                                 next(e);
-                                console.log(e);
-
                                 return res.redirect("https://codemarka.dev/account/confirmed/true/?sent=false");
 
                             }
@@ -761,7 +747,6 @@ export const logout = async (req: Request,res: Response) => {
     
     User.findOne({ kid },(err,user) => {
         if(err) {
-            console.log(err);
             return apiResponse.ErrorResponse(res,"Whoops! Something went wrong");
         }
         if(user) {

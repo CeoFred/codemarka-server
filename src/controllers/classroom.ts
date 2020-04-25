@@ -69,7 +69,7 @@ export const createClassRoom = (req: Request, res: Response, next: NextFunction)
                         } else {
                             const url = new classAliasUrl({Kid: randomNumber(29),shortUrl: `https://cmarka.xyz/${rs}`,classroomKid:data.kid});
                             url.save((err,urlDoc) => {
-                                console.log(err);
+                                (err);
                                 if(err) reject("Something went wrong while trying to save");
                                 resolve(`https://cmarka.xyz/${rs}`);
                             });
@@ -142,11 +142,11 @@ export const createClassRoom = (req: Request, res: Response, next: NextFunction)
                     data.shortUrl = dataUrl;
                     data.save((err,nd) => {
                         if(err){ 
-                            console.log(err);
+                            (err);
                             return apiResponse.ErrorResponse(res,"Whoops! Something went wrong while trying to save class shortURL");
                         }
-                        // console.log(nd);
-                        // console.log(dataUrl);
+                        // (nd);
+                        // (dataUrl);
                         const jsContent = fs.readFileSync(jsSource,"utf8");
                         const cssContent = fs.readFileSync(cssSource,"utf8");
                         const htmlContent = fs.readFileSync(htmlSource,"utf8");
@@ -155,18 +155,18 @@ export const createClassRoom = (req: Request, res: Response, next: NextFunction)
                             return  successResponseWithData(res, "success", nd);
 
                         }).catch(err => {
-                            console.log(err);
+                            (err);
                             return apiResponse.ErrorResponse(res,"Whoops! Something went wrong while trying to create classroom web files.");
                         });
                     });
 
                 }).catch((err: string) => {
-                    console.log(err);
+                    (err);
                     return apiResponse.ErrorResponse(res,"Whoops! Something went wrong while trying to generate shortURL");
                 });
 
             }).catch((err: Error) => {
-                console.log(err);
+                (err);
                 return apiResponse.ErrorResponse(res,"Whoops! Something went wrong while trying to save classroom data to model");
             });
         }
@@ -189,7 +189,7 @@ export const createClassRoom = (req: Request, res: Response, next: NextFunction)
 
        
     } catch (error) {
-        console.log(error);
+        (error);
         return apiResponse.ErrorResponse(res,"Somthing went wrong");
         
     }
@@ -200,6 +200,75 @@ export const getClassroomFromLocation = (req: Request, res: Response): void => {
     const location = req.params.location;
     Classroom.find({ location }).exec().then((data: object) => res.json({ data })).catch((err: Error) => res.status(404).json(err));
 };
+
+export const getLiveClassroomSessions =  (req: Request, res: Response): void => {
+    Classroom.find({status: 3},"name kid topic description startTime owner").then((d) => {
+        if(d){ 
+                const finalStructure: any[] = [];
+                d.forEach(element => {
+                    const classroomOwner = element.owner;
+                    Community.findOne({kid: classroomOwner},(err,comm) => {
+                        if(err){
+                            return apiResponse.ErrorResponse(res,"Something went wrong");
+                        } else if(comm) {
+                            finalStructure.push({ ...d, by: comm.communityName.toLowerCase() });
+                        } else {
+                            User.findOne({kid: element.owner},(err, user) => {
+                                if(err){
+                                    return apiResponse.ErrorResponse(res, "Something went wrong");
+                                } else if( user ){
+                                    finalStructure.push({...d,by: user.name.toLowerCase() });
+                                } else {
+                                    return apiResponse.ErrorResponse(res,"Failed to fetch classroom owners");
+                                }
+                            });
+                        }
+                    });
+                });
+                return apiResponse.successResponseWithData(res,"success",finalStructure);
+        } else {
+            return apiResponse.notFoundResponse(res,"No results found");
+        }
+    }).catch((e) => {
+        (e);
+        return apiResponse.notFoundResponse(res, "No results found");
+    });
+}
+
+export const getUpcomingClassroomSessions = (req: Request, res: Response): void => {
+
+        Classroom.find({ status: 1 }, "name kid topic description startTime owner").then((d) => {
+            if (d) {
+                const finalStructure: any[] = [];
+                d.forEach(element => {
+                    const classroomOwner = element.owner;
+                    Community.findOne({ kid: classroomOwner }, (err, comm) => {
+                        if (err) {
+                            return apiResponse.ErrorResponse(res, "Something went wrong");
+                        } else if (comm) {
+                            finalStructure.push({ ...d, by: comm.communityName.toLowerCase() });
+                        } else {
+                            User.findOne({ kid: element.owner }, (err, user) => {
+                                if (err) {
+                                    return apiResponse.ErrorResponse(res, "Something went wrong");
+                                } else if (user) {
+                                    finalStructure.push({ ...d, by: user.name.toLowerCase() });
+                                } else {
+                                    return apiResponse.ErrorResponse(res, "Failed to fetch classroom owners");
+                                }
+                            });
+                        }
+                    });
+                });
+                return apiResponse.successResponseWithData(res, "success", finalStructure);
+            } else {
+                return apiResponse.notFoundResponse(res, "No results found");
+            }
+        }).catch((e) => {
+            (e);
+            return apiResponse.notFoundResponse(res, "No results found");
+        });
+}
 
 export const findClassRoom = (req: Request, res: Response): any => {
     const { q } = req.params;
@@ -227,7 +296,7 @@ export const downloadClassfiles = (req: Request, res: Response): void => {
     try {
         if (fs.existsSync(dire) === true) {
             //file exists
-            console.log("File exists");
+            ("File exists");
             fs.unlinkSync(dire);
         }
     } catch(err) {
@@ -245,7 +314,7 @@ export const downloadClassfiles = (req: Request, res: Response): void => {
                 fs.appendFileSync(`${root}/${res.css.id}.css`,res.css.content);
                 fs.appendFileSync(`${root}/${res.js.id}.js`,res.js.content);
             } catch (err) {
-                console.log(err);
+                (err);
                 return false;
             }
         }
@@ -266,7 +335,7 @@ export const downloadClassfiles = (req: Request, res: Response): void => {
     });
  
     output.on("end", function() {
-        console.log("Data has been drained");
+        ("Data has been drained");
     });
  
     // good practice to catch warnings (ie stat failures and other non-blocking errors)
@@ -293,7 +362,7 @@ export const downloadClassfiles = (req: Request, res: Response): void => {
  
 
     archive.finalize().then(() => {
-        console.log("Finalized");
+        ("Finalized");
     });
 
 
@@ -374,7 +443,7 @@ export const verifyClassroom = (req: Request, res: Response, next: NextFunction)
 
 exports.endClassPermanently = (req: Request, res: Response) => {
     const id = req.params.classroomid;
-    Classroom.deleteOne({ kid: id }).exec()
+    Classroom.findOneAndUpdate({ kid: id },{status: ended}).exec()
         .then((result: object) => {
             res.status(200).json({
                 message: "Classroom Ended",
@@ -421,8 +490,8 @@ export const getTrending = (req: Request, res: Response): object => {
 export const fecthClassByUrlAlias = (req: Request, res: Response, next: NextFunction): any => {
     const { id } = req.params;
     const url = `https://cmarka.xyz/${id}`;
-    console.log(url);
-    console.log(req.hostname);
+    (url);
+    (req.hostname);
     classAliasUrl.findOneAndUpdate({shortUrl: url},{$inc:{visits:1}}).then(data => {
         if(data){
             if(req.hostname.includes("localhost")){

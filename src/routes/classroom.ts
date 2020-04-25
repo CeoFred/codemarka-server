@@ -1,5 +1,5 @@
 import express from "express";
-import {fecthClassByUrlAlias,findClassRoom,downloadClassfiles, classroomPreview, createClassRoom,verifyClassroom, getTrending, verifyUserClassroom, getUserClassrooms} from "../controllers/classroom";
+import {getLiveClassroomSessions, getUpcomingClassroomSessions, fecthClassByUrlAlias,findClassRoom,downloadClassfiles, classroomPreview, createClassRoom,verifyClassroom, getTrending, verifyUserClassroom, getUserClassrooms} from "../controllers/classroom";
 import {check} from "../middleware/check_Auth";
 
 const router = express.Router();
@@ -22,6 +22,11 @@ router.get("/preview/:classroomKid", classroomPreview);
 router.get("/search/:q", findClassRoom);
 
 router.get("/download/:classroomid", downloadClassfiles);
+
+router.get("/live", getLiveClassroomSessions);
+
+router.get("/upcoming", getUpcomingClassroomSessions);
+
 /**
  * Route to handle alias request from cmarka.xyz
  */
