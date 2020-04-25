@@ -204,28 +204,28 @@ export const getClassroomFromLocation = (req: Request, res: Response): void => {
 export const getLiveClassroomSessions =  (req: Request, res: Response): void => {
     Classroom.find({status: 3},"name kid topic description startTime owner").then((d) => {
         if(d){ 
-                const finalStructure: any[] = [];
-                d.forEach(element => {
-                    const classroomOwner = element.owner;
-                    Community.findOne({kid: classroomOwner},(err,comm) => {
-                        if(err){
-                            return apiResponse.ErrorResponse(res,"Something went wrong");
-                        } else if(comm) {
-                            finalStructure.push({ ...d, by: comm.communityName.toLowerCase() });
-                        } else {
-                            User.findOne({kid: element.owner},(err, user) => {
-                                if(err){
-                                    return apiResponse.ErrorResponse(res, "Something went wrong");
-                                } else if( user ){
-                                    finalStructure.push({...d,by: user.name.toLowerCase() });
-                                } else {
-                                    return apiResponse.ErrorResponse(res,"Failed to fetch classroom owners");
-                                }
-                            });
-                        }
-                    });
+            const finalStructure: any[] = [];
+            d.forEach(element => {
+                const classroomOwner = element.owner;
+                Community.findOne({kid: classroomOwner},(err,comm) => {
+                    if(err){
+                        return apiResponse.ErrorResponse(res,"Something went wrong");
+                    } else if(comm) {
+                        finalStructure.push({ ...d, by: comm.communityName.toLowerCase() });
+                    } else {
+                        User.findOne({kid: element.owner},(err, user) => {
+                            if(err){
+                                return apiResponse.ErrorResponse(res, "Something went wrong");
+                            } else if( user ){
+                                finalStructure.push({...d,by: user.name.toLowerCase() });
+                            } else {
+                                return apiResponse.ErrorResponse(res,"Failed to fetch classroom owners");
+                            }
+                        });
+                    }
                 });
-                return apiResponse.successResponseWithData(res,"success",finalStructure);
+            });
+            return apiResponse.successResponseWithData(res,"success",finalStructure);
         } else {
             return apiResponse.notFoundResponse(res,"No results found");
         }
@@ -233,42 +233,50 @@ export const getLiveClassroomSessions =  (req: Request, res: Response): void => 
         (e);
         return apiResponse.notFoundResponse(res, "No results found");
     });
-}
+};
 
 export const getUpcomingClassroomSessions = (req: Request, res: Response): void => {
 
-        Classroom.find({ status: 1 }, "name kid topic description startTime owner").then((d) => {
-            if (d) {
-                const finalStructure: any[] = [];
-                d.forEach(element => {
-                    const classroomOwner = element.owner;
-                    Community.findOne({ kid: classroomOwner }, (err, comm) => {
-                        if (err) {
-                            return apiResponse.ErrorResponse(res, "Something went wrong");
-                        } else if (comm) {
-                            finalStructure.push({ ...d, by: comm.communityName.toLowerCase() });
-                        } else {
-                            User.findOne({ kid: element.owner }, (err, user) => {
-                                if (err) {
-                                    return apiResponse.ErrorResponse(res, "Something went wrong");
-                                } else if (user) {
-                                    finalStructure.push({ ...d, by: user.name.toLowerCase() });
-                                } else {
-                                    return apiResponse.ErrorResponse(res, "Failed to fetch classroom owners");
-                                }
-                            });
-                        }
+    Classroom.find({ status: 1 }, "name kid topic description startTime owner startDate").then((d) => {
+        if (d) {
+            (async () => {
+                let resol = await Promise.all(
+                    d.map(async classes => {
+                        const t =  new Promise((resolve,reject)  => resolve(Community.findOne({ kid: classes.owner})));
+                        const t2 = new Promise((resolve, reject) => resolve(User.findOne({ kid: classes.owner })));
+                        const ew = Promise.all([t,t2]);
+                        return await(ew)
+                    }));  
+                    const communityOrUsers = resol.map((comU: any) => {
+                        return {n: comU[0].name || comU[0].communityName, kid: comU[0].kid};
                     });
-                });
-                return apiResponse.successResponseWithData(res, "success", finalStructure);
-            } else {
-                return apiResponse.notFoundResponse(res, "No results found");
-            }
-        }).catch((e) => {
-            (e);
+
+                    const po = d.map((cl,ein) => {
+                       let ow = cl.owner;
+                       let fo;
+                        communityOrUsers.map(ss => {
+                            if(ss.kid === ow){
+                                fo = {by: ss.n,kid: d[ein].kid,topic: d[ein].topic, name: d[ein].name, date: d[ein].startDate ,time: d[ein].startTime }
+                                return;
+                            }
+                        });
+                        return fo;
+                    });
+
+
+
+                return apiResponse.successResponseWithData(res, "success", po);
+
+            })();
+        } else {
             return apiResponse.notFoundResponse(res, "No results found");
-        });
-}
+        }
+
+    }).catch((e) => {
+        (e);
+        return apiResponse.notFoundResponse(res, "No results found");
+    });
+};
 
 export const findClassRoom = (req: Request, res: Response): any => {
     const { q } = req.params;
