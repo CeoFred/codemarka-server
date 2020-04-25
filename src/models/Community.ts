@@ -20,6 +20,7 @@ export type CommunityDocument = mongoose.Document & {
     physicalAddress: string;
     publicWebsite: string;
     Logo: string;
+    logoUrl: string;
     meetupLink: string;
     rating: number;
     members: any[];

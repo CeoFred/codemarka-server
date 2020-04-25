@@ -157,6 +157,8 @@ export const communityLogoTemp = (req: Request, res: Response): object|void => {
                     if(response){
                 
                         response.logoUrl = image;
+                        response.Logo = image;
+
                
 
                         response.save((err: WriteError,updatedTemp: CommunityTempDocument) => {
@@ -524,16 +526,16 @@ export const getCommunities = (req: Request, res: Response): void => {
                     acronym: c.communityAcronym,
                     kid: c.kid,
                     rating: c.rating,
-                    logo: c.Logo,
+                    logo: c.logoUrl,
                     members: c.members,
                     reviews: c.reviews
-                }
-            })
+                };
+            });
             return apiResponse.successResponseWithData(res,"success", communities);
 
         }
     });
-}
+};
 
 /**
  * Get a single community
@@ -548,7 +550,7 @@ export const getCommunity = (req: Request, res: Response): void => {
             return apiResponse.successResponseWithData(res, "success", comm);
         }
     });
-}
+};
 
 
 /**
@@ -557,30 +559,30 @@ export const getCommunity = (req: Request, res: Response): void => {
  */
 export const joinCommunity = (req: Request, res: Response): void => {
 
-}
+};
 
 
- /**
+/**
   * 
   * Leave a community as a member
   */
 export const leaveCommunity = (req: Request, res: Response): void => {
 
-}
+};
 
-  /**
+/**
    * Rate a community
    */
 
-   export const rateCommunity = (req: Request, res: Response): void => {
+export const rateCommunity = (req: Request, res: Response): void => {
 
-   }
+};
 
-   /**
+/**
     * Get classrooms by community
     * 
     */
 
 export const getClassroomsByCommunity = (req: Request, res: Response): void => {
 
-}
+};

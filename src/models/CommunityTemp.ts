@@ -19,6 +19,7 @@ export type CommunityTempDocument = mongoose.Document & {
     physicalAddress: string;
     publicWebsite: string;
     logoUrl: string;
+    Logo: string;
     acronym: string;
     status: boolean;
     resetPasswordToken: string | "";
@@ -90,6 +91,9 @@ const communityTempScehema = new mongoose.Schema({
     communityName: {
         type: String,
         required: false
+    },
+    Logo: {
+        type: String
     },
     communityAcronym: {   
         type: String,
