@@ -245,23 +245,23 @@ export const getUpcomingClassroomSessions = (req: Request, res: Response): void 
                         const t =  new Promise((resolve,reject)  => resolve(Community.findOne({ kid: classes.owner})));
                         const t2 = new Promise((resolve, reject) => resolve(User.findOne({ kid: classes.owner })));
                         const ew = Promise.all([t,t2]);
-                        return await(ew)
+                        return await(ew);
                     }));  
-                    const communityOrUsers = resol.map((comU: any) => {
-                        return {n: comU[0].name || comU[0].communityName, kid: comU[0].kid};
-                    });
+                const communityOrUsers = resol.map((comU: any) => {
+                    return {n: comU[0].name || comU[0].communityName, kid: comU[0].kid};
+                });
 
-                    const po = d.map((cl,ein) => {
-                       let ow = cl.owner;
-                       let fo;
-                        communityOrUsers.map(ss => {
-                            if(ss.kid === ow){
-                                fo = {by: ss.n,kid: d[ein].kid,topic: d[ein].topic, name: d[ein].name, date: d[ein].startDate ,time: d[ein].startTime }
-                                return;
-                            }
-                        });
-                        return fo;
+                const po = d.map((cl,ein) => {
+                    let ow = cl.owner;
+                    let fo;
+                    communityOrUsers.map(ss => {
+                        if(ss.kid === ow){
+                            fo = {by: ss.n,kid: d[ein].kid,topic: d[ein].topic, name: d[ein].name, date: d[ein].startDate ,time: d[ein].startTime };
+                            return;
+                        }
                     });
+                    return fo;
+                });
 
 
 

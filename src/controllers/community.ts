@@ -433,9 +433,9 @@ https://codemarka.dev
                     user.save((err,doc) => {
                         if(doc){
                             sendMail(emailTemplate,"Welcome To Codemarka Pro","Community@codemarka.dev",user.email).then((sent: any) => {
-                                return res.redirect(clientHost+"/auth/signin/community?ref=mail&s=t");
+                                return res.redirect(clientHost+"/auth/signin/?ref=mail&s=t");
                             }).catch((err: Error) => {
-                                return res.redirect(clientHost+"/auth/signin/community?ref=mail&s=f");
+                                return res.redirect(clientHost+"/auth/signin/?ref=mail&s=f");
                             });
                         }  
                         if (err) {
