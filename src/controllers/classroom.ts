@@ -241,7 +241,6 @@ export const getUpcomingClassroomSessions = (req: Request, res: Response): void 
             if (d) {
                 const finalStructure: any[] = [];
                 d.forEach(element => {
-                    console.log(element);
                     const classroomOwner = element.owner;
                     Community.findOne({ kid: classroomOwner }, (err, comm) => {
                         if (err) {
