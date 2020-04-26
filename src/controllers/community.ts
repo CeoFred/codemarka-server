@@ -9,6 +9,7 @@ import jwt from "jsonwebtoken";
 import * as apiResponse from "../helpers/apiResponse";
 import { CommunityTempDocument, CommunityTemp } from "../models/CommunityTemp";
 import { CommunityDocument, Community } from "../models/Community";
+import { Classroom, ClassroomDocument } from "../models/classroom";
 import { User } from "../models/User";
 import { randomString } from "../helpers/utility";
 import { COMMUNITY_LOGIN } from "../config/url";
@@ -78,7 +79,7 @@ export const communityOrganizersTemp = ( req: Request,res: Response,next: NextFu
                 response.organizers.lead.email = req.body.organizerOneEmail;
                 response.organizers.lead.fullname = req.body.organizerOneFullName;
                 response.organizers.coLead.email = req.body.organizerTwoEmail;
-                response.organizers.coLead.email = req.body.organizerTwoFullName;
+                response.organizers.coLead.fullname = req.body.organizerTwoFullName;
 
                 response.save((err: WriteError,updatedTemp: CommunityTempDocument) => {
                     if(err) {
@@ -542,12 +543,15 @@ export const getCommunities = (req: Request, res: Response): void => {
  */
 export const getCommunity = (req: Request, res: Response): void => {
 
-    Community.findOne({kid: req.params.kid},{_id:0}).exec((err, comm) => {
+    Community.findOne({kid: req.params.kid},{_id:0,tokens:0,updatedAt:0,accountType:0,isConfirmed:0,lastLoggedInIp:0,__v:0,resetPasswordToken:0}).exec((err, comm) => {
         if (err) {
             return apiResponse.ErrorResponse(res, "Something went wrong");
         }
         if (comm) {
             return apiResponse.successResponseWithData(res, "success", comm);
+        }
+        else {
+            return apiResponse.ErrorResponse(res, "Not Found!");
         }
     });
 };
@@ -581,8 +585,20 @@ export const rateCommunity = (req: Request, res: Response): void => {
 /**
     * Get classrooms by community
     * 
-    */
+ */
 
-export const getClassroomsByCommunity = (req: Request, res: Response): void => {
+export const getUpcomingClassroomByCommunity = (req: Request, res: Response): void => {
+    const { kid } = req.params;
 
+    Classroom.find(({ owner: kid, status: 1 }), "startTime shortUrl gravatarUrl classVisibility startDate topic description", (err: Error, doc: ClassroomDocument) => {
+        if (err) {
+            return apiResponse.ErrorResponse(res, "Whoops!"); 
+
+        }
+        if (doc && doc !== null) {
+            return apiResponse.successResponseWithData(res, "success", doc);
+        } else {
+            return apiResponse.ErrorResponse(res, null);
+        }
+    });
 };

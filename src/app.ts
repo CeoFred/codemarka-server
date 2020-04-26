@@ -126,12 +126,7 @@ function errorHandler(err: Error, req: Request, res: Response, next: NextFunctio
     if (res.headersSent) {
         return next(err);
     }
-    res.status(500);
-    if(err && err.type === "auth"){
-        res.redirect("https://codemaraka.dev/auth/signin?googleAuth=failed");
-    }
-
-    res.json({ error: err });
+    res.redirect("https://codemaraka.dev/whoops/");
 }
 
 function fourofour(req: Request, res: Response) {

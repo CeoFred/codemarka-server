@@ -1,4 +1,4 @@
-import { getClassroomsByCommunity, rateCommunity, joinCommunity, leaveCommunity, getCommunity, getCommunities, emailVerification,uploadCommunityLogo, communityCreationFinal,communityContactInformationTemp, communityInfoTemp, communityLogoTemp, communityOrganizersTemp, communitySocailMediaTemp } from "../controllers/community";
+import { getUpcomingClassroomByCommunity, rateCommunity, joinCommunity, leaveCommunity, getCommunity, getCommunities, emailVerification,uploadCommunityLogo, communityCreationFinal,communityContactInformationTemp, communityInfoTemp, communityLogoTemp, communityOrganizersTemp, communitySocailMediaTemp } from "../controllers/community";
 import express from "express";
 import { body } from "express-validator";
 
@@ -32,7 +32,7 @@ router.post("/membership/join/:kid", joinCommunity);
 
 router.post("/membership/leave/:kid", leaveCommunity);
 
-router.get("/classrooms/:kid", getClassroomsByCommunity);
+router.get("/upcoming/:kid", getUpcomingClassroomByCommunity);
 
 
 // all users
