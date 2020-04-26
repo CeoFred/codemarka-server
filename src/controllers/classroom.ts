@@ -546,7 +546,7 @@ export const verifyUserClassroom = (req: Request, res: Response, next: NextFunct
 export const getUserClassrooms = (req: Request, res: Response, next: NextFunction): any => {
     const { accountid } = req.params;
 
-    Classroom.find(({ owner: accountid }), "classType numberInClass status visits likes topic description location", (err: Error, doc: ClassroomDocument) => {
+    Classroom.find(({ owner: accountid }), "classType numberInClass startTime startDate status visits likes topic description location", (err: Error, doc: ClassroomDocument) => {
         if (err) {
             return next(err);
         }
