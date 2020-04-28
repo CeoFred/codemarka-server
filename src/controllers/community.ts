@@ -545,12 +545,15 @@ export const getCommunities = (req: Request, res: Response): void => {
  */
 export const getCommunity = (req: Request, res: Response): void => {
 
-    Community.findOne({kid: req.params.kid},{_id:0}).exec((err, comm) => {
+    Community.findOne({kid: req.params.kid},{_id:0,tokens:0,updatedAt:0,accountType:0,isConfirmed:0,lastLoggedInIp:0,__v:0,resetPasswordToken:0}).exec((err, comm) => {
         if (err) {
             return apiResponse.ErrorResponse(res, "Something went wrong");
         }
         if (comm) {
             return apiResponse.successResponseWithData(res, "success", comm);
+        }
+        else {
+            return apiResponse.ErrorResponse(res, "Not Found!");
         }
     });
 };
@@ -568,7 +571,7 @@ export const joinCommunity = (req: Request, res: Response): void => {
         if (communityM.members.length > 0){
             if(action && action === "leave"){
                 // remove user as member
-                const newList = communityM.members.filter((member: {kid: String}) => member.kid !== user);
+                const newList = communityM.members.filter((member: {kid: string}) => member.kid !== user);
                 communityM.members = newList;
                 communityM.save((err: Error, docc: CommunityDocument) => {
                     if(docc){
@@ -580,7 +583,7 @@ export const joinCommunity = (req: Request, res: Response): void => {
 
             } else {
                 // user wants to join
-                communityM.members = communityM.members.filter((member: { kid: String }) => member.kid !== user);
+                communityM.members = communityM.members.filter((member: { kid: string }) => member.kid !== user);
 
                 User.findOne({ kid: user }, (err, user) => {
                     if (user) {
@@ -591,7 +594,7 @@ export const joinCommunity = (req: Request, res: Response): void => {
                             } else {
                                 return apiResponse.successResponseWithData(res, "joined", doc.members);
                             }
-                        })
+                        });
                     } else if (err) {
                         return apiResponse.ErrorResponse(res, "Error while fetching user");
                     } else {
@@ -605,7 +608,7 @@ export const joinCommunity = (req: Request, res: Response): void => {
             // no members, add first member
             User.findOne({kid: user},(err, user) => {
                 if(user){
-                   const newmembers = Array({kid: user.kid,username: user.username, profileImg: user.gravatarUrl });
+                    const newmembers = Array({kid: user.kid,username: user.username, profileImg: user.gravatarUrl });
                     communityM.members = newmembers;
                     communityM.save((err: Error,doc: CommunityDocument) => {
                         if(err){
@@ -613,7 +616,7 @@ export const joinCommunity = (req: Request, res: Response): void => {
                         } else {
                             return apiResponse.successResponseWithData(res,"joined",doc.members);
                         }
-                    })
+                    });
                 } else if(err){
                     return apiResponse.ErrorResponse(res, "Error while fetching user");
                 } else {
@@ -644,11 +647,7 @@ export const rateCommunity = (req: Request, res: Response): void => {
 /**
     * Get classrooms by community
     * 
-    */
-
-export const getClassroomsByCommunity = (req: Request, res: Response): void => {
-
-};
+ */
 
 export const getUpcomingClassrooms = (req: Request, res: Response, next: NextFunction): any => {
     const { kid } = req.params;

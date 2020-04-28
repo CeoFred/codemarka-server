@@ -247,10 +247,10 @@ export const getUpcomingClassroomSessions = (req: Request, res: Response): void 
                         const ew = t.then(ty => ty);
                         return await(ew);
                     }));  
-                    let resolv = resol.filter(rt => rt !== null);
+                let resolv = resol.filter(rt => rt !== null);
 
                 const communityOrUsers = resolv.map((comU: any,index) => {
-                        return { n: comU.communityName, kid: comU.kid };
+                    return { n: comU.communityName, kid: comU.kid };
                 });
 
                 const po = d.map((cl,ein) => {
@@ -546,7 +546,7 @@ export const verifyUserClassroom = (req: Request, res: Response, next: NextFunct
 export const getUserClassrooms = (req: Request, res: Response, next: NextFunction): any => {
     const { accountid } = req.params;
 
-    Classroom.find(({ owner: accountid }), "classType numberInClass status visits likes topic description location", (err: Error, doc: ClassroomDocument) => {
+    Classroom.find(({ owner: accountid }), "classType numberInClass startTime startDate status visits likes topic description location", (err: Error, doc: ClassroomDocument) => {
         if (err) {
             return next(err);
         }

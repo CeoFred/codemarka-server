@@ -1,4 +1,4 @@
-import { getUpcomingClassrooms, getClassroomsByCommunity, rateCommunity, joinCommunity, leaveCommunity, getCommunity, getCommunities, emailVerification,uploadCommunityLogo, communityCreationFinal,communityContactInformationTemp, communityInfoTemp, communityLogoTemp, communityOrganizersTemp, communitySocailMediaTemp } from "../controllers/community";
+import { getUpcomingClassrooms, rateCommunity, joinCommunity, leaveCommunity, getCommunity, getCommunities, emailVerification,uploadCommunityLogo, communityCreationFinal,communityContactInformationTemp, communityInfoTemp, communityLogoTemp, communityOrganizersTemp, communitySocailMediaTemp } from "../controllers/community";
 import express from "express";
 import { body, buildSanitizeFunction } from "express-validator";
 
@@ -32,8 +32,6 @@ router.post("/rate/:kid", rateCommunity);
 router.post("/membership/join/:kid", joinCommunity);
 
 router.post("/membership/leave/:kid", leaveCommunity);
-
-router.get("/classrooms/:kid", getClassroomsByCommunity);
 
 router.get("/upcoming/:kid", getUpcomingClassrooms);
 

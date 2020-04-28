@@ -17,6 +17,8 @@ export type CommunityDocument = mongoose.Document & {
     affiliation: string;
     city: string;
     country: string;
+    subscribers: any[];
+    headerImage: string;
     physicalAddress: string;
     publicWebsite: string;
     Logo: string;
@@ -159,6 +161,16 @@ const communityScehema = new mongoose.Schema({
     accountType: {
         default: 102,
         type: Number
+    },
+    telephone:{
+        type: String
+    },
+    headerImage: {
+        type:String
+    },
+    suubscribers: {
+        type: [Object],
+        default: []
     }
 }, { timestamps: true });
 
