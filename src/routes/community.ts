@@ -1,14 +1,15 @@
-import { getClassroomsByCommunity, rateCommunity, joinCommunity, leaveCommunity, getCommunity, getCommunities, emailVerification,uploadCommunityLogo, communityCreationFinal,communityContactInformationTemp, communityInfoTemp, communityLogoTemp, communityOrganizersTemp, communitySocailMediaTemp } from "../controllers/community";
+import { getUpcomingClassrooms, getClassroomsByCommunity, rateCommunity, joinCommunity, leaveCommunity, getCommunity, getCommunities, emailVerification,uploadCommunityLogo, communityCreationFinal,communityContactInformationTemp, communityInfoTemp, communityLogoTemp, communityOrganizersTemp, communitySocailMediaTemp } from "../controllers/community";
 import express from "express";
-import { body } from "express-validator";
+import { body, buildSanitizeFunction } from "express-validator";
 
 import { multerUploads } from "../config/multer";
 
 const router = express.Router();
+const sanitizeBodyAndQuery = buildSanitizeFunction(["body","query","params"]);
 
 router.post("/auth/create/info/temp",[ body("*").trim().escape()], communityInfoTemp);
 
-router.patch("/auth/create/contactInfo/temp/:kid", [ body("*").trim().escape()],communityContactInformationTemp);
+router.patch("/auth/create/contactInfo/temp/:kid", [body("*").trim()],communityContactInformationTemp);
 
 router.patch("/auth/create/logo/temp/:kid", multerUploads, communityLogoTemp);
 
@@ -34,6 +35,7 @@ router.post("/membership/leave/:kid", leaveCommunity);
 
 router.get("/classrooms/:kid", getClassroomsByCommunity);
 
+router.get("/upcoming/:kid", getUpcomingClassrooms);
 
 // all users
 export default router;

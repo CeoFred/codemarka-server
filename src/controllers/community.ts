@@ -9,6 +9,7 @@ import jwt from "jsonwebtoken";
 import * as apiResponse from "../helpers/apiResponse";
 import { CommunityTempDocument, CommunityTemp } from "../models/CommunityTemp";
 import { CommunityDocument, Community } from "../models/Community";
+import { Classroom, ClassroomDocument } from "../models/classroom";
 import { User } from "../models/User";
 import { randomString } from "../helpers/utility";
 import { COMMUNITY_LOGIN } from "../config/url";
@@ -78,7 +79,7 @@ export const communityOrganizersTemp = ( req: Request,res: Response,next: NextFu
                 response.organizers.lead.email = req.body.organizerOneEmail;
                 response.organizers.lead.fullname = req.body.organizerOneFullName;
                 response.organizers.coLead.email = req.body.organizerTwoEmail;
-                response.organizers.coLead.email = req.body.organizerTwoFullName;
+                response.organizers.coLead.fullname = req.body.organizerTwoFullName;
 
                 response.save((err: WriteError,updatedTemp: CommunityTempDocument) => {
                     if(err) {
@@ -102,7 +103,7 @@ export const communityContactInformationTemp = ( req: Request,res: Response,next
     const { address, email, telephone } = req.body;
     let trimedIndex;
 
-    if([address,email,telephone].some((value,index) => {
+    if([email,telephone].some((value,index) => {
         if(value.trim() === ""){
             trimedIndex = index;
             return true;
@@ -117,9 +118,9 @@ export const communityContactInformationTemp = ( req: Request,res: Response,next
             }
             if(response){
                 
-                response.physicalAddress = req.body.address;
-                response.email = req.body.email;
-                response.telephone = req.body.telephone;
+                response.physicalAddress = address;
+                response.email = email;
+                response.telephone = telephone;
 
                 response.save((err: WriteError,updatedTemp: CommunityTempDocument) => {
                     if(err) {
@@ -193,10 +194,10 @@ export const communitySocailMediaTemp = (req: Request, res: Response, next: Next
             }
             if(response){
                 
-                response.meetupLink = req.body.meetupUrl;
-                response.instagramLink = req.body.instagramUrl;
-                response.facebookUrl = req.body.facebookUrl;
-                response.twitterUrl = req.body.twitterUrl;
+                response.meetupUrl = String(req.body.meetupUrl);
+                response.instagramUrl = String(req.body.instagramUrl);
+                response.facebookUrl = String(req.body.facebookUrl);
+                response.twitterUrl = String(req.body.twitterUrl);
                 response.save((err: WriteError,updatedTemp: CommunityTempDocument) => {
                     if(err) {
                         return apiResponse.ErrorResponse(res,"Error updating data");
@@ -528,7 +529,9 @@ export const getCommunities = (req: Request, res: Response): void => {
                     rating: c.rating,
                     logo: c.logoUrl,
                     members: c.members,
-                    reviews: c.reviews
+                    reviews: c.reviews,
+                    city: c.city,
+                    country: c.country
                 };
             });
             return apiResponse.successResponseWithData(res,"success", communities);
@@ -558,7 +561,67 @@ export const getCommunity = (req: Request, res: Response): void => {
  *
  */
 export const joinCommunity = (req: Request, res: Response): void => {
+    const { kid } = req.params;
+    const {action, user} = req.body;
+    // console.log(req);
+    Community.findOne({kid},(err,communityM: CommunityDocument) => {
+        if (communityM.members.length > 0){
+            if(action && action === "leave"){
+                // remove user as member
+                const newList = communityM.members.filter((member: {kid: String}) => member.kid !== user);
+                communityM.members = newList;
+                communityM.save((err: Error, docc: CommunityDocument) => {
+                    if(docc){
+                        return apiResponse.successResponseWithData(res,"removed",docc.members);
+                    } else if(err) {
+                        return apiResponse.ErrorResponse(res, "Failed to update");
+                    }
+                });
 
+            } else {
+                // user wants to join
+                communityM.members = communityM.members.filter((member: { kid: String }) => member.kid !== user);
+
+                User.findOne({ kid: user }, (err, user) => {
+                    if (user) {
+                        communityM.members.push({ kid: user.kid, username: user.username, profileImg: user.gravatarUrl });
+                        communityM.save((err: Error, doc: CommunityDocument) => {
+                            if (err) {
+                                return apiResponse.ErrorResponse(res, "Failed to update");
+                            } else {
+                                return apiResponse.successResponseWithData(res, "joined", doc.members);
+                            }
+                        })
+                    } else if (err) {
+                        return apiResponse.ErrorResponse(res, "Error while fetching user");
+                    } else {
+                        return apiResponse.ErrorResponse(res, "User not found");
+                    }
+                });
+            }
+        } else if(err){
+            return apiResponse.ErrorResponse(res, "Something went wrong");
+        } else {
+            // no members, add first member
+            User.findOne({kid: user},(err, user) => {
+                if(user){
+                   const newmembers = Array({kid: user.kid,username: user.username, profileImg: user.gravatarUrl });
+                    communityM.members = newmembers;
+                    communityM.save((err: Error,doc: CommunityDocument) => {
+                        if(err){
+                            return apiResponse.ErrorResponse(res, "Failed to update");
+                        } else {
+                            return apiResponse.successResponseWithData(res,"joined",doc.members);
+                        }
+                    })
+                } else if(err){
+                    return apiResponse.ErrorResponse(res, "Error while fetching user");
+                } else {
+                    return apiResponse.ErrorResponse(res, "User not found");
+                }
+            });
+        }
+    });
 };
 
 
@@ -585,4 +648,19 @@ export const rateCommunity = (req: Request, res: Response): void => {
 
 export const getClassroomsByCommunity = (req: Request, res: Response): void => {
 
+};
+
+export const getUpcomingClassrooms = (req: Request, res: Response, next: NextFunction): any => {
+    const { kid } = req.params;
+
+    Classroom.find(({ owner: kid,status:1 }), "startDate startTime shortUrl gravatarUrl topic description location", (err: Error, doc: ClassroomDocument) => {
+        if (err) {
+            return next(err);
+        }
+        if (doc && doc !== null) {
+            return apiResponse.successResponseWithData(res, "success", doc);
+        } else {
+            return apiResponse.ErrorResponse(res, null);
+        }
+    });
 };

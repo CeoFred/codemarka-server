@@ -243,29 +243,29 @@ export const getUpcomingClassroomSessions = (req: Request, res: Response): void 
                 let resol = await Promise.all(
                     d.map(async classes => {
                         const t =  new Promise((resolve,reject)  => resolve(Community.findOne({ kid: classes.owner})));
-                        const t2 = new Promise((resolve, reject) => resolve(User.findOne({ kid: classes.owner })));
-                        const ew = Promise.all([t,t2]);
+                        // const t2 = new Promise((resolve, reject) => resolve(User.findOne({ kid: classes.owner })));
+                        const ew = t.then(ty => ty);
                         return await(ew);
                     }));  
-                const communityOrUsers = resol.map((comU: any) => {
-                    return {n: comU[0].name || comU[0].communityName, kid: comU[0].kid};
+                    let resolv = resol.filter(rt => rt !== null);
+
+                const communityOrUsers = resolv.map((comU: any,index) => {
+                        return { n: comU.communityName, kid: comU.kid };
                 });
 
                 const po = d.map((cl,ein) => {
                     let ow = cl.owner;
                     let fo;
+                    
                     communityOrUsers.map(ss => {
-                        if(ss.kid === ow){
+                        if(ss && ss.kid === ow){
                             fo = {by: ss.n,kid: d[ein].kid,topic: d[ein].topic, name: d[ein].name, date: d[ein].startDate ,time: d[ein].startTime };
-                            return;
                         }
                     });
                     return fo;
                 });
 
-
-
-                return apiResponse.successResponseWithData(res, "success", po);
+                return apiResponse.successResponseWithData(res, "success", po.filter(r => r));
 
             })();
         } else {

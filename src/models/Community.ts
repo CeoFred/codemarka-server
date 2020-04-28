@@ -21,10 +21,10 @@ export type CommunityDocument = mongoose.Document & {
     publicWebsite: string;
     Logo: string;
     logoUrl: string;
-    meetupLink: string;
+    meetupUrl: string;
     rating: number;
     members: any[];
-    instagramLink: string;
+    instagramUrl: string;
     facebookUrl: string;
     twitterUrl: string;
     acronym: string;
@@ -46,6 +46,7 @@ export type CommunityDocument = mongoose.Document & {
     updateAfterLogin: (ip: string | string[],token: any) => void;
     hashPasswordResetAndValidateToken: (password: string, token: string) => boolean;
 };
+
 
 type comparePasswordFunction = (candidatePassword: string, cb: (err: any, isMatch: boolean) => {}) => void;
 type addToken = (token: string,type: string) => void;
@@ -80,7 +81,8 @@ const communityScehema = new mongoose.Schema({
         type: Number,
     },
     members:{
-        type: Array
+        type: Array,
+        default:[]
     },
     twitterUrl: {
         type: String
@@ -110,10 +112,10 @@ const communityScehema = new mongoose.Schema({
     geoDetails: Object,
     emailVerified: Boolean,
 
-    meetupLink: {
+    meetupUrl: {
         type: String,
     },
-    instagramLink: {
+    instagramUrl: {
         type: String,
     },
     reviews: {

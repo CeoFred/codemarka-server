@@ -10,8 +10,8 @@ export type CommunityTempDocument = mongoose.Document & {
     telephone: string;
     completed: boolean;
     affiliation: string;
-    meetupLink: string;
-    instagramLink: string;
+    meetupUrl: string;
+    instagramUrl: string;
     facebookUrl: string;
     twitterUrl: string;
     city: string;
@@ -79,13 +79,14 @@ const communityTempScehema = new mongoose.Schema({
     geoDetails: Object,
     emailVerified: Boolean,
 
-    meetupLink: {
+    meetupUrl: {
         type: String,
-        default: undefined
     },
-    instagramLink: {
+    telephone:{
+        type: String
+    },
+    instagramUrl: {
         type: String,
-        default: undefined
     },
     lastLoggedInIp: String,
     communityName: {

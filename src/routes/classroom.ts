@@ -25,7 +25,7 @@ router.get("/download/:classroomid", downloadClassfiles);
 
 router.get("/live", getLiveClassroomSessions);
 
-router.get("/upcoming", getUpcomingClassroomSessions);
+router.get("/upcoming/", getUpcomingClassroomSessions);
 
 /**
  * Route to handle alias request from cmarka.xyz
