@@ -16,6 +16,7 @@ export type CommunityDocument = mongoose.Document & {
     completed: boolean;
     affiliation: string;
     city: string;
+    createdAt: any;
     country: string;
     subscribers: any[];
     headerImage: string;

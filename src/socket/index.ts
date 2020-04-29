@@ -809,7 +809,6 @@ export default (server: express.Application) => {
                                 {
                                     ...msgObject
                                 });
-                            console.log("sent msg");
                         }
                     }
                 );

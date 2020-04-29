@@ -531,7 +531,10 @@ export const getCommunities = (req: Request, res: Response): void => {
                     members: c.members,
                     reviews: c.reviews,
                     city: c.city,
-                    country: c.country
+                    country: c.country,
+                    createdAt: c.createdAt,
+                    privateClassrooms: c.privateClassCreated,
+                    publicClassrooms: c.publicClassCreated
                 };
             });
             return apiResponse.successResponseWithData(res,"success", communities);
@@ -663,3 +666,18 @@ export const getUpcomingClassrooms = (req: Request, res: Response, next: NextFun
         }
     });
 };
+
+export const findCommunity = (req: Request, res: Response) => {
+    const { q } = req.params;
+    if (q && q.trim() !== "") {
+        const reqexQ = new RegExp(q, "i");
+        Community.find({ $or: [{ "communityName": reqexQ }, { "communityAcronym": reqexQ }] }, "communityName city country kid", (err, d: ClassroomDocument[] | any) => {
+            if (d && err === null && d.status !== 3) {
+
+                return apiResponse.successResponseWithData(res, "Success", d);
+            } else {
+                return apiResponse.ErrorResponse(res, "Opps!");
+            }
+        });
+    }
+}
