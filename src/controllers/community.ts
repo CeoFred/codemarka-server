@@ -680,4 +680,4 @@ export const findCommunity = (req: Request, res: Response) => {
             }
         });
     }
-}
+};
