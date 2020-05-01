@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 
 export type ClassroomAttendanceDocument = mongoose.Document & {
     kid: string;
-    list:any[];
+    list: any[];
     classroomkid: string;
 };
 
