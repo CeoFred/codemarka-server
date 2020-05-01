@@ -2,12 +2,18 @@ import mongoose from "mongoose";
 
 export type ClassroomAttendanceDocument = mongoose.Document & {
     kid: string;
+    list:any[];
+    classroomkid: string;
 };
 
 
 const attendanceScehema = new mongoose.Schema({
     kid:{
         type:String,
+        required: true
+    },
+    classroomkid: {
+        type: String,
         required: true
     },
     list:[
@@ -32,13 +38,18 @@ const attendanceScehema = new mongoose.Schema({
             },
             phone:{
                 type: String
+            },
+            joined:{
+                type: Date
+            },
+            timeSpent: {
+                type: Number
+            },
+            left: {
+                type: Number
             }
         }
-    ],
-    classroomkId: {
-        required: true,
-        type: String
-    }
+    ]
 }, { timestamps: true });
 
 export const ClassroomAttendance = mongoose.model<ClassroomAttendanceDocument>("ClassroomAttendance", attendanceScehema);
