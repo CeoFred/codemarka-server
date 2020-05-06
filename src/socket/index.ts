@@ -7,6 +7,8 @@ import uuidv4 from "uuid/v4";
 import sgMail  from "@sendgrid/mail";
 
 import { Classroom, ClassroomDocument } from "../models/classroom";
+import { ClassroomAttendance } from "../models/Attendance";
+
 import { classWeb } from "../models/classWebFiles";
 
 import { User, UserDocument } from "../models/User";
@@ -232,6 +234,67 @@ export default (server: express.Application) => {
                                     
                                     socket.emit("class_favourites", d.likes);
 
+                                    
+                                    ClassroomAttendance.findOne({classroomkid: d.kid}).then((attendance) => {
+                                            if(attendance){
+
+                                                let attendanceList = attendance.list;
+                                               
+                                                console.log(attendanceList);
+
+                                                const userIsOnAttendance =  attendanceList.some(user => user.kid === socket.user);
+
+                                                if(d.owner === data.userId) return; // owner cannot take attendance
+
+                                                if (d.isTakingAttendance){ // classroom is taking attendance
+
+                                                    if (!userIsOnAttendance) { // user has not had an initial Attendance update
+
+                                                        setTimeout(() => {
+                                                            // automatically add user to attendance pending updates on other informations
+                                                            attendance.list.push({ username: data.username, kid: data.userId, email: user.email, joined: new Date(), timeSpent: 0 })
+                                                            attendance.save((err, attendanceUpdated) => {
+                                                                if (!err && attendanceUpdated) {
+                                                                    // console.log(attendanceUpdated);
+                                                                }
+                                                            });
+                                                            socket.emit("collect_attendance", attendance.kid);
+                                                        }, 5000);
+
+                                                        
+                                                    } else if (userIsOnAttendance && attendanceList.length === 1) {
+                                                        const { firstName, lastName, gender ,email, kid, username} = attendanceList[0];
+                                                        if (!(firstName && lastName && gender && email && kid && username)) {
+                                                            socket.emit("collect_attendance", attendance.kid);
+                                                        }
+
+                                                    } else if (userIsOnAttendance && attendanceList.length > 1){
+                                                        // correct multiple data
+                                                        const rt = attendanceList.filter(user => user.kid !== socket.user);
+                                                        const userRecords = attendanceList.filter(user => user.kid === socket.user || user.username === socket.username);
+                                                        rt.push(userRecords[userRecords.length - 1]);
+                                                        attendance.list = rt;            
+                                                        attendance.save((err, attendanceUpdated) => {
+                                                            if (!err && attendanceUpdated) {
+                                                                console.log(attendanceUpdated);
+                                                            }
+                                                        });
+                                                    }
+                                                } else {
+                                                    // automatically add user to attendance
+                                                    attendance.list.push({ username: data.username, kid: data.userId, email: user.email, joined: new Date(), timespent: 0 })
+                                                    attendance.save((err, attendanceUpdated) => {
+                                                        if (!err && attendanceUpdated) {
+                                                            console.log(attendanceUpdated);
+                                                        }
+                                                    });
+                                                }
+                                                
+                                            }
+                                    }).catch(err => {
+                                        console.log(err);
+                                    });
+
                                     socket.join(data.classroom_id, () => {
 
                                         nsp.to(data.classroom_id).emit("someoneJoined",
@@ -310,6 +373,41 @@ export default (server: express.Application) => {
                 socket.emit("ErrorFetchingUser");
 
             });
+
+        });
+
+        socket.on("new_attendance_record", (data: any) => {
+            const classroomkid = socket.classinfo.kid;
+
+            ClassroomAttendance.findOne({ classroomkid},(err, attendance) => {{
+
+                if(attendance){
+
+                    const list = attendance.list;
+                    const hasTakenAttendance = list.some(user => user.kid === socket.user);
+                    // console.log(data);
+                    if (hasTakenAttendance){
+                        // old Record, update.
+                        attendance.list = list.map(user => {
+                            if(user.kid === socket.user){
+                                return { ...data, username: socket.username, kid: socket.user}
+                            } else {
+                                return user
+                            }
+                        })
+                    } else {
+                        // new record
+                        attendance.list.push({ ...data, username: socket.username, kid: socket.user});
+                    }
+                    attendance.save((err, recorded) => {
+                        if (recorded) {
+                            console.log(recorded);
+                            socket.emit("attendance_recorded", data);
+                        }
+                        console.log(err,recorded)
+                    })
+                }
+            }});
 
         });
 
@@ -935,9 +1033,23 @@ export default (server: express.Application) => {
                 }
 
             });
-            activeSockets = activeSockets.filter(
-                existingSocket => existingSocket !== socket.id
-            );
+
+            ClassroomAttendance.findOne({ classroomkid: socket.classinfo.kid }).then((attendance) => {
+                if (attendance) {
+                    let attendanceList = attendance.list;
+                    const userIsOnAttendance = attendanceList.some(user => user.kid === socket.user);
+                    if (userIsOnAttendance) {
+
+                        console.log(userIsOnAttendance);
+                    }
+
+                    activeSockets = activeSockets.filter(
+                        existingSocket => existingSocket !== socket.id
+                    );
+                }
+            }).catch(err => {
+                console.log(err);
+            });
             console.log(`${socket.username}  disconnected`);
         });
     });

@@ -5,6 +5,7 @@ import { Request, Response, NextFunction } from "express";
 import { validationResult } from "express-validator";
 
 import { Classroom, ClassroomDocument } from "../models/classroom";
+import { ClassroomAttendance } from "../models/Attendance";
 import { classAliasUrl } from "../models/classAlias"; 
 import { User, UserDocument } from "../models/User";
 import { randomNumber ,randomString} from "../helpers/utility";
@@ -32,14 +33,16 @@ export const createClassRoom = (req: Request, res: Response, next: NextFunction)
         return res.status(403).json({ errors: errors.array() });
     }
 
-    const { location, name, topic, startTime, startDate, description, classType, visibility } = req.body;
+    const { user: userData, isTakingAttendance, location, name, topic, startTime, startDate, description, classType, visibility } = req.body;
     
+    const { accountType: creatorsAccountType } = userData
 
     const accountid: string = req.body.decoded.kid;
     // find user and validate classroom creation limit.
     let userAccountType: number,privateClassroomsCreated,user;
 
     try {
+       
         function createClassroominit(user: UserDocument | CommunityDocument){
             if (user) {
                 userAccountType = user.accountType;
@@ -77,25 +80,36 @@ export const createClassRoom = (req: Request, res: Response, next: NextFunction)
                     });
                 });
             };
+            const kid = randomString(40);
 
             const newclassroom = new Classroom({
                 name,
-                kid: randomString(40),
+                kid,
                 topic,
                 description,
                 classVisibility: visibility,
                 classType,
-                startTime,
-                startDate,
+                startTime: creatorsAccountType === 101 ? new Date().getHours() : startTime,
+                startDate: creatorsAccountType === 101 ? new Date().getFullYear() : startDate,
                 status: notStarted,
                 owner: accountid,
-                location,
-                    
+                location: creatorsAccountType === 101 ? "NOT_SET" : location,
+                isTakingAttendance: isTakingAttendance.toLowerCase() === "yes" ? true : false ,
                 maxUsers: userAccountType === 101 ? MAX_CASSROOM_MEMBERS_REGULAR : MAX_CLASSROOM_MEMBERS_PREMUIM
             });
 
             newclassroom.gravatar(23);
             newclassroom.save().then((data: ClassroomDocument) => {
+
+                new ClassroomAttendance({
+                    kid: randomString(40),
+                    classroomkid: data.kid
+                }).save((err,attendance) => {
+                    if(err && attendance){
+                        return apiResponse.ErrorResponse(res,"Failed!");
+                    }
+                });
+
                 const jsfile = randomNumber(15);
                 const htmlfile = randomNumber(15);
                 const cssfile = randomNumber(15);
