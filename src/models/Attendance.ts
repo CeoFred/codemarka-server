@@ -3,7 +3,8 @@ import mongoose from "mongoose";
 export type ClassroomAttendanceDocument = mongoose.Document & {
     kid: string;
     list: any[];
-    classroom: string;
+    classroomkid: string;
+    csvName: string;
 };
 
 
@@ -15,7 +16,7 @@ const attendanceScehema = new mongoose.Schema({
     classroomkid: {
         type: String,
         required: true,
-        ref:'Classroom'
+        ref:"Classroom"
     },
     list:[
         {
@@ -46,14 +47,20 @@ const attendanceScehema = new mongoose.Schema({
             classExpertiseLevel:{
                 type: String
             },
-            timeSpent: {
+            totalTimeSpent: {
                 type: Number
             },
-            left: {
+            lastExitTime: {
                 type: Number
+            },
+            lastEntryTime: {
+                type: Date
             }
         }
-    ]
+    ],
+    csvName:{
+        type: String
+    }
 }, { timestamps: true });
 
 export const ClassroomAttendance = mongoose.model<ClassroomAttendanceDocument>("ClassroomAttendance", attendanceScehema);

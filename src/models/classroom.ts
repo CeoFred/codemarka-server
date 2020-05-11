@@ -58,7 +58,7 @@ const classroomSchema = new mongoose.Schema({
     },
     blocked: [Object],
     description:{
-        required: true,
+        default: "No description",
         type: String
     },
     classVisibility: {
@@ -112,20 +112,20 @@ classroomSchema.methods.gravatar = function (size: number = 200): void {
 };
 
 
-classroomSchema.virtual('createdBy',{
-    ref:'User',
-    localField: 'owner',
-    foreignField: 'kid',
+classroomSchema.virtual("createdBy",{
+    ref:"User",
+    localField: "owner",
+    foreignField: "kid",
     justOne: true
-})
+});
 
 classroomSchema.pre("findOne",function(){
-    this.populate('createdBy');
-})
+    this.populate("createdBy");
+});
 
-classroomSchema.post('save',function(doc, next){
-    doc.populate('createdBy').execPopulate().then(function(){
-    next();
-    })
-})
+classroomSchema.post("save",function(doc, next){
+    doc.populate("createdBy").execPopulate().then(function(){
+        next();
+    });
+});
 export const Classroom = mongoose.model<ClassroomDocument>("Classroom", classroomSchema);

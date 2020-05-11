@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/explicit-function-return-type */
 import fs from "fs";
 import archiver from "archiver";
 
@@ -13,7 +14,7 @@ import { successResponseWithData } from "../helpers/apiResponse";
 import { classWeb } from "../models/classWebFiles";
 import * as apiResponse from "../helpers/apiResponse";
 import { Community, CommunityDocument } from "../models/Community";
-
+import { CLASSROOM } from "../config/url";
 const notStarted = 1;
 const started = 2;
 const ended = 3;
@@ -35,7 +36,7 @@ export const createClassRoom = (req: Request, res: Response, next: NextFunction)
 
     const { user: userData, isTakingAttendance, location, name, topic, startTime, startDate, description, classType, visibility } = req.body;
     
-    const { accountType: creatorsAccountType } = userData
+    const { accountType: creatorsAccountType } = userData;
 
     const accountid: string = req.body.decoded.kid;
     // find user and validate classroom creation limit.
@@ -180,7 +181,7 @@ export const createClassRoom = (req: Request, res: Response, next: NextFunction)
                 });
 
             }).catch((err: Error) => {
-                (err);
+                console.log(err);
                 return apiResponse.ErrorResponse(res,"Whoops! Something went wrong while trying to save classroom data to model");
             });
         }
@@ -213,6 +214,34 @@ export const createClassRoom = (req: Request, res: Response, next: NextFunction)
 export const getClassroomFromLocation = (req: Request, res: Response): void => {
     const location = req.params.location;
     Classroom.find({ location }).exec().then((data: object) => res.json({ data })).catch((err: Error) => res.status(404).json(err));
+};
+
+export const downloadAttendance = (req: Request, res: Response): void => {
+    const classroomkid = req.params.classroom;
+    const csvName = req.params.attednancecsv;
+    const filePath = __dirname + "/../../main/classrooms/" + classroomkid + "/" + csvName +".csv";
+    console.log(filePath);
+    ClassroomAttendance.findOne({classroomkid, csvName},(err,cr) => {
+        if(!err && cr){
+
+            if(fs.existsSync(filePath)){
+                cr.csvName = "";
+                cr.save((err, savedAtt) => {
+                    if(!err && savedAtt){
+                        return res.download(filePath,(err) => {
+                            if(err){
+                                console.log(err);
+                            }
+                        });
+                    }
+                });
+            } else {
+                return res.redirect(CLASSROOM + "/" + classroomkid + "/?attendanceStat=Failed&r=not_found");
+            }
+        } else if(cr === null) {
+            return res.redirect(CLASSROOM + "/" + classroomkid + "/?attendanceStat=Failed");
+        }
+    });
 };
 
 export const getLiveClassroomSessions =  (req: Request, res: Response): void => {
