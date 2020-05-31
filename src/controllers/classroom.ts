@@ -100,17 +100,17 @@ export const createClassRoom = (req: Request, res: Response, next: NextFunction)
                 return new Promise((resolve,reject) => {
                     let rs = randomString(4);
 
-                    classAliasUrl.findOne({shortUrl:`https://cmarka.xyz/${rs}`},(err, url) => {
+                    classAliasUrl.findOne({shortUrl:`http://cmarka.xyz/${rs}`},(err, url) => {
                         if(err) reject("Something went wrong while searching for urlAlias");
                         if(url){
                             //url exists
                             resolve(generateClassUrlAlias(data));
                         } else {
-                            const url = new classAliasUrl({Kid: randomNumber(29),shortUrl: `https://cmarka.xyz/${rs}`,classroomKid:data.kid});
+                            const url = new classAliasUrl({Kid: randomNumber(29),shortUrl: `http://cmarka.xyz/${rs}`,classroomKid:data.kid});
                             url.save((err,urlDoc) => {
                                 (err);
                                 if(err) reject("Something went wrong while trying to save");
-                                resolve(`https://cmarka.xyz/${rs}`);
+                                resolve(`http://cmarka.xyz/${rs}`);
                             });
                         }
                     });
@@ -577,7 +577,7 @@ export const getTrending = (req: Request, res: Response): object => {
 // fecth classroom original url
 export const fecthClassByUrlAlias = (req: Request, res: Response, next: NextFunction): any => {
     const { id } = req.params;
-    const url = `https://cmarka.xyz/${id}`;
+    const url = `http://cmarka.xyz/${id}`;
     (url);
     (req.hostname);
     classAliasUrl.findOneAndUpdate({shortUrl: url},{$inc:{visits:1}}).then(data => {

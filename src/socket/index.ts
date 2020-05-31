@@ -92,9 +92,9 @@ export default (server: express.Application) => {
                                     const classroomIsTakingAttendance = res.isTakingAttendance;
                                     const attendanceList = hasClassAttendance.list;
                                     const userHasTakenAttedance = attendanceList.some((list) => list.kid === socket.user);
+                                    const isOwner = res.owner === socket.user;
 
-
-                                    if(res.owner === socket.user){
+                                    if(isOwner){
                                         socket.emit("attendance_list",attendanceList);
                                     }
                                     if(classroomIsTakingAttendance){
@@ -141,6 +141,8 @@ export default (server: express.Application) => {
                                             }
                                         } else {
                                             // console.log("User has not taken attendance");
+                                            if(!isOwner){
+                                                
                                             const userAttedance = {kid: socket.user, username: data.username, email: user.email };
                                             hasClassAttendance.list.push(userAttedance);
                                             hasClassAttendance.save((err,up) => {
@@ -149,10 +151,11 @@ export default (server: express.Application) => {
                                                 }
                                             });
                                             socket.emit("collect_attendance", null);
+                                            }
                                         }
                                     } else {
                                         // console.log("classroom is not taking attendace");
-                                        if(!userHasTakenAttedance){
+                                        if(!userHasTakenAttedance && !isOwner){
                                             const userAttedance = {kid: socket.user, username: data.username, email: user.email };
                                             hasClassAttendance.list.push(userAttedance);
                                             hasClassAttendance.save((err,up) => {
@@ -331,7 +334,7 @@ export default (server: express.Application) => {
                                             const classroomIsTakingAttendance = res.isTakingAttendance;
                                             const attendanceList = hasClassAttendance.list;
                                             const userHasTakenAttedance = attendanceList.some((list) => list.kid === socket.user);
-
+                                            const isOwner = res.owner === socket.user;
 
                                             if(classroomIsTakingAttendance){
                                                 // console.log("classroom is taking attedance");
@@ -379,6 +382,8 @@ export default (server: express.Application) => {
                                                     }
                                                 } else {
                                                     // console.log("User has not taken attendance");
+                                                    if(!isOwner){
+                                                        
                                                     const userAttedance = {kid: socket.user, username: data.username, email: user.email };
                                                     hasClassAttendance.list.push(userAttedance);
                                                     hasClassAttendance.save((err,up) => {
@@ -387,10 +392,11 @@ export default (server: express.Application) => {
                                                         }
                                                     });
                                                     socket.emit("collect_attendance", null);
+                                                    }
                                                 }
                                             } else {
                                                 console.log("classroom is not taking attendace");
-                                                if(!userHasTakenAttedance){
+                                                if(!userHasTakenAttedance && !isOwner){
                                                     const userAttedance = {kid: socket.user, username: data.username, email: user.email };
                                                     hasClassAttendance.list.push(userAttedance);
                                                     hasClassAttendance.save((err,up) => {
