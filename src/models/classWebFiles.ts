@@ -9,24 +9,24 @@ export type ClassroomWebFileDocument = mongoose.Document & {
         id: number;
         settings: {
             preprocessor: string;
-            externalCDN: Array<Object>;
-        }
+            externalCDN: Record<string, any>[];
+        };
     };
     "css": {
         content: string;
         id: number;
         settings: {
             preprocessor: string;
-            externalCDN: Array<Object>;
-        }
+            externalCDN: Record<string, any>[];
+        };
     };
     "html": {
         content: string;
         id: number;
         settings: {
             preprocessor: string;
-            classes: Array<Object>;
-        }
+            classes: Record<string, any>[];
+        };
     };
 };
 

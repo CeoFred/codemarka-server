@@ -30,14 +30,14 @@ export const getAllLanguageSettings = (req: Request, res: Response): void => {
     const classroomKid = req.params.classroomkid;
     classWeb.findOne({classroomKid},(err, docc) => {
         if(!err && docc){
-                return  successResponseWithData(res, "success", {css:docc.css.settings,js:docc.js.settings});
+            return  successResponseWithData(res, "success", {css:docc.css.settings,js:docc.js.settings});
 
         } else {
             return apiResponse.ErrorResponse(res,"Not found");
         }
-    })
+    });
 
-}
+};
 
 export const getLanguageSettings = (req: Request, res: Response): void => {
     const classroomKid = req.params.classroomkid;
@@ -55,13 +55,13 @@ export const getLanguageSettings = (req: Request, res: Response): void => {
                 return  successResponseWithData(res, "success", docc.html.settings);
 
             } else {
-                 return res.status(403).json({ errors: "no language specified" });
+                return res.status(403).json({ errors: "no language specified" });
             }
         } else {
             return apiResponse.ErrorResponse(res,"Not found");
         }
-    })
-}
+    });
+};
 export const createClassRoom = (req: Request, res: Response, next: NextFunction): object => {
 
     const errors = validationResult(req);

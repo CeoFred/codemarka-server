@@ -379,13 +379,13 @@ export default (server: express.Application) => {
                                                     }
                                                 } else {
                                                     // console.log("User has not taken attendance");
-                                            const userAttedance = {kid: socket.user, username: data.username, email: user.email };
-                                            hasClassAttendance.list.push(userAttedance);
-                                            hasClassAttendance.save((err,up) => {
-                                                if(!up && err){
-                                                    console.log(err);
-                                                }
-                                            });
+                                                    const userAttedance = {kid: socket.user, username: data.username, email: user.email };
+                                                    hasClassAttendance.list.push(userAttedance);
+                                                    hasClassAttendance.save((err,up) => {
+                                                        if(!up && err){
+                                                            console.log(err);
+                                                        }
+                                                    });
                                                     socket.emit("collect_attendance", null);
                                                 }
                                             } else {
@@ -851,7 +851,7 @@ export default (server: express.Application) => {
                                 
                         });
                     } catch (e) {
-                        console.log(e)
+                        console.log(e);
                         nsp.to(socket.room).emit("error");
                      
                     }
@@ -1167,12 +1167,12 @@ export default (server: express.Application) => {
         interface EditorSettingsData {
             classroom: string;
             preprocessor: any;
-            externalCDN: Array<any>;
+            externalCDN: any[];
             editor: string;
         }
 
         socket.on("editor_settings_changed", (EditorSettingsData: EditorSettingsData):  void => {
-            const { preprocessor, externalCDN} = EditorSettingsData
+            const { preprocessor, externalCDN} = EditorSettingsData;
 
             // function hasKey<O>(obj: O, key: keyof any): key is keyof O {
             //     return key in obj;
@@ -1184,22 +1184,22 @@ export default (server: express.Application) => {
                 if(!err && classWebDoc){
                     
                     const mapCDNToId = externalCDN.map(cdn => {
-                        return {url: cdn, id: randomString(20)}
-                    })
+                        return {url: cdn, id: randomString(20)};
+                    });
                     const newSettings = { preprocessor, externalCDN: mapCDNToId };
                     if(editorName === "css"){
                         
-                       classWebDoc.css.settings =  newSettings;
+                        classWebDoc.css.settings =  newSettings;
 
                     } else if(editorName === "js"){
-                       classWebDoc.js.settings = newSettings;
+                        classWebDoc.js.settings = newSettings;
                     }
 
                     classWebDoc.save((err,updatedSettings) => {
                         if(!err && updatedSettings){
-                            socket.emit('editor_settings_update_feedback',newSettings)
+                            socket.emit("editor_settings_update_feedback",newSettings);
                         } else {
-                            socket.emit('editor_settings_update_feedback',false);
+                            socket.emit("editor_settings_update_feedback",false);
                         }
                     });
                 } else {
