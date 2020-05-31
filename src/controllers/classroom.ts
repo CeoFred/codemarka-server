@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/explicit-function-return-type */
 import fs from "fs";
 import archiver from "archiver";
 
@@ -5,6 +6,7 @@ import { Request, Response, NextFunction } from "express";
 import { validationResult } from "express-validator";
 
 import { Classroom, ClassroomDocument } from "../models/classroom";
+import { ClassroomAttendance } from "../models/Attendance";
 import { classAliasUrl } from "../models/classAlias"; 
 import { User, UserDocument } from "../models/User";
 import { randomNumber ,randomString} from "../helpers/utility";
@@ -12,7 +14,7 @@ import { successResponseWithData } from "../helpers/apiResponse";
 import { classWeb } from "../models/classWebFiles";
 import * as apiResponse from "../helpers/apiResponse";
 import { Community, CommunityDocument } from "../models/Community";
-
+import { CLASSROOM } from "../config/url";
 const notStarted = 1;
 const started = 2;
 const ended = 3;
@@ -24,7 +26,42 @@ const MAX_CASSROOM_MEMBERS_REGULAR = 100;
 const MAX_CLASSROOM_MEMBERS_PREMUIM = 300;
 
 const MAX_PUBLIC_CLASSROOMS = "unlimited";
+export const getAllLanguageSettings = (req: Request, res: Response): void => {
+    const classroomKid = req.params.classroomkid;
+    classWeb.findOne({classroomKid},(err, docc) => {
+        if(!err && docc){
+            return  successResponseWithData(res, "success", {css:docc.css.settings,js:docc.js.settings});
 
+        } else {
+            return apiResponse.ErrorResponse(res,"Not found");
+        }
+    });
+
+};
+
+export const getLanguageSettings = (req: Request, res: Response): void => {
+    const classroomKid = req.params.classroomkid;
+    const language = req.params.language;
+    
+    classWeb.findOne({classroomKid},(err, docc) => {
+        if(!err && docc){
+            if(language && language === "css"){
+                return  successResponseWithData(res, "success", docc.css.settings);
+
+            } else if(language && language === "js"){
+                return  successResponseWithData(res, "success", docc.js.settings);
+
+            } else if(language && language === "html"){
+                return  successResponseWithData(res, "success", docc.html.settings);
+
+            } else {
+                return res.status(403).json({ errors: "no language specified" });
+            }
+        } else {
+            return apiResponse.ErrorResponse(res,"Not found");
+        }
+    });
+};
 export const createClassRoom = (req: Request, res: Response, next: NextFunction): object => {
 
     const errors = validationResult(req);
@@ -32,14 +69,16 @@ export const createClassRoom = (req: Request, res: Response, next: NextFunction)
         return res.status(403).json({ errors: errors.array() });
     }
 
-    const { location, name, topic, startTime, startDate, description, classType, visibility } = req.body;
+    const { user: userData, isTakingAttendance, location, name, topic, startTime, startDate, description, classType, visibility } = req.body;
     
+    const { accountType: creatorsAccountType } = userData;
 
     const accountid: string = req.body.decoded.kid;
     // find user and validate classroom creation limit.
     let userAccountType: number,privateClassroomsCreated,user;
 
     try {
+       
         function createClassroominit(user: UserDocument | CommunityDocument){
             if (user) {
                 userAccountType = user.accountType;
@@ -77,25 +116,36 @@ export const createClassRoom = (req: Request, res: Response, next: NextFunction)
                     });
                 });
             };
+            const kid = randomString(40);
 
             const newclassroom = new Classroom({
                 name,
-                kid: randomString(40),
+                kid,
                 topic,
                 description,
                 classVisibility: visibility,
                 classType,
-                startTime,
-                startDate,
+                startTime: creatorsAccountType === 101 ? new Date().getHours() : startTime,
+                startDate: creatorsAccountType === 101 ? new Date().getFullYear() : startDate,
                 status: notStarted,
                 owner: accountid,
-                location,
-                    
+                location: creatorsAccountType === 101 ? "NOT_SET" : location,
+                isTakingAttendance: isTakingAttendance.toLowerCase() === "yes" ? true : false ,
                 maxUsers: userAccountType === 101 ? MAX_CASSROOM_MEMBERS_REGULAR : MAX_CLASSROOM_MEMBERS_PREMUIM
             });
 
             newclassroom.gravatar(23);
             newclassroom.save().then((data: ClassroomDocument) => {
+
+                new ClassroomAttendance({
+                    kid: randomString(40),
+                    classroomkid: data.kid
+                }).save((err,attendance) => {
+                    if(err && attendance){
+                        return apiResponse.ErrorResponse(res,"Failed!");
+                    }
+                });
+
                 const jsfile = randomNumber(15);
                 const htmlfile = randomNumber(15);
                 const cssfile = randomNumber(15);
@@ -166,7 +216,7 @@ export const createClassRoom = (req: Request, res: Response, next: NextFunction)
                 });
 
             }).catch((err: Error) => {
-                (err);
+                console.log(err);
                 return apiResponse.ErrorResponse(res,"Whoops! Something went wrong while trying to save classroom data to model");
             });
         }
@@ -199,6 +249,34 @@ export const createClassRoom = (req: Request, res: Response, next: NextFunction)
 export const getClassroomFromLocation = (req: Request, res: Response): void => {
     const location = req.params.location;
     Classroom.find({ location }).exec().then((data: object) => res.json({ data })).catch((err: Error) => res.status(404).json(err));
+};
+
+export const downloadAttendance = (req: Request, res: Response): void => {
+    const classroomkid = req.params.classroom;
+    const csvName = req.params.attednancecsv;
+    const filePath = __dirname + "/../../main/classrooms/" + classroomkid + "/" + csvName +".csv";
+    console.log(filePath);
+    ClassroomAttendance.findOne({classroomkid, csvName},(err,cr) => {
+        if(!err && cr){
+
+            if(fs.existsSync(filePath)){
+                cr.csvName = "";
+                cr.save((err, savedAtt) => {
+                    if(!err && savedAtt){
+                        return res.download(filePath,(err) => {
+                            if(err){
+                                console.log(err);
+                            }
+                        });
+                    }
+                });
+            } else {
+                return res.redirect(CLASSROOM + "/" + classroomkid + "/?attendanceStat=Failed&r=not_found");
+            }
+        } else if(cr === null) {
+            return res.redirect(CLASSROOM + "/" + classroomkid + "/?attendanceStat=Failed");
+        }
+    });
 };
 
 export const getLiveClassroomSessions =  (req: Request, res: Response): void => {
@@ -406,11 +484,13 @@ export const classroomPreview = (req: Request, res: Response): object => {
                 };
                 const css = {
                     id: cssfileId,
-                    content: cssContent
+                    content: cssContent,
+                    externalCDN: d.css.settings.externalCDN
                 };
                 const js = {
                     id: jsFileId,
-                    content: jsContent
+                    content: jsContent,
+                    externalCDN: d.js.settings.externalCDN
                 };
                 Classroom.findOne({kid: classroomKid},(err,respo: ClassroomDocument) => {
                     if(!err && respo){

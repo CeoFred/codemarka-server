@@ -22,10 +22,15 @@ export type ClassroomDocument = mongoose.Document & {
     gravatar: (p: number) => void;
     description: string;
     topic: string;
+    isTakingAttendance: boolean;
 };
 
 
 const classroomSchema = new mongoose.Schema({
+    isTakingAttendance:{
+        type: Boolean,
+        required: true
+    },
     kid: {
         type: String,
         required: true
@@ -53,7 +58,7 @@ const classroomSchema = new mongoose.Schema({
     },
     blocked: [Object],
     description:{
-        required: true,
+        default: "No description",
         type: String
     },
     classVisibility: {
@@ -106,4 +111,21 @@ classroomSchema.methods.gravatar = function (size: number = 200): void {
     this.gravatarUrl = `https://gravatar.com/avatar/${md5}?s=${size}&d=retro`;
 };
 
+
+classroomSchema.virtual("createdBy",{
+    ref:"User",
+    localField: "owner",
+    foreignField: "kid",
+    justOne: true
+});
+
+classroomSchema.pre("findOne",function(){
+    this.populate("createdBy");
+});
+
+classroomSchema.post("save",function(doc, next){
+    doc.populate("createdBy").execPopulate().then(function(){
+        next();
+    });
+});
 export const Classroom = mongoose.model<ClassroomDocument>("Classroom", classroomSchema);
