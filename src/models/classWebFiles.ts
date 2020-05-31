@@ -1,20 +1,32 @@
 import mongoose from "mongoose";
 
-export type ClassroomDocument = mongoose.Document & {
+export type ClassroomWebFileDocument = mongoose.Document & {
     classroomId: string;
     classroomKid: string;
 
-    js: {
+    "js": {
         content: string;
         id: number;
+        settings: {
+            preprocessor: string;
+            externalCDN: Array<Object>;
+        }
     };
-    css: {
+    "css": {
         content: string;
         id: number;
+        settings: {
+            preprocessor: string;
+            externalCDN: Array<Object>;
+        }
     };
-    html: {
+    "html": {
         content: string;
         id: number;
+        settings: {
+            preprocessor: string;
+            classes: Array<Object>;
+        }
     };
 };
 
@@ -36,6 +48,16 @@ const classWebFiles = new mongoose.Schema({
         id: {
             type:Number,
             required:true
+        },
+        settings:{
+            preprocessor:{
+                type:String,
+                default:null
+            },
+            externalCDN:{
+                type: Array,
+                default:[]
+            }
         }
     },
     css:{
@@ -46,6 +68,16 @@ const classWebFiles = new mongoose.Schema({
         id: {
             type:Number,
             required:true
+        },
+        settings:{
+            preprocessor:{
+                type:String,
+                default:null
+            },
+            externalCDN:{
+                type: Array,
+                default:[]
+            }
         }
     },
     html: {
@@ -56,9 +88,19 @@ const classWebFiles = new mongoose.Schema({
         id: {
             type:Number,
             required:true
+        },
+        settings:{
+            preprocessor:{
+                type:String,
+                default:null
+            },
+            classes:{
+                type: Array,
+                default:[]
+            }
         }
     }
 }, { timestamps: true });
 
 
-export const classWeb = mongoose.model<ClassroomDocument>("classWebFiles", classWebFiles);
+export const classWeb = mongoose.model<ClassroomWebFileDocument>("classWebFiles", classWebFiles);

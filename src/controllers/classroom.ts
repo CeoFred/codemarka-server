@@ -26,7 +26,42 @@ const MAX_CASSROOM_MEMBERS_REGULAR = 100;
 const MAX_CLASSROOM_MEMBERS_PREMUIM = 300;
 
 const MAX_PUBLIC_CLASSROOMS = "unlimited";
+export const getAllLanguageSettings = (req: Request, res: Response): void => {
+    const classroomKid = req.params.classroomkid;
+    classWeb.findOne({classroomKid},(err, docc) => {
+        if(!err && docc){
+                return  successResponseWithData(res, "success", {css:docc.css.settings,js:docc.js.settings});
 
+        } else {
+            return apiResponse.ErrorResponse(res,"Not found");
+        }
+    })
+
+}
+
+export const getLanguageSettings = (req: Request, res: Response): void => {
+    const classroomKid = req.params.classroomkid;
+    const language = req.params.language;
+    
+    classWeb.findOne({classroomKid},(err, docc) => {
+        if(!err && docc){
+            if(language && language === "css"){
+                return  successResponseWithData(res, "success", docc.css.settings);
+
+            } else if(language && language === "js"){
+                return  successResponseWithData(res, "success", docc.js.settings);
+
+            } else if(language && language === "html"){
+                return  successResponseWithData(res, "success", docc.html.settings);
+
+            } else {
+                 return res.status(403).json({ errors: "no language specified" });
+            }
+        } else {
+            return apiResponse.ErrorResponse(res,"Not found");
+        }
+    })
+}
 export const createClassRoom = (req: Request, res: Response, next: NextFunction): object => {
 
     const errors = validationResult(req);
@@ -449,11 +484,13 @@ export const classroomPreview = (req: Request, res: Response): object => {
                 };
                 const css = {
                     id: cssfileId,
-                    content: cssContent
+                    content: cssContent,
+                    externalCDN: d.css.settings.externalCDN
                 };
                 const js = {
                     id: jsFileId,
-                    content: jsContent
+                    content: jsContent,
+                    externalCDN: d.js.settings.externalCDN
                 };
                 Classroom.findOne({kid: classroomKid},(err,respo: ClassroomDocument) => {
                     if(!err && respo){

@@ -1,5 +1,5 @@
 import express from "express";
-import { downloadAttendance, getLiveClassroomSessions, getUpcomingClassroomSessions, fecthClassByUrlAlias,findClassRoom,downloadClassfiles, classroomPreview, createClassRoom,verifyClassroom, getTrending, verifyUserClassroom, getUserClassrooms} from "../controllers/classroom";
+import {getAllLanguageSettings, getLanguageSettings, downloadAttendance, getLiveClassroomSessions, getUpcomingClassroomSessions, fecthClassByUrlAlias,findClassRoom,downloadClassfiles, classroomPreview, createClassRoom,verifyClassroom, getTrending, verifyUserClassroom, getUserClassrooms} from "../controllers/classroom";
 import {check} from "../middleware/check_Auth";
 
 const router = express.Router();
@@ -26,6 +26,11 @@ router.get("/download/:classroomid", downloadClassfiles);
 router.get("/live", getLiveClassroomSessions);
 
 router.get("/upcoming/", getUpcomingClassroomSessions);
+
+router.get("/settings/language/:language/:classroomkid", getLanguageSettings);
+
+router.get("/settings/language/all/:classroomkid", getAllLanguageSettings);
+
 
 router.get("/attendance/download/:classroom/:attednancecsv", downloadAttendance);
 
