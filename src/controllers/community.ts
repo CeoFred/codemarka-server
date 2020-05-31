@@ -150,7 +150,7 @@ export const communityLogoTemp = (req: Request, res: Response): object|void => {
 
            
             cloudi.uploader.upload(path).then(result => {
-                const image= result.url;
+                const image= result.secure_url;
                 CommunityTemp.findOne({kid:req.params.kid},(err, response) => {
                     if(err) {
                         return apiResponse.ErrorResponse(res,"Could not retrieve data");
