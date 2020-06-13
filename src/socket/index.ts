@@ -51,15 +51,15 @@ export default (server: express.Application) => {
                     let usersInThisRoom = users.students.map(s =>  s.socketid).filter(o => o !== socket.id);
                     socket.emit("all_users", usersInThisRoom);
                 }
-            })
+            });
         });
     
         socket.on("sending signal", (payload: any) => {
-            io.to(payload.userToSignal).emit('user joined', { signal: payload.signal, callerID: payload.callerID });
+            io.to(payload.userToSignal).emit("user joined", { signal: payload.signal, callerID: payload.callerID });
         });
     
         socket.on("returning signal", (payload: any) => {
-            io.to(payload.callerID).emit('receiving returned signal', { signal: payload.signal, id: socket.id });
+            io.to(payload.callerID).emit("receiving returned signal", { signal: payload.signal, id: socket.id });
         });
     
     
@@ -75,16 +75,16 @@ export default (server: express.Application) => {
                                 } else {
                                     nsp.to(socket.room).emit("broadcast_status",false,socket.id);
                                 }
-                            })
+                            });
                         } else {
                             socket.emit("operation_failed","No Privilegde for User");
                         }
                     } else if (err) {
-                        socket.emit("operation_failed","Something went wrong, try again later")
+                        socket.emit("operation_failed","Something went wrong, try again later");
                     }
-                })
+                });
             }
-        })
+        });
 
         socket.on("broadcast_end",(status: boolean,userkid: string) => {
             if(status && userkid){
@@ -98,18 +98,18 @@ export default (server: express.Application) => {
                                 } else {
                                     nsp.to(socket.room).emit("broadcast_end_confirmed",false);
                                 }
-                            })
+                            });
                         } else {
                             socket.emit("operation_failed","No Privilegde for User");
                         }
                     } else if (err) {
-                        socket.emit("operation_failed","Something went wrong, try again later")
+                        socket.emit("operation_failed","Something went wrong, try again later");
                     }
-                })
+                });
             }
-        })
+        });
 
-        socket.on('make-offer', function (data: any) {
+        socket.on("make-offer", function (data: any) {
 
             socket.to(data.to).emit("offer-made",{
                 offer: data.offer,
@@ -119,7 +119,7 @@ export default (server: express.Application) => {
 
         });
 
-        socket.on('make-answer', function (data: any) {
+        socket.on("make-answer", function (data: any) {
             
             socket.to(data.to).emit("answer-made",{
                 answer: data.answer,
@@ -127,7 +127,7 @@ export default (server: express.Application) => {
                 to: data.to
             });
             
-          });
+        });
 
         socket.on("re_join",(data: JoinObj) => {
             
@@ -229,14 +229,14 @@ export default (server: express.Application) => {
                                             // console.log("User has not taken attendance");
                                             if(!isOwner){
                                                 
-                                            const userAttedance = {kid: socket.user, username: data.username, email: user.email };
-                                            hasClassAttendance.list.push(userAttedance);
-                                            hasClassAttendance.save((err,up) => {
-                                                if(!up && err){
-                                                    console.log(err);
-                                                }
-                                            });
-                                            setTimeout(() => socket.emit("collect_attendance", null),30000);
+                                                const userAttedance = {kid: socket.user, username: data.username, email: user.email };
+                                                hasClassAttendance.list.push(userAttedance);
+                                                hasClassAttendance.save((err,up) => {
+                                                    if(!up && err){
+                                                        console.log(err);
+                                                    }
+                                                });
+                                                setTimeout(() => socket.emit("collect_attendance", null),30000);
                                             }
                                         }
                                     } else {
@@ -471,13 +471,13 @@ export default (server: express.Application) => {
                                                     // console.log("User has not taken attendance");
                                                     if(!isOwner){
                                                         
-                                                    const userAttedance = {kid: socket.user, username: data.username, email: user.email };
-                                                    hasClassAttendance.list.push(userAttedance);
-                                                    hasClassAttendance.save((err,up) => {
-                                                        if(!up && err){
-                                                            console.log(err);
-                                                        }});
-                                                    setTimeout(() => socket.emit("collect_attendance", null),30000);
+                                                        const userAttedance = {kid: socket.user, username: data.username, email: user.email };
+                                                        hasClassAttendance.list.push(userAttedance);
+                                                        hasClassAttendance.save((err,up) => {
+                                                            if(!up && err){
+                                                                console.log(err);
+                                                            }});
+                                                        setTimeout(() => socket.emit("collect_attendance", null),30000);
                                                     }
                                                 }
                                             } else {

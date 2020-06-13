@@ -23,7 +23,7 @@ class Server {
      */
     public start(): void {
         
-     http.listen(this.app.get("port"), () => {
+        http.listen(this.app.get("port"), () => {
             console.log(
                 "  App is running at http://localhost:%d in %s mode",
                 this.app.get("port"),
