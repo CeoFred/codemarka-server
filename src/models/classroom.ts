@@ -23,6 +23,7 @@ export type ClassroomDocument = mongoose.Document & {
     description: string;
     topic: string;
     isTakingAttendance: boolean;
+    isBroadcasting: boolean;
 };
 
 
@@ -46,6 +47,11 @@ const classroomSchema = new mongoose.Schema({
     startDate:{
         type: Date,
         required:true
+    },
+    isBroadcasting:{
+        type:Boolean,
+        default: false,
+        required: true
     },
     owner: {
         type: String,

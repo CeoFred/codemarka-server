@@ -1,8 +1,12 @@
 import errorHandler from "errorhandler";
 import express from "express";
+// import fs from "fs";
 import app from "./app";
 import dotenv from "dotenv";
 import socket from "./socket/index";
+import  { ExpressPeerServer } from  'peer';
+// const key = fs.readFileSync(__dirname + '/../sslCert/key.pem')
+// const cert = fs.readFileSync(__dirname + '/../sslCert/cert.pem')
 
 const http = require("http").createServer(app);
 
@@ -20,7 +24,9 @@ class Server {
      * start
      */
     public start(): void {
-        http.listen(this.app.get("port"), () => {
+        
+
+        const s = http.listen(this.app.get("port"), () => {
             console.log(
                 "  App is running at http://localhost:%d in %s mode",
                 this.app.get("port"),
@@ -28,6 +34,13 @@ class Server {
             );
             console.log("  Press CTRL-C to stop\n");
         });
+
+
+        const peerServer = ExpressPeerServer(s);
+        //@ts-ignore
+        this.app.use('/peerjs', peerServer);
+
+          
     }
 }
 /**

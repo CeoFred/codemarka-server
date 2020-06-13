@@ -18,6 +18,7 @@ import { randomString } from "../helpers/utility";
 export default (server: express.Application) => {
     let activeSockets: string[] = [];
 
+    
     const io = require("socket.io")(server, chat);
     const clients: any[] = [];
     const nsp = io.of("/classrooms");
@@ -43,6 +44,90 @@ export default (server: express.Application) => {
             cdata: ClassroomDocument;
         }
 
+        socket.on("start_broadcast", (roomID: string) => {
+            console.log("started broadcast by host");
+            Classroom.findOne({kid: roomID},(err, users) => {
+                if(users && !err){
+                    let usersInThisRoom = users.students.map(s =>  s.socketid).filter(o => o !== socket.id);
+                    socket.emit("all_users", usersInThisRoom);
+                }
+            })
+        });
+    
+        socket.on("sending signal", (payload: any) => {
+            io.to(payload.userToSignal).emit('user joined', { signal: payload.signal, callerID: payload.callerID });
+        });
+    
+        socket.on("returning signal", (payload: any) => {
+            io.to(payload.callerID).emit('receiving returned signal', { signal: payload.signal, id: socket.id });
+        });
+    
+    
+        socket.on("broadcast_init",(status: boolean,userkid: string) => {
+            if(status && userkid){
+                Classroom.findOne({_id: socket.room},(err: Error, classroom: ClassroomDocument) => {
+                    if(!err && classroom){
+                        if(classroom.owner === userkid){
+                            classroom.isBroadcasting = true;
+                            classroom.save((err,kb) => {
+                                if(kb && !err){
+                                    nsp.to(socket.room).emit("broadcast_status",true,socket.id);
+                                } else {
+                                    nsp.to(socket.room).emit("broadcast_status",false,socket.id);
+                                }
+                            })
+                        } else {
+                            socket.emit("operation_failed","No Privilegde for User");
+                        }
+                    } else if (err) {
+                        socket.emit("operation_failed","Something went wrong, try again later")
+                    }
+                })
+            }
+        })
+
+        socket.on("broadcast_end",(status: boolean,userkid: string) => {
+            if(status && userkid){
+                Classroom.findOne({_id: socket.room},(err: Error, classroom: ClassroomDocument) => {
+                    if(!err && classroom){
+                        if(classroom.owner === userkid){
+                            classroom.isBroadcasting = false;
+                            classroom.save((err,kb) => {
+                                if(kb && !err){
+                                    nsp.to(socket.room).emit("broadcast_end_confirmed",true);
+                                } else {
+                                    nsp.to(socket.room).emit("broadcast_end_confirmed",false);
+                                }
+                            })
+                        } else {
+                            socket.emit("operation_failed","No Privilegde for User");
+                        }
+                    } else if (err) {
+                        socket.emit("operation_failed","Something went wrong, try again later")
+                    }
+                })
+            }
+        })
+
+        socket.on('make-offer', function (data: any) {
+
+            socket.to(data.to).emit("offer-made",{
+                offer: data.offer,
+                from: socket.id,
+                to: data.to
+            });
+
+        });
+
+        socket.on('make-answer', function (data: any) {
+            
+            socket.to(data.to).emit("answer-made",{
+                answer: data.answer,
+                from: socket.id,
+                to: data.to
+            });
+            
+          });
 
         socket.on("re_join",(data: JoinObj) => {
             
@@ -77,7 +162,8 @@ export default (server: express.Application) => {
                                 role: "1",
                                 kid: user.kid,
                                 stack: user.techStack || "communityAccount",
-                                avatar: user.gravatarUrl || "communityAvatar"
+                                avatar: user.gravatarUrl || "communityAvatar",
+                                socketid: socket.id
                             };
  
                             oldStudentsWithoutUser.push(studentObj);
@@ -117,7 +203,7 @@ export default (server: express.Application) => {
                                                 const { firstName, lastName, email, gender, kid, username } = usersAttendance[0];
                                                 if(!(firstName && lastName && email && gender && kid && username)){
                                                     //incomplete
-                                                    socket.emit("collect_attendance", usersAttendance[0]);
+                                                    setTimeout(() => socket.emit("collect_attendance", usersAttendance[0]),30000);
                                                 } else {
                                                     //complete data
                                                     // console.log("user has completed attendance data");
@@ -150,7 +236,7 @@ export default (server: express.Application) => {
                                                     console.log(err);
                                                 }
                                             });
-                                            socket.emit("collect_attendance", null);
+                                            setTimeout(() => socket.emit("collect_attendance", null),30000);
                                             }
                                         }
                                     } else {
@@ -188,7 +274,8 @@ export default (server: express.Application) => {
                                     name: data.username.toLowerCase(),
                                     type: "sJoin",
                                     msgId: uuidv4(),
-                                    newuserslist: updatedStudentList
+                                    newuserslist: updatedStudentList,
+                                    socketid: socket.id
                                 });
                             classWeb.findOne({ classroomId: data.classroom_id }).then((d: any) => {
                                 if (!d && d === null) {
@@ -286,7 +373,7 @@ export default (server: express.Application) => {
                                 kid: user.kid,
                                 stack: user.techStack || "communityAccount",
                                 avatar: user.gravatarUrl || user.Logo,
-                                socketId: socket.id
+                                socketid: socket.id
                             };
  
                             oldStudentsWithoutUser.push(studentObj);
@@ -358,7 +445,7 @@ export default (server: express.Application) => {
                                                         const { firstName, lastName, email, gender, kid, username } = usersAttendance[0];
                                                         if(!(firstName && lastName && email && gender && kid && username)){
                                                             //incomplete
-                                                            socket.emit("collect_attendance", usersAttendance[0]);
+                                                            setTimeout(() => socket.emit("collect_attendance", usersAttendance[0]),30000);
                                                         } else {
                                                             //complete data
                                                             console.log("user has completed attendance data");
@@ -389,9 +476,8 @@ export default (server: express.Application) => {
                                                     hasClassAttendance.save((err,up) => {
                                                         if(!up && err){
                                                             console.log(err);
-                                                        }
-                                                    });
-                                                    socket.emit("collect_attendance", null);
+                                                        }});
+                                                    setTimeout(() => socket.emit("collect_attendance", null),30000);
                                                     }
                                                 }
                                             } else {
@@ -425,7 +511,7 @@ export default (server: express.Application) => {
                                                 type: "sJoin",
                                                 msgId: uuidv4(),
                                                 newuserslist: updatedStudentList,
-                                                socketId: socket.id
+                                                socketid: socket.id
                                             });
 
 
