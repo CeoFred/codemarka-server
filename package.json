@@ -76,6 +76,7 @@
     "passport-snapchat": "1.0.0",
     "passport-twitter": "1.0.4",
     "paypal-rest-sdk": "1.8.1",
+    "peer": "0.5.3",
     "pug": "2.0.4",
     "puppeteer": "2.1.1",
     "socket.io": "2.3.0",
