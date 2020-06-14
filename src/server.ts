@@ -1,6 +1,5 @@
 import errorHandler from "errorhandler";
 import express from "express";
-// import fs from "fs";
 import app from "./app";
 import dotenv from "dotenv";
 import socket from "./socket/index";
