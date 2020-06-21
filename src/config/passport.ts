@@ -39,119 +39,100 @@ function(accessToken, refreshToken, profile: any, done) {
     const githubemail = profile.emails[0].value;
     const profilePhoto = profile._json.avatar_url;
     //check email
-
-    //if email exist, check if it has a google id, if it does not( account was created with password), return false else
-    // if it does, return the user
-
-    User.findOne({email:githubemail},(err,user) => {
-
-        if(err) done(err);
-
-        if(user !== null){
-            if(user.githubid === "" || !user.githubid) done(null,null,{ message:"User exists with email"});
-        }           
-        User.findOne({ githubid,email: githubemail }, (err, existingUser) => {
-            if (err) { return done(err); }
-            if (existingUser) {
-                // user exists, log in
-                return done(null, existingUser);
-            }    
-                
-            //link account with google details;
-                
-            const user = new User();
-            user.email = githubemail.toLowerCase();
-            user.githubid = githubid;
-            user.tokens.push({
-                kind: "github",
-                accessToken,
-                refreshToken,
-            });
-            user.kid = randomString(40);
-                
-            
-            user.isConfirmed = true;
-            user.username = displayName.toLowerCase();
-            user.gravatar(20);
-
-            user.profile.name = profile.displayName;
-            user.profile.picture = profilePhoto;
-            user.save((err) => {
-                //send Welcome mail;
-                if(err) done(err,null);
-
-                let trial = 0;
-                let maxTrial = 2;
-                let sent = false;
-                const sendWelcomeEmailToUser = (email: string): void => {
-
-                    const trimedEmail = email.trim();
-
-                    const emailTemplate = `
-                    <div style="margin:15px;padding:10px;border:1px solid grey;justify-content;">
-                    <div style="text-align:center">
-                    <img src='https://avatars1.githubusercontent.com/oa/1186156?s=140&u=722efebddbd96ad8bea99643d79408cad51e6d86&v=4' height="100" width="100"/>
-                    
-                    </div>
-                    <h4><b>Hey ${displayName},</b></h4>
-                    <br/>
-
-                    <p>Thank you for confirming your account, we want to use this opportunity to welcome you to the
-                    codemarka community. Having confirmed your account, you can now create or hosts classroom sessions right
-                    from your homepage, all the best!
-                    </p>
-
-                    <br/>
-                    <p><a href='https://codemarka.dev/auth/signin?ref=confirm'>Login</a></p>
-                    </div>
-
-                    `;
-
-                    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-
-                    const msg = {
-                        to: trimedEmail,
-                        from: "Codemarka@codemarak.dev",
-                        subject: "Welcome To Codemarka",
-                        text: "Welcome to codemarka!",
-                        html: emailTemplate,
-                    };
-
-                    if(trial <= maxTrial){
-                        try {
-                            sgMail.send(msg,true,(err: any,resp: unknown) => {
-                                if(err){
-                                    // RECURSION
-                                    trial++;
-                                  
-                                    sendWelcomeEmailToUser(trimedEmail);
-                                } else {
-                                
-                                    // BASE
-                                    sent = true;
-                                    done(null, user);
-
-                                }
-                                
-                            });
-                        } catch (e) {
-                            done(e,user);
-                        }
-                       
-                    } else {
-                        // TERMINATION
-                        sent = false;
-                        done(null, user);
-
-                    }
-
-                };
-                sendWelcomeEmailToUser(user.email);
-            });
-           
-        });
-    });
     
+    
+    User.findOne({ githubid }, (err, existingUser) => {
+        if (err) { return done(err); }
+        if (existingUser) {
+            // user exists, log in
+            return done(null, existingUser);
+        }    
+            
+        //link account with google details;
+            
+        const user = new User();
+        user.email = githubemail.toLowerCase();
+        user.githubid = githubid;
+        user.tokens.push({
+            kind: "github",
+            accessToken,
+            refreshToken,
+        });
+        user.kid = randomString(40);
+            
+        
+        user.isConfirmed = true;
+        user.username = String(displayName).toLowerCase().trim().replace(' ','_');
+        user.gravatar(20);
+
+        user.profile.name = profile.displayName;
+        user.profile.picture = profilePhoto;
+        user.save((err) => {
+            //send Welcome mail;
+            if(err) done(err,null);
+
+            let trial = 0;
+            let maxTrial = 2;
+            let sent = false;
+            const sendWelcomeEmailToUser = (email: string): void => {
+
+                const trimedEmail = email.trim();
+
+                const emailTemplate = `
+                <div style="margin:15px;padding:10px;border:1px solid grey;justify-content;">
+                <h4><b>H ${displayName},</b></h4>
+                <b>Thanks for joinig us at codemarka!</b>
+                <p>Thank you for confirming your account, we want to use this opportunity to welcome you to the
+                codemarka community. Having confirmed your account, you can now create or hosts classroom sessions right
+                from your homepage, all the best!
+                </p>
+                <p><a href='https://codemarka.dev/auth/signin?ref=confirm'>Login</a></p>
+                </div>
+                `;
+
+                sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+
+                const msg = {
+                    to: trimedEmail,
+                    from: "Codemarka@codemarak.dev",
+                    subject: "Welcome To Codemarka",
+                    text: "Welcome to codemarka!",
+                    html: emailTemplate,
+                };
+
+                if(trial <= maxTrial){
+                    try {
+                        sgMail.send(msg,true,(err: any,resp: unknown) => {
+                            if(err){
+                                // RECURSION
+                                trial++;
+                              
+                                sendWelcomeEmailToUser(trimedEmail);
+                            } else {
+                            
+                                // BASE
+                                sent = true;
+                                done(null, user);
+
+                            }
+                            
+                        });
+                    } catch (e) {
+                        done(e,user);
+                    }
+                   
+                } else {
+                    // TERMINATION
+                    sent = false;
+                    done(null, user);
+
+                }
+
+            };
+            sendWelcomeEmailToUser(user.email);
+        });
+       
+    });
 }
 ));
 
@@ -199,7 +180,7 @@ function(accessToken, refreshToken, profile, done) {
                 
             
             user.isConfirmed = true;
-            user.username = displayName.toLowerCase();
+            user.username = String(displayName).toLowerCase().trim().replace(' ','_');
             user.gravatar(20);
 
             user.profile.name = profile._json.name.toLowerCase();
@@ -218,22 +199,14 @@ function(accessToken, refreshToken, profile, done) {
 
                     const emailTemplate = `
                     <div style="margin:15px;padding:10px;border:1px solid grey;justify-content;">
-                    <div style="text-align:center">
-                    <img src='https://avatars1.githubusercontent.com/oa/1186156?s=140&u=722efebddbd96ad8bea99643d79408cad51e6d86&v=4' height="100" width="100"/>
-                    
-                    </div>
                     <h4><b>Hey ${profile.displayName},</b></h4>
-                    <br/>
 
                     <p>Thank you for confirming your account, we want to use this opportunity to welcome you to the
                     codemarka community. Having confirmed your account, you can now create or hosts classroom sessions right
                     from your homepage, all the best!
                     </p>
-
-                    <br/>
                     <p><a href='https://codemarka.dev/auth/signin?ref=confirm'>Login</a></p>
                     </div>
-
                     `;
 
                     sgMail.setApiKey(process.env.SENDGRID_API_KEY);

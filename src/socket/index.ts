@@ -156,7 +156,7 @@ export default (server: express.Application) => {
                             const updatedStudentList = oldStudentsWithoutUser;
                             
                             if(isBroadcasting){
-                                nsp.to(data.classroom_id).emit("call_me",{id:user._id,username: user.username || user.communityName,kid:user.kid,socketid: socket.id})
+                                nsp.to(data.classroom_id).emit("call_me",{id:user._id,username: user.username || user.communityName,kid:user.kid,socketid: socket.id});
                             }
                             
                             ClassroomAttendance.findOne({classroomkid: res.kid }).then((hasClassAttendance: ClassroomAttendanceDocument) => {
@@ -390,7 +390,6 @@ export default (server: express.Application) => {
                                             return String(socket.user) === String(rating.user);
                                         });
 
-
                                         if (foundRating && Array.isArray(foundRating) && foundRating.length > 0) {
                                             return socket.emit("rated_class", true);
                                         } else {
@@ -406,7 +405,7 @@ export default (server: express.Application) => {
                                     socket.emit("class_favourites", d.likes);
 
                                     if(isBroadcasting){
-                                        nsp.to(data.classroom_id).emit("call_me",{id:user._id,username: user.username || user.communityName,kid:user.kid,socketid: socket.id})
+                                        nsp.to(data.classroom_id).emit("call_me",{id:user._id,username: user.username || user.communityName,kid:user.kid,socketid: socket.id});
                                     }
                                     ClassroomAttendance.findOne({classroomkid: res.kid }).then((hasClassAttendance: ClassroomAttendanceDocument) => {
                                         if(hasClassAttendance){

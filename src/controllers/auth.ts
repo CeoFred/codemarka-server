@@ -47,12 +47,15 @@ export const accountRecovery = (req: Request, res: Response, next: NextFunction)
             const buf = crypto.randomBytes(26);
             token = buf.toString("hex");
             let userid;
-            if(resp){{
+            if(resp){
                 userid = resp._id;
-                if(resp.googleid !== "" && resp.googleid !== null && resp.googleid !== undefined){
+                if(resp.googleid.trim() !== "" && resp.googleid !== null && resp.googleid !== undefined){
                     return apiResponse.ErrorResponse(res,"Try logging in with a google account associated with this email");
                 }
-            }} else {
+                if(resp.githubid.trim() !== "" && resp.githubid !== null && resp.githubid !== undefined){
+                    return apiResponse.ErrorResponse(res,"Try logging in with a github account associated with this email");
+                }
+          } else {
                 return apiResponse.ErrorResponse(res,"Whoops! Email does not exits, try signing up.");
             }
             
@@ -428,7 +431,7 @@ export const postSignup = (req: Request, res: Response, next: NextFunction) => {
                 let trial = 0;
                 let maxTrial = 2;
                 let sent = false;
-                const vLink = `https://code-marka.herokuapp.com/auth/account/user/verify/${verificationToken}/${user._id}`;
+                const vLink = `${req.hostname === "localhost" ? "http://localhost:2001/" : "https://code-marka.herokuapp.com/"}auth/account/user/verify/${verificationToken}/${user._id}`;
                 console.log(vLink);
                 const sendMailToNewUser = (email: string) => {
 
@@ -657,13 +660,13 @@ export const emailVerification = (req: Request, res: Response, next: NextFunctio
                     };
                     sendWelcomeEmailToUser(user.email);
                 } else {
-                    return res.redirect("https://codemarka.dev/account/confirmed/false/?sent=false&info=0");
+                    return res.redirect(`${req.hostname === "localhost" ? "http://localhost:3000" : "https://codemarka.dev"}/account/confirmed/false/?sent=false&info=0`);
 
                 }
             });
         } catch (error) {
 
-            return res.redirect("https://codemarka.dev/account/confirmed/false/?sent=false&info=0");
+            return res.redirect(`${req.hostname === "localhost" ? "http://localhost:3000" : "https://codemarka.dev"}/account/confirmed/false/?sent=false&info=0`);
 
         }
     } else {

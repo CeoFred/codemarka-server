@@ -135,7 +135,6 @@ function fourofour(req: Request, res: Response) {
 
 app.use(logErrors);
 app.use(clientErrorHandler);
-
 app.use(errorHandler);
 app.use(fourofour);
 export default app;
