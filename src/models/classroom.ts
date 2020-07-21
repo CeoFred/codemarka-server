@@ -55,7 +55,7 @@ const classroomSchema = new mongoose.Schema({
     },
     owner: {
         type: String,
-        required: true
+        required: true,
     },
     subAdmins : [Object],
     classType:{

@@ -43,7 +43,6 @@ const classWebFiles = new mongoose.Schema({
     js:{
         content:{
             type:String,
-            required:true
         },
         id: {
             type:Number,
@@ -63,7 +62,6 @@ const classWebFiles = new mongoose.Schema({
     css:{
         content:{
             type:String,
-            required: true,
         },
         id: {
             type:Number,
@@ -83,7 +81,6 @@ const classWebFiles = new mongoose.Schema({
     html: {
         content:{
             type:String,
-            required: true,
         },
         id: {
             type:Number,

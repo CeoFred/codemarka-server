@@ -20,10 +20,10 @@ const started = 2;
 const ended = 3;
 
 const MAX_PRIVATE_CLASSROOM_REGULAR = 15;
-const MAX_PRIVATE_CLASSROOM_PREMUIM = "unlimited";
+const MAX_PRIVATE_CLASSROOM_PREMUIM = 45;
 
-const MAX_CASSROOM_MEMBERS_REGULAR = 100;
-const MAX_CLASSROOM_MEMBERS_PREMUIM = 300;
+const MAX_CASSROOM_MEMBERS_REGULAR = 10;
+const MAX_CLASSROOM_MEMBERS_PREMUIM = 30;
 
 const MAX_PUBLIC_CLASSROOMS = "unlimited";
 export const getAllLanguageSettings = (req: Request, res: Response): void => {
@@ -129,7 +129,7 @@ export const createClassRoom = (req: Request, res: Response, next: NextFunction)
                 startDate: creatorsAccountType === 101 ? new Date().getFullYear() : startDate,
                 status: notStarted,
                 owner: accountid,
-                location: creatorsAccountType === 101 ? "NOT_SET" : location,
+                location,
                 isTakingAttendance: isTakingAttendance.toLowerCase() === "yes" ? true : false ,
                 maxUsers: userAccountType === 101 ? MAX_CASSROOM_MEMBERS_REGULAR : MAX_CLASSROOM_MEMBERS_PREMUIM
             });
@@ -552,17 +552,28 @@ export const getTrending = (req: Request, res: Response): object => {
         let filteredClassrooms: any[] = [];
         if(d){
             filteredClassrooms = d.map((room: ClassroomDocument) => {
-                return {
-                    visits: room.visits,
-                    likes: room.likes,
-                    students: room.students,
-                    location: room.location,
-                    name: room.name,
-                    description: room.description,
-                    top: room.topic,
-                    kid: room.kid,
-                    topic: room.topic
-                };
+                console.log(room.owner)
+                let d = {}
+                return User.findOne({kid: room.owner},(err, user) => {
+                    console.log(user)
+                    if(user){
+                        d = {
+                            visits: room.visits,
+                            likes: room.likes,
+                            students: room.students,
+                            location: room.location,
+                            name: room.name,
+                            description: room.description,
+                            kid: room.kid,
+                            topic: room.topic,
+                            img: room.gravatar,
+                            user: user.username
+                        };
+                        return d
+                    }
+                });
+
+                
             });
         };
         return apiResponse.successResponseWithData(res, "Success", filteredClassrooms);
