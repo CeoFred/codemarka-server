@@ -55,7 +55,7 @@ export const accountRecovery = (req: Request, res: Response, next: NextFunction)
                 if(resp.githubid.trim() !== "" && resp.githubid !== null && resp.githubid !== undefined){
                     return apiResponse.ErrorResponse(res,"Try logging in with a github account associated with this email");
                 }
-          } else {
+            } else {
                 return apiResponse.ErrorResponse(res,"Whoops! Email does not exits, try signing up.");
             }
             
