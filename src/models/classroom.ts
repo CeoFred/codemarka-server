@@ -13,6 +13,7 @@ export type ClassroomDocument = mongoose.Document & {
     blocked: [Record<string, any>];
     startTime: any;
     startDate: any;
+    gravatarUrl: string;
     maxUsers: number;
     visits: number;
     location: number;
