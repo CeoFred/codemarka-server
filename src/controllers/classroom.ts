@@ -693,7 +693,7 @@ export const getTrending = (req: Request, res: Response): object => {
                         location: classroom.location,
                         name: classroom.name,
                         description: classroom.description,
-                        room_kid: classroom.kid,
+                        roomKid: classroom.kid,
                         topic: classroom.topic,
                         img: classroom.gravatarUrl,
                         owner: classroom.owner
@@ -726,7 +726,7 @@ export const getTrending = (req: Request, res: Response): object => {
                                 location: validClassroom.location,
                                 name: validClassroom.name,
                                 description: validClassroom.description,
-                                room_kid: validClassroom.room_kid,
+                                roomKid: validClassroom.roomKid,
                                 topic: validClassroom.topic,
                                 img: validClassroom.img,
                                 owner: userForClassroom.username || userForClassroom.communityName
