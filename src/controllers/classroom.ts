@@ -685,10 +685,6 @@ export const getTrending = (req: Request, res: Response): object => {
             let filteredClassrooms: any[] = [];
             if (d) {
 
-                const data =  {
-
-                    // user: user.username,
-                };
                 const neededClassroomData =  d.map(classroom => {
                     return {
                         visits: classroom.visits,
@@ -707,17 +703,22 @@ export const getTrending = (req: Request, res: Response): object => {
                 let promisesToResolve: any[] = [];
                 // map users to classroom
                 neededClassroomData.forEach(singleClassroom => {
+                    // console.log(singleClassroom.name, singleClassroom.owner)
                     const classroomOwner = singleClassroom.owner;
                     if(!classroomOwner) apiResponse.ErrorResponse(res, "Failed to Load Session Moderator");
                     promisesToResolve.push(User.findOne({kid: classroomOwner}));
+                    promisesToResolve.push(Community.findOne({kid: classroomOwner}));
+
                 });
         
-                Promise.all(promisesToResolve).then(d => {
-                    const validMappedClassRoomToUsers = d.filter(classmapping => classmapping !== null);
+                Promise.all(promisesToResolve).then(resol => {
+
+                    const validUsersOrCommuityThatOwnsAClassroom = resol.filter(classmapping => classmapping !== null).map(rt => rt);
 
                     const finalStructure = neededClassroomData.map((validClassroom: any) => {
-                        const userForClassroom =  validMappedClassRoomToUsers.filter(ee => ee.kid === validClassroom.owner)[0];
-                        if(userForClassroom && validClassroom){
+                        const userForClassroom =  validUsersOrCommuityThatOwnsAClassroom.filter(ee => ee.kid === validClassroom.owner)[0];
+
+                        if(userForClassroom){
                             return {
                                 visits: validClassroom.visits,
                                 likes: validClassroom.likes.length,
@@ -725,15 +726,15 @@ export const getTrending = (req: Request, res: Response): object => {
                                 location: validClassroom.location,
                                 name: validClassroom.name,
                                 description: validClassroom.description,
-                                room_kid: validClassroom.kid,
+                                room_kid: validClassroom.room_kid,
                                 topic: validClassroom.topic,
                                 img: validClassroom.img,
-                                owner: userForClassroom.username
+                                owner: userForClassroom.username || userForClassroom.communityName
                             };
                         } else return null;
                     });
 
-                    return apiResponse.successResponseWithData(res,"Done", finalStructure.filter(d => d !== null));
+                    return apiResponse.successResponseWithData(res,"Done", finalStructure.filter(dst => dst !== null));
             
                 }).catch(e => {
                     console.log(e);
