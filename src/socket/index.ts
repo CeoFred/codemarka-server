@@ -109,25 +109,6 @@ export default (server: express.Application) => {
             }
         });
 
-        socket.on("make-offer", function (data: any) {
-
-            socket.to(data.to).emit("offer-made",{
-                offer: data.offer,
-                from: socket.id,
-                to: data.to
-            });
-
-        });
-
-        socket.on("make-answer", function (data: any) {
-            
-            socket.to(data.to).emit("answer-made",{
-                answer: data.answer,
-                from: socket.id,
-                to: data.to
-            });
-            
-        });
 
         socket.on("re_join",(data: JoinObj) => {
             
@@ -149,6 +130,10 @@ export default (server: express.Application) => {
 
                             socket.emit("classroom_users", res.students);
                         
+                            const ownerid = res.owner;
+                            const isBroadcasting = res.isBroadcasting;
+
+                            
                             let oldStudentsWithoutUser = [];
                         
                             const currentClassStudents = res.students;
@@ -170,7 +155,10 @@ export default (server: express.Application) => {
 
                             const updatedStudentList = oldStudentsWithoutUser;
                             
-                               
+                            if(isBroadcasting){
+                                nsp.to(data.classroom_id).emit("call_me",{id:user._id,username: user.username || user.communityName,kid:user.kid,socketid: socket.id});
+                            }
+                            
                             ClassroomAttendance.findOne({classroomkid: res.kid }).then((hasClassAttendance: ClassroomAttendanceDocument) => {
                                 if(hasClassAttendance){
                                     // console.log("classroom has attednace document created");
@@ -353,6 +341,9 @@ export default (server: express.Application) => {
                         if (err) throw err;
                         
                         if (res && res !== null) {
+                            const ownerid = res.owner;
+                            const isBroadcasting = res.isBroadcasting;
+
                             const students = res.students;
                             let found = students.filter((s: any) => {
                                 return String(s.id) === String(socket.user);
@@ -399,7 +390,6 @@ export default (server: express.Application) => {
                                             return String(socket.user) === String(rating.user);
                                         });
 
-
                                         if (foundRating && Array.isArray(foundRating) && foundRating.length > 0) {
                                             return socket.emit("rated_class", true);
                                         } else {
@@ -414,6 +404,9 @@ export default (server: express.Application) => {
                                     
                                     socket.emit("class_favourites", d.likes);
 
+                                    if(isBroadcasting){
+                                        nsp.to(data.classroom_id).emit("call_me",{id:user._id,username: user.username || user.communityName,kid:user.kid,socketid: socket.id});
+                                    }
                                     ClassroomAttendance.findOne({classroomkid: res.kid }).then((hasClassAttendance: ClassroomAttendanceDocument) => {
                                         if(hasClassAttendance){
                                             // console.log("classroom has attednace document created");
