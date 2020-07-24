@@ -417,7 +417,7 @@ export const postSignup = (req: Request, res: Response, next: NextFunction) => {
                     } else {
                         var user = new User(
                             {
-                                username: username.toLowerCase().replace(' ',''),
+                                username: username.toLowerCase().replace(" ",""),
                                 email: email.toLowerCase(),
                                 confirmOTP: 1,
                                 isConfirmed: false,
@@ -527,7 +527,7 @@ export const postSignup = (req: Request, res: Response, next: NextFunction) => {
                         });
             
                     }
-                })
+                });
             });
 
         }
