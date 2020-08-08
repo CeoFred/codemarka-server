@@ -692,8 +692,8 @@ export const postUpdateProfile = (req: Request, res: Response, next: NextFunctio
     User.findById(req.body.user.id, (err, user: UserDocument) => {
         if (err) { return next(err); }
         user.email = req.body.email || "";
-        user.name = req.body.name || "";
-        user.gender = req.body.gender || "";
+        user.profile.name = req.body.name || "";
+        user.profile.gender = req.body.gender || "";
         user.location = req.body.location || "";
         user.save((err: WriteError) => {
             if (err) {
@@ -731,10 +731,10 @@ export const postUpdatePassword = (req: Request, res: Response, next: NextFuncti
  * Delete user account.
  */
 export const postDeleteAccount = (req: Request, res: Response, next: NextFunction) => {
-    User.findOne({ _id: req.params.userId }, (err, userFound) => {
+    User.findOne({ kid: req.params.userId }, (err, userFound) => {
         if (err) { return next(err); }
         UserDeleted.create(userFound).then(done => {
-            User.deleteOne({ _id: req.params.userId }, (err) => {
+            User.deleteOne({ kid: req.params.userId }, (err) => {
                 if (err) { return next(err); }
                 res.status(200).json(successMessage("Deleted Document Successfully"));
             });
