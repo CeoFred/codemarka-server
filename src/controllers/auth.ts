@@ -406,118 +406,128 @@ export const postSignup = (req: Request, res: Response, next: NextFunction) => {
                 if (err) { return apiResponse.ErrorResponse(res, err); }
 
                 if(userf){
-                    return apiResponse.ErrorResponse(res, "Email already exists,try logging in");
+                    return apiResponse.ErrorResponse(res, "Email already exists");
                 }
-            });
-            var user = new User(
-                {
-                    username: username.toLowerCase(),
-                    email: email.toLowerCase(),
-                    confirmOTP: 1,
-                    isConfirmed: false,
-                    status:1,
-                    emailVerificationToken:verificationToken,
-                    techStack:techStack || "",
-                    kid: randomString(40)
-                }
-            );
-            user.gravatar(20);
-            user.password = password;
 
+                User.findOne({username},(err,userName) => {
+                    if (err) { return apiResponse.ErrorResponse(res, err); }
 
-            user.save(function (err,data) {
-                if (err) { return apiResponse.ErrorResponse(res, err); }
-                
-                let trial = 0;
-                let maxTrial = 2;
-                let sent = false;
-                const vLink = `${req.hostname === "localhost" ? "http://localhost:2001/" : "https://code-marka.herokuapp.com/"}auth/account/user/verify/${verificationToken}/${user._id}`;
-                console.log(vLink);
-                const sendMailToNewUser = (email: string) => {
-
-                    const trimedEmail = email.trim();
-
-                    const emailTemplate = `
-                <div style="padding:20px;">
-                <div style="width:100%;background-color: #273444!important;padding:30px;text-align:center;margin-bottom:30px">   
-                <img style="height:auto;width:auto" src="https://res.cloudinary.com/ogwugo-people/image/upload/v1585816806/codemark__logo.png"/>
-                </div>
-                    <h4><b>Hi ${username},</b></h4>
-                    Welcome to Codemarka!
-                    <p>
-                    To continue signing up, please confirm that we got your email right by clicking the link below.
-                     If the link is not clickable, copy and paste the URL in a new browser window:
-                     </p>
-                     ${vLink}
-                    <p>
-                    The link is valid for 14 days, after that you will have to start the registration process from the beginning.
-                    </p>
-                    If you did not request sign up to codemarka, you can safely ignore this email or visit <a href="https://codemarka.dev/?ref=mail">codemarka</a> to find out more about
-                    what we have to offer, it might interest you.
-                    <p>
-                If you have any questions about the service, feel free to contact us anytime at support@codemarka.dev.
-                    </p>
-                    <p>
-Thanks for joining Codemarka!
-</p>
-<p>
-Happy Learning,
-</p>
-<p>
-The Codemarka Team
-</p>
-</p>
-https://codemarka.dev
-</p>
-
-                 
-                    </div>
-
-                    `;
-
-                    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-
-                    const msg = {
-                        to: trimedEmail,
-                        from: "Codemarka@codemarak.dev",
-                        subject: "Verify Your Email",
-                        text: `Click below to verify ${vLink}`,
-                        html: emailTemplate,
-                    };
-
-                    if(trial <= maxTrial){
-                        try {
-                            sgMail.send(msg,true,(err: any,resp: unknown) => {
-                                if(err){
-                                    // RECURSION
-                                    trial++;
-                                    console.log("retrying..",trial);
-                                  
-                                    sendMailToNewUser(trimedEmail);
-                                } else {
-                                
-                                    // BASE
-                                    console.log("sent mail to",trimedEmail);
-                                    sent = true;
-                                    return apiResponse.successResponse(res,"Hurray! One last thing, we sent a confirmation mail , please check your inbox.");
-
-                                }
-                                
-                            });
-                        } catch (e) {
-                            next(e);
-                            return apiResponse.ErrorResponse(res,"Whoops!  Something went wrong");
-
-                        }
-                       
+                    if(userName){
+                        return apiResponse.ErrorResponse(res, "Username already in use");
                     } else {
-                        // TERMINATION
-                        console.log("exceeded trial");
-                        sent = false;
-                        return apiResponse.successResponse(res,"Hurray! One last thing, we sent a confirmation mail , please check your inbox.");
+                        var user = new User(
+                            {
+                                username: username.toLowerCase().replace(" ",""),
+                                email: email.toLowerCase(),
+                                confirmOTP: 1,
+                                isConfirmed: false,
+                                status:1,
+                                emailVerificationToken:verificationToken,
+                                techStack:techStack || "",
+                                kid: randomString(40)
+                            }
+                        );
+                        user.gravatar(20);
+                        user.password = password;
+            
+            
+                        user.save(function (err,data) {
+                            if (err) { return apiResponse.ErrorResponse(res, err); }
+                            
+                            let trial = 0;
+                            let maxTrial = 2;
+                            let sent = false;
+                            const vLink = `${req.hostname === "localhost" ? "http://localhost:2001/" : "https://code-marka.herokuapp.com/"}auth/account/user/verify/${verificationToken}/${user._id}`;
+                            console.log(vLink);
+                            const sendMailToNewUser = (email: string) => {
+            
+                                const trimedEmail = email.trim();
+            
+                                const emailTemplate = `
+                            <div style="padding:20px;">
+                            <div style="width:100%;background-color: #273444!important;padding:30px;text-align:center;margin-bottom:30px">   
+                            <img style="height:auto;width:auto" src="https://res.cloudinary.com/ogwugo-people/image/upload/v1585816806/codemark__logo.png"/>
+                            </div>
+                                <h4><b>Hi ${username},</b></h4>
+                                Welcome to Codemarka!
+                                <p>
+                                To continue signing up, please confirm that we got your email right by clicking the link below.
+                                 If the link is not clickable, copy and paste the URL in a new browser window:
+                                 </p>
+                                 ${vLink}
+                                <p>
+                                The link is valid for 14 days, after that you will have to start the registration process from the beginning.
+                                </p>
+                                If you did not request sign up to codemarka, you can safely ignore this email or visit <a href="https://codemarka.dev/?ref=mail">codemarka</a> to find out more about
+                                what we have to offer, it might interest you.
+                                <p>
+                            If you have any questions about the service, feel free to contact us anytime at support@codemarka.dev.
+                                </p>
+                                <p>
+            Thanks for joining Codemarka!
+            </p>
+            <p>
+            Happy Learning,
+            </p>
+            <p>
+            The Codemarka Team
+            </p>
+            </p>
+            https://codemarka.dev
+            </p>
+            
+                             
+                                </div>
+            
+                                `;
+            
+                                sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+            
+                                const msg = {
+                                    to: trimedEmail,
+                                    from: "Codemarka@codemarak.dev",
+                                    subject: "Verify Your Email",
+                                    text: `Click below to verify ${vLink}`,
+                                    html: emailTemplate,
+                                };
+            
+                                if(trial <= maxTrial){
+                                    try {
+                                        sgMail.send(msg,true,(err: any,resp: unknown) => {
+                                            if(err){
+                                                // RECURSION
+                                                trial++;
+                                                console.log("retrying..",trial);
+                                              
+                                                sendMailToNewUser(trimedEmail);
+                                            } else {
+                                            
+                                                // BASE
+                                                console.log("sent mail to",trimedEmail);
+                                                sent = true;
+                                                return apiResponse.successResponse(res,"Hurray! One last thing, we sent a confirmation mail , please check your inbox.");
+            
+                                            }
+                                            
+                                        });
+                                    } catch (e) {
+                                        next(e);
+                                        return apiResponse.ErrorResponse(res,"Whoops!  Something went wrong");
+            
+                                    }
+                                   
+                                } else {
+                                    // TERMINATION
+                                    console.log("exceeded trial");
+                                    sent = false;
+                                    return apiResponse.successResponse(res,"Hurray! One last thing, we sent a confirmation mail , please check your inbox.");
+                                }
+                            };
+                            sendMailToNewUser(email);
+                        });
+            
                     }
-                };
-                sendMailToNewUser(email);
+                });
             });
 
         }
