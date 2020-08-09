@@ -262,6 +262,7 @@ export default (server: express.Application) => {
                                     name: data.username.toLowerCase(),
                                     type: "sJoin",
                                     msgId: uuidv4(),
+                                    roomId: socket.room,
                                     newuserslist: updatedStudentList,
                                     socketid: socket.id
                                 });
@@ -1304,7 +1305,8 @@ export default (server: express.Application) => {
                 name: socket.username,
                 type: "sLeft",
                 timeSent: moment().format("LT"),
-                msgId: uuidv4()
+                msgId: uuidv4(),
+                roomId: socket.room
             });
             Classroom.findById(socket.room, (err, room: ClassroomDocument) => {
 
