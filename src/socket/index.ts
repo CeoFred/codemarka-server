@@ -21,7 +21,7 @@ export default (server: express.Application) => {
     
     const io = require("socket.io")(server, chat);
     const clients: any[] = [];
-    const nsp = io.of("/classrooms");
+    const nsp = io.of("/api/v1/classrooms");
 
     nsp.on("connection", function (socket: any) {
 

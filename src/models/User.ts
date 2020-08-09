@@ -142,6 +142,13 @@ const userSchema = new mongoose.Schema({
         country: { default:"",type: String },
         zip: { default:"",type: String },
     },
+    
+    social: {
+        facebook:  { default:"",type: String },
+        twitter:  { default:"",type: String },
+        linkedin:  { default:"",type: String },
+        github:  { default:"",type: String }
+    },
     followers: { type: Number, default: 0},
     following:{ type: Number, default: 0},
     githubrepo: String

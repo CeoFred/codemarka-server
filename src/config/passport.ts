@@ -30,7 +30,7 @@ passport.deserializeUser((kid, done) => {
 passport.use(new GitHubStrategy({
     clientID: process.env.GITHUB_CLIENT_ID,
     clientSecret: process.env.GITHUB_CLIENT_SECRET,
-    callbackURL: `${host}/auth/github/callback`,
+    callbackURL: `${host}/api/v1/auth/github/callback`,
     scope: ["user:email","read:user"]
 },
 function(accessToken, refreshToken, profile: any, done) {
@@ -171,7 +171,7 @@ function(accessToken, refreshToken, profile: any, done) {
 passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: `${host}/auth/google/callback`,
+    callbackURL: `${host}/api/v1/auth/google/callback`,
 },
 function(accessToken, refreshToken, profile, done) {
     const googleid = profile.id;
@@ -232,7 +232,8 @@ function(accessToken, refreshToken, profile, done) {
         
                 user.isConfirmed = true;
                 user.username = String(displayName).toLowerCase().trim().replace(" ","_");
-                user.gravatar(20);
+                user.gravatarUrl = picture;
+
 
                 user.profile.name = profile.displayName;
                 user.profile.picture = picture;

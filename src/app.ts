@@ -19,6 +19,7 @@ import { SESS_NAME, SESS_SECRET , SESS_LIFETIME } from "./util/secrets";
 import auth from "./routes/auth";
 import classroom from "./routes/classroom";
 import community from "./routes/community";
+import user from "./routes/user";
 
 import { NextFunction, Request, Response } from "express";
 
@@ -89,10 +90,10 @@ app.use(lusca.xssProtection(true));
 app.use(express.static(path.join(__dirname, "public"), { maxAge: 31557600000 }));
 
 // routes as middlewares
-app.use("/auth", cors(), auth);
-app.use("/classroom",cors(), classroom);
-app.use("/community", community);
-
+app.use("/api/v1/auth", cors(), auth);
+app.use("/api/v1/classroom",cors(), classroom);
+app.use("/api/v1/community", community);
+app.use("/api/v1/user",cors(), user);
 
 app.get("/", (req, res) => {
     res.json({ message: "Looking for something??" });
