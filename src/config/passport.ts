@@ -63,7 +63,7 @@ function(accessToken, refreshToken, profile: any, done) {
         
         user.isConfirmed = true;
         user.username = String(displayName).toLowerCase().trim().replace(" ","_");
-        user.gravatar(20);
+        user.gravatarUrl = profilePhoto;
 
         user.profile.name = profile.displayName;
         user.profile.picture = profilePhoto;
@@ -181,7 +181,7 @@ function(accessToken, refreshToken, profile, done) {
             
             user.isConfirmed = true;
             user.username = String(displayName).toLowerCase().trim().replace(" ","_");
-            user.gravatar(20);
+            user.gravatarUrl = profile._json.picture;
 
             user.profile.name = profile._json.name.toLowerCase();
             user.profile.gender = profile._json.gender;

@@ -700,7 +700,10 @@ export const getTrending = (req: Request, res: Response): object => {
                     };
                 });
 
-                let promisesToResolve: any[] = [];
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                type AnyArray = any[];
+
+                let  promisesToResolve: AnyArray ;
                 // map users to classroom
                 neededClassroomData.forEach(singleClassroom => {
                     // console.log(singleClassroom.name, singleClassroom.owner)
