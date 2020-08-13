@@ -127,7 +127,8 @@ function errorHandler(err: Error, req: Request, res: Response, next: NextFunctio
     if (res.headersSent) {
         return next(err);
     }
-    res.redirect("https://codemaraka.dev/whoops/");
+    return res.json(err);
+    res.redirect("https://codemraka.dev/whoops/");
 }
 
 function fourofour(req: Request, res: Response) {
