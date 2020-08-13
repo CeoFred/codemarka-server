@@ -192,7 +192,7 @@ function(accessToken, refreshToken, profile, done) {
                 refreshToken,
             });
         
-            user.profile.name = profile.displayName;
+            user.profile.name = profile.displayName.replace(" ","_");
             user.profile.picture = picture;
             user.gravatarUrl = picture;
         
