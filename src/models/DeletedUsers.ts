@@ -5,7 +5,7 @@ export type UserDeletedDocument = mongoose.Document & {
     password: string;
     passwordResetToken: string;
     passwordResetExpires: Date;
-    accountType: string;
+    accountType: number;
     name: string;
     gender: string;
     location: string;
@@ -32,8 +32,8 @@ const userDeletedSchema = new mongoose.Schema({
     website: String,
     picture: String,
     accountType: {
-        default: "regular",
-        type: String
+        default: 101,
+        type: Number
     }
 }, { timestamps: true });
 

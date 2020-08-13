@@ -38,3 +38,23 @@ export const unfollowUser = (req: Request, res: Response): object => {
         return ErrorResponse(res,"User id required");
     }
 };
+
+export const specialUpdate = (req: Request, res: Response): void => {
+    User.find({}).then(users => {
+        let promises: any[] = [];
+        users.map(user => {
+            user.name = user.username.toLocaleLowerCase().replace(" ","_");
+            user.profile.name = user.profile.name.toLocaleLowerCase().replace(" ","_");
+            user.email = user.email.toLocaleLowerCase();
+            promises.push(user.save());
+        });
+
+        Promise.all(promises)
+            .then(resolved => {
+                return successResponseWithData(res,"done",resolved);
+            }).catch(err => {
+                console.log(err);
+                return ErrorResponse(res, err);
+            });
+    });
+};
