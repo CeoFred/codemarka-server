@@ -42,12 +42,16 @@ export const unfollowUser = (req: Request, res: Response): object => {
 export const specialUpdate = (req: Request, res: Response): void => {
     User.find({}).then(users => {
         let promises: any[] = [];
+        let accty: any = [];
         users.map(user => {
-            user.name = user.username.toLocaleLowerCase().replace(" ","_");
-            user.profile.name = user.profile.name.toLocaleLowerCase().replace(" ","_");
+            user.username = user.username.toLocaleLowerCase().replace(" ","_");
+            user.profile.name = user.profile.name ? user.profile.name.toLocaleLowerCase().replace(" ","_") : ""; 
             user.email = user.email.toLocaleLowerCase();
+            user.accountType = Number(user.accountType);
             promises.push(user.save());
+            accty.push({username: user.username, accountType:typeof user.accountType});
         });
+        // return successResponseWithData(res,"done",accty);
 
         Promise.all(promises)
             .then(resolved => {

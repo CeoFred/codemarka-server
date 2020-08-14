@@ -88,7 +88,8 @@ const userSchema = new mongoose.Schema({
     },
     username: {
         unique:true,
-        type: String
+        type: String,
+        default:""
     },
     status: {
         default: true,
