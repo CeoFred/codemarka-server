@@ -69,7 +69,7 @@ export const accountRecovery = (req: Request, res: Response, next: NextFunction)
                     let trial = 0;
                     let maxTrial = 2;
                     let sent = false;
-                    const PasswordResetLink = `${req.hostname === "localhost" ? "http://localhost:3000" : "https://codemarka.dev"}/auth/user/account/password/reset/${token}/${user}`;
+                    const PasswordResetLink = `${req.hostname === "localhost" ? "http://localhost:3000" : "https://codemarka.dev"}/api/v1/auth/user/account/password/reset/${token}/${user}`;
                     console.log(PasswordResetLink);
                     const sendPasswordResetMail = (email: string) => {
 
@@ -437,7 +437,7 @@ export const postSignup = (req: Request, res: Response, next: NextFunction) => {
                             let trial = 0;
                             let maxTrial = 2;
                             let sent = false;
-                            const vLink = `${req.hostname === "localhost" ? "http://localhost:2001/" : "https://code-marka.herokuapp.com/"}auth/account/user/verify/${verificationToken}/${user._id}`;
+                            const vLink = `${req.hostname === "localhost" ? "http://localhost:2001/" : "https://code-marka.herokuapp.com/"}api/v1/auth/account/user/verify/${verificationToken}/${user._id}`;
                             console.log(vLink);
                             const sendMailToNewUser = (email: string) => {
             
