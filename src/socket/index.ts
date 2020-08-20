@@ -54,15 +54,6 @@ export default (server: express.Application) => {
             });
         });
     
-        socket.on("sending signal", (payload: any) => {
-            io.to(payload.userToSignal).emit("user joined", { signal: payload.signal, callerID: payload.callerID });
-        });
-    
-        socket.on("returning signal", (payload: any) => {
-            io.to(payload.callerID).emit("receiving returned signal", { signal: payload.signal, id: socket.id });
-        });
-    
-    
         socket.on("broadcast_init",(status: boolean,userkid: string) => {
             if(status && userkid){
                 Classroom.findOne({_id: socket.room},(err: Error, classroom: ClassroomDocument) => {
@@ -154,6 +145,7 @@ export default (server: express.Application) => {
                             oldStudentsWithoutUser.push(studentObj);
 
                             const updatedStudentList = oldStudentsWithoutUser;
+                            console.log(isBroadcasting);
                             
                             if(isBroadcasting){
                                 nsp.to(data.classroom_id).emit("call_me",{id:user._id,username: user.username || user.communityName,kid:user.kid,socketid: socket.id});
@@ -325,7 +317,6 @@ export default (server: express.Application) => {
         });
         // event when someone joins a class
         socket.on("join", (data: JoinObj) => {
-
             socket.user = data.userId;
             socket.room = data.classroom_id;
             socket.username = data.username;
@@ -344,7 +335,11 @@ export default (server: express.Application) => {
                         if (res && res !== null) {
                             const ownerid = res.owner;
                             const isBroadcasting = res.isBroadcasting;
-
+                            console.log(isBroadcasting);
+                            
+                            if(isBroadcasting){
+                                nsp.to(socket.room).emit("call_me",{id:user._id,username: user.username || user.communityName,kid:user.kid,socketid: socket.id});
+                            }
                             const students = res.students;
                             let found = students.filter((s: any) => {
                                 return String(s.id) === String(socket.user);
@@ -404,10 +399,9 @@ export default (server: express.Application) => {
                                     socket.emit("classroom_users", d.students);
                                     
                                     socket.emit("class_favourites", d.likes);
+                                  
 
-                                    if(isBroadcasting){
-                                        nsp.to(data.classroom_id).emit("call_me",{id:user._id,username: user.username || user.communityName,kid:user.kid,socketid: socket.id});
-                                    }
+                            
                                     ClassroomAttendance.findOne({classroomkid: res.kid }).then((hasClassAttendance: ClassroomAttendanceDocument) => {
                                         if(hasClassAttendance){
                                             // console.log("classroom has attednace document created");
