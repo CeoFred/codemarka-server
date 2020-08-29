@@ -1,9 +1,11 @@
+/* eslint-disable @typescript-eslint/camelcase */
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { chat } from "./config";
 import fs from "fs";
 import express from "express";
 import moment from "moment";
+import cloudinary  from "cloudinary";
 import uuidv4 from "uuid/v4";
 import sgMail  from "@sendgrid/mail";
 
@@ -15,6 +17,15 @@ import { classWeb, ClassroomWebFileDocument } from "../models/classWebFiles";
 import { User, UserDocument } from "../models/User";
 import { Community, CommunityDocument } from "../models/Community";
 import { randomString } from "../helpers/utility";
+import { result } from "lodash";
+
+const cloudi = cloudinary.v2;
+
+cloudi.config({ 
+    cloud_name: "codemarka", 
+    api_key: "831423733611478", 
+    api_secret: "EsmTcI2hBcDKLRzYwxkEuxopU4o" 
+});
 export default (server: express.Application) => {
     let activeSockets: string[] = [];
 
@@ -43,6 +54,65 @@ export default (server: express.Application) => {
             username: string;
             cdata: ClassroomDocument;
         }
+
+        interface ImageUploadData {
+            data: string;
+            by: string;
+            name: string;
+            time: string;
+            messageColor: string;
+            room: string;
+        }
+
+        socket.on("image_upload", (data: ImageUploadData) => {
+            cloudi.uploader.upload(data.data, 
+                function(error, result) {
+                    console.log(result, error);
+                    if(result){
+                        socket.emit("image_upload_complete",result,data);
+                     
+                        function sendSocketMessage(u: any): void {
+
+                            const msgId = uuidv4();
+                            const msgObject = {
+                                timeSent: moment(data.time).format("LT"),
+                                msgId, 
+                                name: u.username || u.communityName,
+                                by: data.by,
+                                color: data.messageColor,
+                                oTime: data.time,
+                                type:"image",
+                                result
+                            };
+                            Classroom.findOneAndUpdate({ kid: data.room, status: 2 },
+                                {
+                                    $push: {
+                                        messages: msgObject
+                                    }
+                                },
+                                { upsert: true },
+                                function (err, doc: object) {
+                                    if (err) {
+                                        console.log(err);
+                                    } else if (doc) {
+                                        //do stuff
+                                        nsp.to(socket.room).emit("nM",
+                                            {
+                                                ...msgObject
+                                            });
+                                    }
+                                }
+                            );
+                        }
+
+                        User.findOne({ kid: data.by }).then((u: UserDocument) => {
+                            if (u) {
+                                return sendSocketMessage(u);
+                            } 
+                        });
+                    }
+                });
+        });
 
         socket.on("start_broadcast", (roomID: string) => {
             console.log("started broadcast by host");
@@ -1137,7 +1207,8 @@ export default (server: express.Application) => {
                     by: data.user,
                     msg: data.message,
                     color: data.messageColor,
-                    oTime: data.time
+                    oTime: data.time,
+                    type:"text"
                 };
                 Classroom.findOneAndUpdate({ kid: data.class, status: 2 },
                     {
