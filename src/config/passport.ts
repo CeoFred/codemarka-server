@@ -54,6 +54,9 @@ function(accessToken, refreshToken, profile: any, done) {
         
             user.profile.name = profile.displayName;
             user.profile.picture = profilePhoto;
+            
+            user.profile.firstname = profile.displayName.split(" ")[0];
+            user.profile.lastname = profile.displayName.split(" ")[1] || "";
             user.gravatarUrl = profilePhoto;
 
             // confirm account since user can access github account using same email asssociated with github
@@ -93,6 +96,8 @@ function(accessToken, refreshToken, profile: any, done) {
                 user.username = String(displayName).toLowerCase().trim().replace(" ","_");
                 user.gravatarUrl = profilePhoto;
 
+                user.profile.firstname = profile.displayName.split(" ")[0];
+                user.profile.lastname = profile.displayName.split(" ")[1] || "";
                 user.profile.name = profile.displayName;
                 user.profile.picture = profilePhoto;
                 user.save((err) => {
@@ -193,6 +198,9 @@ function(accessToken, refreshToken, profile, done) {
             });
         
             user.profile.name = profile.displayName.replace(" ","_");
+            user.profile.firstname = profile.displayName.split(" ")[0];
+            user.profile.lastname = profile.displayName.split(" ")[1] || "";
+
             user.profile.picture = picture;
             user.gravatarUrl = picture;
         
@@ -234,6 +242,8 @@ function(accessToken, refreshToken, profile, done) {
                 user.username = String(displayName).toLowerCase().trim().replace(" ","_");
                 user.gravatarUrl = picture;
 
+                user.profile.firstname = profile.displayName.split(" ")[0];
+                user.profile.lastname = profile.displayName.split(" ")[1] || "";
 
                 user.profile.name = profile.displayName;
                 user.profile.picture = picture;

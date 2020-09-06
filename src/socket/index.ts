@@ -17,7 +17,6 @@ import { classWeb, ClassroomWebFileDocument } from "../models/classWebFiles";
 import { User, UserDocument } from "../models/User";
 import { Community, CommunityDocument } from "../models/Community";
 import { randomString } from "../helpers/utility";
-import { result } from "lodash";
 
 const cloudi = cloudinary.v2;
 
@@ -96,7 +95,7 @@ export default (server: express.Application) => {
                                         console.log(err);
                                     } else if (doc) {
                                         //do stuff
-                                        nsp.to(socket.room).emit("nM",
+                                        nsp.to(socket.room).emit("new_image_message",
                                             {
                                                 ...msgObject
                                             });
@@ -1015,7 +1014,7 @@ export default (server: express.Application) => {
             };
             
 
-            User.findOne({email: email.toLowerCase()},(err, user) => {
+            User.findOne({ $or:[ {"username":email}, {"email":email} ]},(err, user) => {
                 if(err) socket.emit("user_invite_failed","Something went Wrong,try again.");
 
                 if(user){
@@ -1035,35 +1034,46 @@ export default (server: express.Application) => {
                             
                         }
                     });
-                } else if(user === null){
-
-                    Community.findOne({ email: email.toLowerCase() }, (err, user) => {
-
-                        if (err) socket.emit("user_invite_failed","Something went wrong,try again.");
-
-                        if (user) {
-                            Classroom.findOne({ kid: classroomInfo.kid }, (err, res: any) => {
-                                if (res) {
-                                    const students = res.students;
-                                    let found = students.filter((s: any) => {
-                                        return String(s.kid) === String(user.kid);
-                                    });
-                                    if (Array.isArray(found) && found[0]) {
-                                        socket.emit("user_invite_failed", "User already In class");
-                                    } else {
-                                        sendPasswordResetMail(user.communityName, user.email);
-                                    }
-                                } else if(!res && !err){
-                                    socket.emit("user_invite_failed",`Classroom Not Found with id ${classroomInfo.kid}`);
-                                }
-                            });
-                        } else {
-                            socket.emit("user_invite_failed", "Whoops! User not found");
+                } else {
+                    function ValidateEmail(mail: string) 
+                    {
+                        if (/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(mail))
+                        {
+                            sendPasswordResetMail("",mail);
                         }
-                    });
+                    }
+                    ValidateEmail(email);
+
+                } 
+                // else if(user === null){
+
+                //     Community.findOne({ email: email.toLowerCase() }, (err, user) => {
+
+                //         if (err) socket.emit("user_invite_failed","Something went wrong,try again.");
+
+                //         if (user) {
+                //             Classroom.findOne({ kid: classroomInfo.kid }, (err, res: any) => {
+                //                 if (res) {
+                //                     const students = res.students;
+                //                     let found = students.filter((s: any) => {
+                //                         return String(s.kid) === String(user.kid);
+                //                     });
+                //                     if (Array.isArray(found) && found[0]) {
+                //                         socket.emit("user_invite_failed", "User already In class");
+                //                     } else {
+                //                         sendPasswordResetMail(user.communityName, user.email);
+                //                     }
+                //                 } else if(!res && !err){
+                //                     socket.emit("user_invite_failed",`Classroom Not Found with id ${classroomInfo.kid}`);
+                //                 }
+                //             });
+                //         } else {
+                //             socket.emit("user_invite_failed", "Whoops! User not found");
+                //         }
+                //     });
 
 
-                }
+                // }
                 
             });
         });
