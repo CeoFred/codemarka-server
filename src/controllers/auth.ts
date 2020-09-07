@@ -9,6 +9,7 @@ import { WriteError } from "mongodb";
 import { validationResult } from "express-validator";
 import crypto from "crypto";
 import { successMessage } from "../helpers/response";
+import { successResponseWithData } from "../helpers/apiResponse";
 import { randomNumber,randomString } from "../helpers/utility";
 
 import jwt from "jsonwebtoken";
@@ -699,17 +700,15 @@ export const postUpdateProfile = (req: Request, res: Response, next: NextFunctio
         // return res.status(422).json(failed(errors.array()));
         return apiResponse.ErrorResponse(res,errors.array());
     }
-    User.findById(req.body.user.id, (err, user: UserDocument) => {
+    User.findOne({ kid: req.body.decoded.kid }, (err, user: UserDocument) => {
         if (err) { return next(err); }
-        user.email = req.body.email || "";
-        user.profile.name = req.body.name || "";
-        user.profile.gender = req.body.gender || "";
-        user.location = req.body.location || "";
-        user.save((err: WriteError) => {
+        user.profile =  {...user.profile, ...req.body.profile};
+        user.social =  {...user.social, ...req.body.social};
+        user.save((err: WriteError,data) => {
             if (err) {
                 return next(err);
             }
-            res.status(200).json(successMessage("Profile information has been updated."));
+            return successResponseWithData(res,"Success", data);
         });
     });
 };

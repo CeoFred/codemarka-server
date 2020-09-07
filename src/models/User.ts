@@ -51,8 +51,8 @@ export type UserDocument = mongoose.Document & {
     emailConfirmed: () => void;
     gravatarUrl: string;
     kid: any;
-    followers: number;
-    following: number;
+    followers: any[];
+    following: any[];
     githubrepo: string;
     updateAfterLogin: (ip: string | string[],token: any) => void;
     hashPasswordResetAndValidateToken: (password: string, token: string) => boolean;
@@ -142,6 +142,7 @@ const userSchema = new mongoose.Schema({
         city: { default:"",type: String },
         country: { default:"",type: String },
         zip: { default:"",type: String },
+        birthday: { default:"",type: String },
     },
     
     social: {
@@ -150,11 +151,18 @@ const userSchema = new mongoose.Schema({
         linkedin:  { default:"",type: String },
         github:  { default:"",type: String }
     },
-    followers: { type: Number, default: 0},
-    following:{ type: Number, default: 0},
-    githubrepo: String
+    followers: { type: Array, default: []},
+    following:{ type: Array, default: []},
+    githubrepo: String,
+    title: {
+        type: String,
+        default:"Software Engineer",
+    }
 }, { timestamps: true });
 
+// userSchema.post("findOne", function(result: UserDocument) {
+//     result.password = undefined;
+// });
 /**
  * Password hash middleware.
  */

@@ -4,7 +4,7 @@ import {getUserInfo,unfollowUser, followUser, specialUpdate} from "../controller
 const router = express.Router();
 
 
-router.get("/u/:kid", check, getUserInfo);
+router.get("/u/:username", check, getUserInfo);
 
 router.post("/follow/:kid", check, followUser);
 
