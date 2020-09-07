@@ -9,6 +9,7 @@ import { WriteError } from "mongodb";
 import { validationResult } from "express-validator";
 import crypto from "crypto";
 import { successMessage } from "../helpers/response";
+import { successResponseWithData } from "../helpers/apiResponse";
 import { randomNumber,randomString } from "../helpers/utility";
 
 import jwt from "jsonwebtoken";
@@ -69,7 +70,7 @@ export const accountRecovery = (req: Request, res: Response, next: NextFunction)
                     let trial = 0;
                     let maxTrial = 2;
                     let sent = false;
-                    const PasswordResetLink = `${req.hostname === "localhost" ? "http://localhost:3000" : "https://codemarka.dev"}/auth/user/account/password/reset/${token}/${user}`;
+                    const PasswordResetLink = `${req.hostname === "localhost" ? "http://localhost:3000" : "https://codemarka.dev"}/api/v1/auth/user/account/password/reset/${token}/${user}`;
                     console.log(PasswordResetLink);
                     const sendPasswordResetMail = (email: string) => {
 
@@ -437,7 +438,7 @@ export const postSignup = (req: Request, res: Response, next: NextFunction) => {
                             let trial = 0;
                             let maxTrial = 2;
                             let sent = false;
-                            const vLink = `${req.hostname === "localhost" ? "http://localhost:2001/" : "https://code-marka.herokuapp.com/"}auth/account/user/verify/${verificationToken}/${user._id}`;
+                            const vLink = `${req.hostname === "localhost" ? "http://localhost:2001/" : "https://code-marka.herokuapp.com/"}api/v1/auth/account/user/verify/${verificationToken}/${user._id}`;
                             console.log(vLink);
                             const sendMailToNewUser = (email: string) => {
             
@@ -699,17 +700,15 @@ export const postUpdateProfile = (req: Request, res: Response, next: NextFunctio
         // return res.status(422).json(failed(errors.array()));
         return apiResponse.ErrorResponse(res,errors.array());
     }
-    User.findById(req.body.user.id, (err, user: UserDocument) => {
+    User.findOne({ kid: req.body.decoded.kid }, (err, user: UserDocument) => {
         if (err) { return next(err); }
-        user.email = req.body.email || "";
-        user.name = req.body.name || "";
-        user.gender = req.body.gender || "";
-        user.location = req.body.location || "";
-        user.save((err: WriteError) => {
+        user.profile =  {...user.profile, ...req.body.profile};
+        user.social =  {...user.social, ...req.body.social};
+        user.save((err: WriteError,data) => {
             if (err) {
                 return next(err);
             }
-            res.status(200).json(successMessage("Profile information has been updated."));
+            return successResponseWithData(res,"Success", data);
         });
     });
 };
@@ -741,10 +740,10 @@ export const postUpdatePassword = (req: Request, res: Response, next: NextFuncti
  * Delete user account.
  */
 export const postDeleteAccount = (req: Request, res: Response, next: NextFunction) => {
-    User.findOne({ _id: req.params.userId }, (err, userFound) => {
+    User.findOne({ kid: req.params.userId }, (err, userFound) => {
         if (err) { return next(err); }
         UserDeleted.create(userFound).then(done => {
-            User.deleteOne({ _id: req.params.userId }, (err) => {
+            User.deleteOne({ kid: req.params.userId }, (err) => {
                 if (err) { return next(err); }
                 res.status(200).json(successMessage("Deleted Document Successfully"));
             });

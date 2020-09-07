@@ -255,7 +255,7 @@ export const communityCreationFinal = (req: Request, res: Response, next: NextFu
                                             if(err) apiResponse.ErrorResponse(res,"Whoops! Something went wrong, contact support.");
                         
                                             else if (newCommunityAccount){                            
-                                                const vLink = `${serverHost}/community/account/verify/${verificationToken}/${newCommunityAccount.kid}`;
+                                                const vLink = `${serverHost}/api/v1/community/account/verify/${verificationToken}/${newCommunityAccount.kid}`;
                                                 console.log(vLink);
                                                 const emailTemplate = `
                                         <div style="padding:20px;">

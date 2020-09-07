@@ -7,18 +7,30 @@ export type UserDocument = mongoose.Document & {
     emailVerified: boolean;
     googleid: string;
     githubid: string;
+    name: string;
     profile: {
         name: string;
         gender: string;
         location: string;
         website: string;
         picture: string;
+        firstname: string;
+        lastname: string;
+        phone: string;
+        address: string;
+        city: string;
+        country: string;
+        zip: string;
+    };
+
+    social: {
+        facebook: string;
+        twitter: string;
+        linkedin: string;
     };
     password: string;
     tokens: any[];
     accountType: number;
-    name: string;
-    gender: string;
     location: string;
     website: string;
     picture: string;
@@ -39,6 +51,9 @@ export type UserDocument = mongoose.Document & {
     emailConfirmed: () => void;
     gravatarUrl: string;
     kid: any;
+    followers: any[];
+    following: any[];
+    githubrepo: string;
     updateAfterLogin: (ip: string | string[],token: any) => void;
     hashPasswordResetAndValidateToken: (password: string, token: string) => boolean;
 };
@@ -73,7 +88,8 @@ const userSchema = new mongoose.Schema({
     },
     username: {
         unique:true,
-        type: String
+        type: String,
+        default:""
     },
     status: {
         default: true,
@@ -114,14 +130,39 @@ const userSchema = new mongoose.Schema({
     },
     lastLoggedInIp: String,
     profile: {
-        name: String,
-        gender: String,
-        location: String,
-        website: String,
-        picture: String
+        name: { default:"",type: String },
+        gender: { default:"",type: String },
+        location: { default:"",type: String },
+        website: { default:"",type: String },
+        picture: { default:"",type: String },
+        firstname: { default:"",type: String },
+        lastname: { default:"",type: String },
+        phone: { default:"",type: String },
+        address: { default:"",type: String },
+        city: { default:"",type: String },
+        country: { default:"",type: String },
+        zip: { default:"",type: String },
+        birthday: { default:"",type: String },
+    },
+    
+    social: {
+        facebook:  { default:"",type: String },
+        twitter:  { default:"",type: String },
+        linkedin:  { default:"",type: String },
+        github:  { default:"",type: String }
+    },
+    followers: { type: Array, default: []},
+    following:{ type: Array, default: []},
+    githubrepo: String,
+    title: {
+        type: String,
+        default:"Software Engineer",
     }
 }, { timestamps: true });
 
+// userSchema.post("findOne", function(result: UserDocument) {
+//     result.password = undefined;
+// });
 /**
  * Password hash middleware.
  */
@@ -145,34 +186,6 @@ userSchema.pre("save", function save(next: any) {
 
 });
 
-/**
- * Password reset hash middleware
- */
-
-// const hashPasswordResetAndValidateToken = function (password: string, Resettoken: string): boolean {
-//     this.password = bcrypt.hashSync(password,10);
-//     let tokens = this.tokens;
-
-//     let foundToken =  tokens.filter((token: {type: string;accessToken: string}) => {
-//         return String(token.type) === "ActRecry" && token.accessToken === Resettoken;
-//     });
-
-//     if (Array.isArray(foundToken) && foundToken.length > 0){
-//         foundToken = true;
-//         tokens =  tokens.filter((token: {type: string; accessToken: string}) => {
-//             return String(token.type) !== "ActRecry" && token.accessToken !== Resettoken;
-//         }); 
-//     } else {
-//         foundToken = false;
-//     }
-
-//     this.tokens = tokens;
-//     console.log(this.password);
-//     console.log(password);
-
-//     this.save();
-//     return foundToken;
-// };
 
 const comparePassword: comparePasswordFunction = function (candidatePassword, cb) {
     bcrypt.compare(candidatePassword, this.password, (err: mongoose.Error, isMatch: boolean) => {

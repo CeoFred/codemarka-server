@@ -50,6 +50,7 @@ let connections: any[] = [];
 //     (err: any, connections: any) => console.log(`${connections} connections currently open`)
 // ), 1000);
 
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 function shutDown() {
     console.log("Received kill signal, shutting down gracefully");
     http.close(() => {
