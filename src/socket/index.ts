@@ -63,6 +63,13 @@ export default (server: express.Application) => {
             room: string;
         }
 
+        socket.on("indicator_position_changed", (data: any) => {
+            nsp.to(socket.room).emit("new_indicator_position",
+                {
+                    ...data
+                });
+        });
+
         socket.on("image_upload", (data: ImageUploadData) => {
             cloudi.uploader.upload(data.data, 
                 function(error, result) {

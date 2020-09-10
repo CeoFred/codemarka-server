@@ -52,8 +52,9 @@ export const followUser = (req: Request, res: Response): object => {
                             } else {
                                 user.following.push({ kid: userData.kid, username: userData.username});
 
-                                user.save();
-                                return successResponse(res,"Success");
+                                user.save((err,updates) => {
+                                    return successResponseWithData(res,"Success",data);
+                                });
                             }
                         } else {
                             return ErrorResponse(res,"Request user not found");
@@ -68,8 +69,44 @@ export const followUser = (req: Request, res: Response): object => {
 
 export const unfollowUser = (req: Request, res: Response): object => {
     const {kid}  = req.params;
+    const requestUserKid = req.body.decoded.kid;
     if(!kid.length){
         return ErrorResponse(res,"User id required");
+    } else {
+        User.findOne({kid}).then(userData => {
+            const userIsFollowing =  userData.followers.some((d) => {
+                return d.kid === requestUserKid;
+            });
+
+            if(!userIsFollowing){
+                return successResponse(res,"Success");
+            } else {
+                const newUsersFollowers =  userData.followers.filter(d => d.kid !== requestUserKid);
+                userData.followers = newUsersFollowers;
+                userData.save((err, data) => {
+                    if(err) ErrorResponse(res,"Failed to unfollow user");
+
+                    User.findOne({kid: requestUserKid}).then((user) => {
+                        if(user){
+                            const usersIsFollowing =  user.following.some((d) => {
+                                return d.kid === kid;
+                            });
+                            if(!usersIsFollowing){
+                                return successResponse(res,"Success");                
+                            } else {
+                                const newUsersFollowing =  user.following.filter(d => d.kid !== kid);
+                                user.following = newUsersFollowing;
+                                user.save((err,updates) => {
+                                    return successResponseWithData(res,"Success",data);
+                                });
+                            }
+                        } else {
+                            return ErrorResponse(res,"Request user not found");
+                        }
+                    });
+                });
+            }
+        });
     }
 };
 
