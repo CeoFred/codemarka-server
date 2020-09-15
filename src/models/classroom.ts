@@ -11,11 +11,10 @@ export type ClassroomDocument = mongoose.Document & {
     pinnedMessages: [Record<string, any>];
     ratings: [Record<string, any>];
     blocked: [Record<string, any>];
-    startTime: any;
-    startDate: any;
     gravatarUrl: string;
     maxUsers: number;
     visits: number;
+    schedule: Date;
     location: number;
     kid: string;
     shortUrl: string;
@@ -45,10 +44,6 @@ const classroomSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
-    startDate:{
-        type: Date,
-        required:true
-    },
     isBroadcasting:{
         type:Boolean,
         default: false,
@@ -73,9 +68,10 @@ const classroomSchema = new mongoose.Schema({
         required: true,
         default:"Public"
     },
-    startTime:{
-        type: String,
-        required: true
+    schedule:{
+        type: Date,
+        required: true,
+        default: new Date()
     },
     status: {
         default: 1,

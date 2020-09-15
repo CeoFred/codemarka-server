@@ -20,12 +20,12 @@ const started = 2;
 const ended = 3;
 
 const MAX_PRIVATE_CLASSROOM_REGULAR = 15;
-const MAX_PRIVATE_CLASSROOM_PREMUIM = 45;
+// const MAX_PRIVATE_CLASSROOM_PREMUIM = 45;
 
 const MAX_CASSROOM_MEMBERS_REGULAR = 10;
 const MAX_CLASSROOM_MEMBERS_PREMUIM = 30;
 
-const MAX_PUBLIC_CLASSROOMS = "unlimited";
+// const MAX_PUBLIC_CLASSROOMS = "unlimited";
 export const getAllLanguageSettings = (req: Request, res: Response): void => {
     const classroomKid = req.params.classroomkid;
     classWeb.findOne({ classroomKid }, (err, docc) => {
@@ -76,13 +76,11 @@ export const createClassRoom = (
         location,
         name,
         topic,
-        startTime,
-        startDate,
+        schedule,
         description,
         classType,
         visibility,
     } = req.body;
-
     const { accountType: creatorsAccountType } = userData;
 
     const accountid: string = req.body.decoded.kid;
@@ -148,10 +146,8 @@ export const createClassRoom = (
                 description,
                 classVisibility: visibility,
                 classType,
-                startTime:
-          creatorsAccountType === 101 ? new Date().getHours() : startTime,
-                startDate:
-          creatorsAccountType === 101 ? new Date().getFullYear() : startDate,
+                schedule:
+          creatorsAccountType === 101 ? new Date().getFullYear() : schedule,
                 status: notStarted,
                 owner: accountid,
                 location,
@@ -421,14 +417,14 @@ export const getUpcomingClassroomSessions = (
 ): void => {
     Classroom.find(
         { status: 1 },
-        "name kid topic description startTime owner startDate"
+        "name kid topic description owner schedule gravatarUrl"
     )
         .then((d) => {
             if (d) {
                 (async () => {
                     let resol = await Promise.all(
                         d.map(async (classes) => {
-                            const t = new Promise((resolve, reject) =>
+                            const t = new Promise((resolve) =>
                                 resolve(Community.findOne({ kid: classes.owner }))
                             );
                             // const t2 = new Promise((resolve, reject) => resolve(User.findOne({ kid: classes.owner })));
@@ -445,7 +441,6 @@ export const getUpcomingClassroomSessions = (
                     const po = d.map((cl, ein) => {
                         let ow = cl.owner;
                         let fo;
-
                         communityOrUsers.map((ss) => {
                             if (ss && ss.kid === ow) {
                                 fo = {
@@ -453,8 +448,8 @@ export const getUpcomingClassroomSessions = (
                                     kid: d[ein].kid,
                                     topic: d[ein].topic,
                                     name: d[ein].name,
-                                    date: d[ein].startDate,
-                                    time: d[ein].startTime,
+                                    schedule: cl.schedule,
+                                    gravatar: cl.gravatarUrl
                                 };
                             }
                         });
@@ -647,7 +642,7 @@ export const verifyClassroom = (
                 return apiResponse.successResponseWithData(res, "success", d);
             } else if (d && d.status === notStarted) {
                 return apiResponse.successResponse(res, {
-                    startTimeFull: `${d.startTime} - ${d.startDate}`,
+                    startTimeFull: `${d.schedule}`,
                     msg: "Class has not started!",
                     cdata: d,
                 });

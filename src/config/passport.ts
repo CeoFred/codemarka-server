@@ -7,6 +7,7 @@ import passport from "passport";
 import sgMail  from "@sendgrid/mail";
 
 import {User} from "../models/User";
+import {Community} from "../models/Community";
 import { randomString } from "../helpers/utility";
 
 const { OAuth2Strategy: GoogleStrategy } = google;
@@ -184,81 +185,84 @@ function(accessToken, refreshToken, profile, done) {
     const googleEmail = profile._json.email;
     const gender = profile._json.gender;
     const picture = profile._json.picture;
-
-    User.findOne({email: googleEmail},(err, user) => {
-        if(err) done(err,null);
-
-        if(user ){
-            // connect account     
-            user.googleid = googleid;
-            user.tokens.push({   
-                kind: "google",
-                accessToken,
-                refreshToken,
-            });
-        
-            user.profile.name = profile.displayName.replace(" ","_");
-            user.profile.firstname = profile.displayName.split(" ")[0];
-            user.profile.lastname = profile.displayName.split(" ")[1] || "";
-
-            user.profile.picture = picture;
-            user.gravatarUrl = picture;
-        
-            // confirm account since user can access github account using same email asssociated with github
-            user.isConfirmed = true;
-        
-            user.save((err, connectGithubUser) => {
-                if(err) done(err,null);
-                if(connectGithubUser){
-                    return done(null, connectGithubUser);
-                }else {
-                    done(null,null);
-                }
-            }); 
+    Community.findOne({email: googleEmail}).then((community) => {
+        if(community){
+            return done(null, community);
         } else {
-            // create or login exiting user
-            User.findOne({ googleid }, (err, existingUser) => {
-                if (err) { return done(err); }
-                if (existingUser) {
-                    // user exists, log in
-                    return done(null, existingUser);
-                }    
+            User.findOne({email: googleEmail},(err, user) => {
+                if(err) done(err,null);
+
+                if(user ){
+                    // connect account     
+                    user.googleid = googleid;
+                    user.tokens.push({   
+                        kind: "google",
+                        accessToken,
+                        refreshToken,
+                    });
+        
+                    user.profile.name = profile.displayName.replace(" ","_");
+                    user.profile.firstname = profile.displayName.split(" ")[0];
+                    user.profile.lastname = profile.displayName.split(" ")[1] || "";
+
+                    user.profile.picture = picture;
+                    user.gravatarUrl = picture;
+        
+                    // confirm account since user can access github account using same email asssociated with github
+                    user.isConfirmed = true;
+        
+                    user.save((err, connectGithubUser) => {
+                        if(err) done(err,null);
+                        if(connectGithubUser){
+                            return done(null, connectGithubUser);
+                        }else {
+                            done(null,null);
+                        }
+                    }); 
+                } else {
+                    // create or login exiting user
+                    User.findOne({ googleid }, (err, existingUser) => {
+                        if (err) { return done(err); }
+                        if (existingUser) {
+                            // user exists, log in
+                            return done(null, existingUser);
+                        }    
             
-                //link account with google details;
+                        //link account with google details;
             
-                const user = new User();
-                user.email = googleEmail.toLowerCase();
-                user.googleid = googleid;
-                user.tokens.push({   
-                    kind: "google",
-                    accessToken,
-                    refreshToken,
-                });
+                        const user = new User();
+                        user.email = googleEmail.toLowerCase();
+                        user.googleid = googleid;
+                        user.tokens.push({   
+                            kind: "google",
+                            accessToken,
+                            refreshToken,
+                        });
              
-                user.kid = randomString(40);
+                        user.kid = randomString(40);
             
         
-                user.isConfirmed = true;
-                user.username = String(displayName).toLowerCase().trim().replace(" ","_");
-                user.gravatarUrl = picture;
+                        user.isConfirmed = true;
+                        user.username = String(displayName).toLowerCase().trim().replace(" ","_");
+                        user.gravatarUrl = picture;
 
-                user.profile.firstname = profile.displayName.split(" ")[0];
-                user.profile.lastname = profile.displayName.split(" ")[1] || "";
+                        user.profile.firstname = profile.displayName.split(" ")[0];
+                        user.profile.lastname = profile.displayName.split(" ")[1] || "";
 
-                user.profile.name = profile.displayName;
-                user.profile.picture = picture;
-                user.save((err) => {
-                    //send Welcome mail;
-                    if(err) done(err,null);
+                        user.profile.name = profile.displayName;
+                        user.profile.picture = picture;
+                        user.save((err) => {
+                            //send Welcome mail;
+                            if(err) done(err,null);
 
-                    let trial = 0;
-                    let maxTrial = 2;
-                    let sent = false;
-                    const sendWelcomeEmailToUser = (email: string): void => {
+                            let trial = 0;
+                            let maxTrial = 2;
+                            let sent = false;
+                            const sendWelcomeEmailToUser = (email: string): void => {
 
-                        const trimedEmail = email.trim();
+                                const trimedEmail = email.trim();
 
-                        const emailTemplate = `
+                                const emailTemplate = `
                 <div style="margin:15px;padding:10px;border:1px solid grey;justify-content;">
                 <h4><b>H ${displayName},</b></h4>
                 <b>Thanks for joinig us at codemarka!</b>
@@ -270,51 +274,54 @@ function(accessToken, refreshToken, profile, done) {
                 </div>
                 `;
 
-                        sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+                                sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
-                        const msg = {
-                            to: trimedEmail,
-                            from: "Codemarka@codemarak.dev",
-                            subject: "Welcome To Codemarka",
-                            text: "Welcome to codemarka!",
-                            html: emailTemplate,
-                        };
+                                const msg = {
+                                    to: trimedEmail,
+                                    from: "Codemarka@codemarak.dev",
+                                    subject: "Welcome To Codemarka",
+                                    text: "Welcome to codemarka!",
+                                    html: emailTemplate,
+                                };
 
-                        if(trial <= maxTrial){
-                            try {
-                                sgMail.send(msg,true,(err: any,resp: unknown) => {
-                                    if(err){
-                                        // RECURSION
-                                        trial++;
+                                if(trial <= maxTrial){
+                                    try {
+                                        sgMail.send(msg,true,(err: any,resp: unknown) => {
+                                            if(err){
+                                                // RECURSION
+                                                trial++;
                               
-                                        sendWelcomeEmailToUser(trimedEmail);
-                                    } else {
+                                                sendWelcomeEmailToUser(trimedEmail);
+                                            } else {
                             
-                                        // BASE
-                                        sent = true;
-                                        done(null, user);
+                                                // BASE
+                                                sent = true;
+                                                done(null, user);
 
+                                            }
+                            
+                                        });
+                                    } catch (e) {
+                                        done(e,user);
                                     }
-                            
-                                });
-                            } catch (e) {
-                                done(e,user);
-                            }
                    
-                        } else {
-                            // TERMINATION
-                            sent = false;
-                            done(null, user);
+                                } else {
+                                    // TERMINATION
+                                    sent = false;
+                                    done(null, user);
 
-                        }
+                                }
 
-                    };
-                    sendWelcomeEmailToUser(user.email);
-                });
+                            };
+                            sendWelcomeEmailToUser(user.email);
+                        });
        
-            });
-        } 
+                    });
+                } 
         
+            });
+        }
     });
+
 }
 ));

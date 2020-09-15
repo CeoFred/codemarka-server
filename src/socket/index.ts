@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/camelcase */
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
 /* eslint-disable @typescript-eslint/no-unused-vars */
@@ -137,6 +138,7 @@ export default (server: express.Application) => {
                         if(classroom.owner === userkid){
                             classroom.isBroadcasting = true;
                             classroom.save((err,kb) => {
+                                console.log(err);
                                 if(kb && !err){
                                     nsp.to(socket.room).emit("broadcast_status",true,socket.id);
                                 } else {
