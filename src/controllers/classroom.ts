@@ -772,8 +772,9 @@ export const fecthClassByUrlAlias = (
                     "Success",
                     `https://codemarka.dev/c/classroom/${data.classroomKid}`
                 );
+            } else {
+                return apiResponse.ErrorResponse(res, "URL not found");
             }
-            return apiResponse.ErrorResponse(res, "URL not found");
         })
         .catch((err) => {
             return apiResponse.ErrorResponse(res, err);
