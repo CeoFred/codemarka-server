@@ -10,22 +10,58 @@ import { ClassroomAttendance } from "../models/Attendance";
 import { classAliasUrl } from "../models/classAlias";
 import { User, UserDocument } from "../models/User";
 import { randomNumber, randomString } from "../helpers/utility";
-import { successResponseWithData } from "../helpers/apiResponse";
+import { successResponseWithData, ErrorResponse } from "../helpers/apiResponse";
 import { classWeb } from "../models/classWebFiles";
 import * as apiResponse from "../helpers/apiResponse";
 import { Community, CommunityDocument } from "../models/Community";
+import { classReportSchema, classroomReport } from "../models/Reports";
+
 import { CLASSROOM } from "../config/url";
 const notStarted = 1;
 const started = 2;
 const ended = 3;
 
 const MAX_PRIVATE_CLASSROOM_REGULAR = 15;
-// const MAX_PRIVATE_CLASSROOM_PREMUIM = 45;
-
 const MAX_CASSROOM_MEMBERS_REGULAR = 10;
 const MAX_CLASSROOM_MEMBERS_PREMUIM = 30;
 
-// const MAX_PUBLIC_CLASSROOMS = "unlimited";
+export const addQuestion = (req: Request, res: Response): void => {
+    const { question,kid,time } = req.body;
+
+    Classroom.findOne({kid}).then(classroom => {
+        if(!classroom) ErrorResponse(res, "Classroom not found");
+        classroom.questions.push({question,user: req.body.decoded.kid,time});
+        classroom.save((err) => {
+            if(err) ErrorResponse(res,"Failed to add your question, try again later");
+            return successResponseWithData(res,"Success",question);
+        });
+    }).catch(() => {
+        return ErrorResponse(res,"Something went wrong");
+    });
+};
+
+export const addReport = (req: Request, res: Response): void => {
+    const { report,kid,time } = req.body;
+
+    Classroom.findOne({kid}).then(classroom => {
+        if(!classroom) ErrorResponse(res, "Classroom not found");
+        classroom.reports.push({report,user: req.body.decoded.kid,time});
+        classroom.save((err) => {
+            if(err) ErrorResponse(res,"Failed to report classroom");
+            new classroomReport({
+                user: req.body.decoded.kid,
+                report,
+                reportId: randomString(40),
+                kid,
+                timeSent: time
+            }).save((err) => {
+                return successResponseWithData(res,"Success",report);
+            });
+        });
+    }).catch(() => {
+        return ErrorResponse(res,"Something went wrong");
+    });
+};
 export const getAllLanguageSettings = (req: Request, res: Response): void => {
     const classroomKid = req.params.classroomkid;
     classWeb.findOne({ classroomKid }, (err, docc) => {

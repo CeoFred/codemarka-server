@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import crypto from "crypto";
-
+import { randomString } from "../helpers/utility";
 export type ClassroomDocument = mongoose.Document & {
     owner: string;
     status: number;
@@ -20,10 +20,14 @@ export type ClassroomDocument = mongoose.Document & {
     shortUrl: string;
     name: string;
     gravatar: (p: number) => void;
+    regenerate: () => string;
     description: string;
     topic: string;
     isTakingAttendance: boolean;
     isBroadcasting: boolean;
+    actions: [Record<string, any>];
+    reports: [Record<string, any>];
+    questions: [Record<string, any>];
 };
 
 
@@ -102,7 +106,15 @@ const classroomSchema = new mongoose.Schema({
     pinnedMessages: [Object],
     gravatarUrl: String,
     maxUsers: Number    ,
-    Usersjoined: [Object]
+    Usersjoined: [Object],
+    actions:[Object],
+    pin: {
+        default: "0000",
+        type: String
+    },
+    subscribers: [Object],
+    reports: [Object],
+    questions: [Object]
 }, { timestamps: true });
 
 /**
@@ -111,7 +123,13 @@ const classroomSchema = new mongoose.Schema({
 classroomSchema.methods.gravatar = function (size: number = 200): void {
     
     const md5 = crypto.createHash("md5").update(this.name).digest("hex");
-    this.gravatarUrl = `https://gravatar.com/avatar/${md5}?s=${size}&d=retro`;
+    this.gravatarUrl = `https://gravatar.com/avatar/${md5}?s=${size}&d=identicon`;
+};
+
+classroomSchema.methods.regenerate = function (): void {
+    const md5 = crypto.createHash("md5").update(randomString(33)).digest("hex");
+    this.gravatarUrl = `https://gravatar.com/avatar/${md5}?s=${200}&d=identicon`;
+    return this.gravatarUrl;
 };
 
 

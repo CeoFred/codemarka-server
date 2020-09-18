@@ -64,6 +64,47 @@ export default (server: express.Application) => {
             room: string;
         }
 
+        socket.on("gravatarRegenerate",(data: any) => {
+            Classroom.findOne({kid: data.room }).then(room => {
+                if(room){
+                    room.regenerate();
+                    room.actions.push({message: "Gravatar Updated",user: socket.user,timestamp: data.time });
+                    room.save((err, data) => {
+                        if(err) nsp.to(socket.room).emit("action_failed","Failed to Generate Gravatr");
+                        nsp.to(socket.room).emit("gravatarRegenerated",data.gravatarUrl);
+                    });
+                } else {
+                    nsp.to(socket.room).emit("action_failed","Classroom not found");
+                }
+            }).catch(err => {
+                nsp.to(socket.room).emit("action_failed","Something went wrong");
+            });
+        });
+
+        socket.on("gravatar_image_upload",(data: any) => {
+            cloudi.uploader.upload(data.data, 
+                function(error: any, result: any) {
+                    if(result && !error){
+                        Classroom.findOneAndUpdate({ kid: data.room, status: 2 },
+                            {
+                                $push: {
+                                    actions: {message:"Updated Gravatr image", user: socket.user, timestamp: data.time}
+                                },
+                                gravatarUrl: result.secure_url
+                            },
+                            { upsert: true },
+                            function (err, doc: object) {
+                                if (err) {
+                                    console.log(err);
+                                } else if (doc) {
+                                    socket.emit("gravatar_image_upload_complete",result.secure_url);
+                                }
+                            }
+                        );
+                    }
+                });
+        });
+
         socket.on("indicator_position_changed", (data: any) => {
             nsp.to(socket.room).emit("new_indicator_position",
                 {
@@ -1190,11 +1231,13 @@ export default (server: express.Application) => {
             const topic = data.ctopic.value;
             const description = data.cdesc.value;
             const name = data.cname.value;
+            const schedule = data.cschedule.value;
 
             Classroom.findOneAndUpdate({ _id: classid }, {
                 name,
                 description,
                 topic,
+                schedule
             }, { new: true }, (err, doc) => {
                 if (err) socket.emit("errUpdating", err);
                 if(doc) {
