@@ -548,11 +548,17 @@ export const getCommunities = (req: Request, res: Response): void => {
  */
 export const getCommunity = (req: Request, res: Response): void => {
 
-    Community.findOne({kid: req.params.kid},{_id:0,tokens:0,updatedAt:0,accountType:0,isConfirmed:0,lastLoggedInIp:0,__v:0,resetPasswordToken:0}).exec((err, comm) => {
+    Community.findOne({kid: req.params.kid},{_id:0,tokens:0,updatedAt:0,accountType:0,isConfirmed:0,lastLoggedInIp:0,__v:0,resetPasswordToken:0,password:0}).exec((err, comm) => {
         if (err) {
             return apiResponse.ErrorResponse(res, "Something went wrong");
         }
         if (comm) {
+            delete comm.password;
+            delete comm._id;
+            delete comm.createdAt;
+            delete comm.geoDetails;
+            delete comm.resetPasswordExpires;
+            delete comm.emailVerificationToken;
             return apiResponse.successResponseWithData(res, "success", comm);
         }
         else {
@@ -655,11 +661,14 @@ export const rateCommunity = (req: Request, res: Response): void => {
 export const getUpcomingClassrooms = (req: Request, res: Response, next: NextFunction): any => {
     const { kid } = req.params;
 
-    Classroom.find(({ owner: kid,status:1 }), "startDate startTime shortUrl gravatarUrl topic description location", (err: Error, doc: ClassroomDocument) => {
+    Classroom.find(({ owner: kid,status:1 }), "schedule kid shortUrl gravatarUrl topic description location", (err: Error, doc) => {
         if (err) {
             return next(err);
         }
         if (doc && doc !== null) {
+            doc.forEach(element => {
+                delete element._id;
+            });
             return apiResponse.successResponseWithData(res, "success", doc);
         } else {
             return apiResponse.ErrorResponse(res, null);
@@ -667,7 +676,7 @@ export const getUpcomingClassrooms = (req: Request, res: Response, next: NextFun
     });
 };
 
-export const findCommunity = (req: Request, res: Response) => {
+export const findCommunity = (req: Request, res: Response): void => {
     const { q } = req.params;
     if (q && q.trim() !== "") {
         const reqexQ = new RegExp(q, "i");
