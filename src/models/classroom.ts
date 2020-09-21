@@ -28,6 +28,7 @@ export type ClassroomDocument = mongoose.Document & {
     actions: [Record<string, any>];
     reports: [Record<string, any>];
     questions: [Record<string, any>];
+    settings: any;
 };
 
 
@@ -114,7 +115,17 @@ const classroomSchema = new mongoose.Schema({
     },
     subscribers: [Object],
     reports: [Object],
-    questions: [Object]
+    questions: [Object],
+    settings:{
+        mutedAll: {
+            default: false,
+            type: Boolean
+        },
+        videoOff:{
+            default: true,
+            type: Boolean
+        }
+    }
 }, { timestamps: true });
 
 /**

@@ -64,6 +64,75 @@ export default (server: express.Application) => {
             room: string;
         }
 
+        socket.on("mute_All",(room: string,time: any) => {
+            Classroom.findOne({kid:room }).then(room => {
+                if(room){
+                    room.regenerate();
+                    room.actions.push({message: "Muted All Users",user: socket.user,timestamp: time });
+                    room.settings.mutedAll = true;
+                    room.save((err, data) => {
+                        if(err) nsp.to(socket.room).emit("action_failed","Failed to mute");
+                        nsp.to(socket.room).emit("muted_successfully",true);
+                    });
+                } else {
+                    nsp.to(socket.room).emit("action_failed","Classroom not found");
+                }
+            }).catch(err => {
+                nsp.to(socket.room).emit("action_failed","Something went wrong");
+            });
+        });
+
+        socket.on("turn_video_off_all",(room: string,time: any) => {
+            Classroom.findOne({kid:room }).then(room => {
+                if(room){
+                    room.regenerate();
+                    room.actions.push({message: "Turned Off All Users Camera",user: socket.user,timestamp: time });
+                    room.settings.videoOff = true;
+                    room.save((err, data) => {
+                        if(err) nsp.to(socket.room).emit("action_failed","Failed to turn All Videos Off");
+                        nsp.to(socket.room).emit("turn_video_off_all_successfully",true);
+                    });
+                } else {
+                    nsp.to(socket.room).emit("action_failed","Classroom not found");
+                }
+            }).catch(err => {
+                nsp.to(socket.room).emit("action_failed","Something went wrong");
+            });
+        });
+        socket.on("turn_video_on_all",(room: string,time: any) => {
+            Classroom.findOne({kid:room }).then(room => {
+                if(room){
+                    room.regenerate();
+                    room.actions.push({message: "Turned On All Users Camera",user: socket.user,timestamp: time });
+                    room.settings.videoOff = false;
+                    room.save((err, data) => {
+                        if(err) nsp.to(socket.room).emit("action_failed","Failed to turn All Videos Off");
+                        nsp.to(socket.room).emit("turn_video_on_all_successfully",true);
+                    });
+                } else {
+                    nsp.to(socket.room).emit("action_failed","Classroom not found");
+                }
+            }).catch(err => {
+                nsp.to(socket.room).emit("action_failed","Something went wrong");
+            });
+        });
+        socket.on("unmute_All",(room: string,time: any) => {
+            Classroom.findOne({kid: room }).then(room => {
+                if(room){
+                    room.regenerate();
+                    room.actions.push({message: "UnMuted All Users",user: socket.user,timestamp: time });
+                    room.settings.mutedAll = false;
+                    room.save((err, data) => {
+                        if(err) nsp.to(socket.room).emit("action_failed","Failed to mute");
+                        nsp.to(socket.room).emit("unmuted_successfully",true);
+                    });
+                } else {
+                    nsp.to(socket.room).emit("action_failed","Classroom not found");
+                }
+            }).catch(err => {
+                nsp.to(socket.room).emit("action_failed","Something went wrong");
+            });
+        });
         socket.on("gravatarRegenerate",(data: any) => {
             Classroom.findOne({kid: data.room }).then(room => {
                 if(room){
