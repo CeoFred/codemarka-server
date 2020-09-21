@@ -354,7 +354,7 @@ export const postLogin = (req: Request, res: Response) => {
                                     const secret = process.env.JWT_SECRET;
                                     //Generated JWT token with Payload and secret.
                                     userData.token = jwt.sign(jwtPayload, secret, jwtData);
-
+                                    user.username = user.username.replace(" ","_");
                                     user.updateAfterLogin(ip,{accessToken:userData.token,type: "login"});
 
                                     // integrate IP change later
@@ -418,7 +418,7 @@ export const postSignup = (req: Request, res: Response, next: NextFunction) => {
                     } else {
                         var user = new User(
                             {
-                                username: username.toLowerCase().replace(" ",""),
+                                username: username.toLowerCase().replace(" ","_"),
                                 email: email.toLowerCase(),
                                 confirmOTP: 1,
                                 isConfirmed: false,
