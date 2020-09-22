@@ -34,7 +34,7 @@ export const accountRecovery = (req: Request, res: Response, next: NextFunction)
     const formattedMail = String(email.trim());
 
     if(formattedMail !== ""){
-        
+         
         // validate email
         const EmailRegexPattern = new RegExp(/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/);
 
@@ -502,24 +502,18 @@ export const postSignup = (req: Request, res: Response, next: NextFunction) => {
                                               
                                                 sendMailToNewUser(trimedEmail);
                                             } else {
-                                            
                                                 // BASE
-                                                console.log("sent mail to",trimedEmail);
                                                 sent = true;
                                                 return apiResponse.successResponse(res,"Hurray! One last thing, we sent a confirmation mail , please check your inbox.");
-            
                                             }
-                                            
                                         });
                                     } catch (e) {
                                         next(e);
                                         return apiResponse.ErrorResponse(res,"Whoops!  Something went wrong");
-            
                                     }
                                    
                                 } else {
                                     // TERMINATION
-                                    console.log("exceeded trial");
                                     sent = false;
                                     return apiResponse.successResponse(res,"Hurray! One last thing, we sent a confirmation mail , please check your inbox.");
                                 }
@@ -535,11 +529,8 @@ export const postSignup = (req: Request, res: Response, next: NextFunction) => {
 
         
     } catch (error) {
-
         return apiResponse.ErrorResponse(res, error);
-        
     }
-        
 };
 
 export const handelGoogleAuthCallback  = (req: any | Request, res: Response) => {

@@ -32,19 +32,15 @@ export default (server: express.Application) => {
     
     const io = require("socket.io")(server, chat);
     const clients: any[] = [];
-    const nsp = io.of("/api/v1/classrooms");
+    // const nsp = io.of("/api/v1/classrooms");
 
-    nsp.on("connection", function (socket: any) {
-
-        const existingSocket = activeSockets.find(
-            existingSocket => existingSocket === socket.id
-        );
+    io.on("connection", function (socket: any) {
+        const existingSocket = activeSockets.find((existingSocket: any) => {
+            return existingSocket.id === socket.id;
+        });
         if (!existingSocket) {
-            activeSockets.push(socket.id);
+            activeSockets.push(socket);
         };
-
-        console.log("New socket connection to classroom");
-
         // register current client  
         clients[socket.id] = socket.client;
 
@@ -71,14 +67,14 @@ export default (server: express.Application) => {
                     room.actions.push({message: "Muted All Users",user: socket.user,timestamp: time });
                     room.settings.mutedAll = true;
                     room.save((err, data) => {
-                        if(err) nsp.to(socket.room).emit("action_failed","Failed to mute");
-                        nsp.to(socket.room).emit("muted_successfully",true);
+                        if(err) io.in(socket.room).emit("action_failed","Failed to mute");
+                        io.in(socket.room).emit("muted_successfully",true);
                     });
                 } else {
-                    nsp.to(socket.room).emit("action_failed","Classroom not found");
+                    io.in(socket.room).emit("action_failed","Classroom not found");
                 }
             }).catch(err => {
-                nsp.to(socket.room).emit("action_failed","Something went wrong");
+                io.in(socket.room).emit("action_failed","Something went wrong");
             });
         });
 
@@ -89,16 +85,18 @@ export default (server: express.Application) => {
                     room.actions.push({message: "Turned Off All Users Camera",user: socket.user,timestamp: time });
                     room.settings.videoOff = true;
                     room.save((err, data) => {
-                        if(err) nsp.to(socket.room).emit("action_failed","Failed to turn All Videos Off");
-                        nsp.to(socket.room).emit("turn_video_off_all_successfully",true);
+                        if(err) io.in(socket.room).emit("action_failed","Failed to turn All Videos Off");
+                        io.in(socket.room).emit("turn_video_off_all_successfully",true);
                     });
                 } else {
-                    nsp.to(socket.room).emit("action_failed","Classroom not found");
+                    io.in(socket.room).emit("action_failed","Classroom not found");
                 }
             }).catch(err => {
-                nsp.to(socket.room).emit("action_failed","Something went wrong");
+                io.in(socket.room).emit("action_failed","Something went wrong");
             });
         });
+
+
         socket.on("turn_video_on_all",(room: string,time: any) => {
             Classroom.findOne({kid:room }).then(room => {
                 if(room){
@@ -106,16 +104,17 @@ export default (server: express.Application) => {
                     room.actions.push({message: "Turned On All Users Camera",user: socket.user,timestamp: time });
                     room.settings.videoOff = false;
                     room.save((err, data) => {
-                        if(err) nsp.to(socket.room).emit("action_failed","Failed to turn All Videos Off");
-                        nsp.to(socket.room).emit("turn_video_on_all_successfully",true);
+                        if(err) io.in(socket.room).emit("action_failed","Failed to turn All Videos Off");
+                        io.in(socket.room).emit("turn_video_on_all_successfully",true);
                     });
                 } else {
-                    nsp.to(socket.room).emit("action_failed","Classroom not found");
+                    io.in(socket.room).emit("action_failed","Classroom not found");
                 }
             }).catch(err => {
-                nsp.to(socket.room).emit("action_failed","Something went wrong");
+                io.in(socket.room).emit("action_failed","Something went wrong");
             });
         });
+
         socket.on("unmute_All",(room: string,time: any) => {
             Classroom.findOne({kid: room }).then(room => {
                 if(room){
@@ -123,30 +122,31 @@ export default (server: express.Application) => {
                     room.actions.push({message: "UnMuted All Users",user: socket.user,timestamp: time });
                     room.settings.mutedAll = false;
                     room.save((err, data) => {
-                        if(err) nsp.to(socket.room).emit("action_failed","Failed to mute");
-                        nsp.to(socket.room).emit("unmuted_successfully",true);
+                        if(err) io.in(socket.room).emit("action_failed","Failed to mute");
+                        io.in(socket.room).emit("unmuted_successfully",true);
                     });
                 } else {
-                    nsp.to(socket.room).emit("action_failed","Classroom not found");
+                    io.in(socket.room).emit("action_failed","Classroom not found");
                 }
             }).catch(err => {
-                nsp.to(socket.room).emit("action_failed","Something went wrong");
+                io.in(socket.room).emit("action_failed","Something went wrong");
             });
         });
+
         socket.on("gravatarRegenerate",(data: any) => {
             Classroom.findOne({kid: data.room }).then(room => {
                 if(room){
                     room.regenerate();
                     room.actions.push({message: "Gravatar Updated",user: socket.user,timestamp: data.time });
                     room.save((err, data) => {
-                        if(err) nsp.to(socket.room).emit("action_failed","Failed to Generate Gravatr");
-                        nsp.to(socket.room).emit("gravatarRegenerated",data.gravatarUrl);
+                        if(err) io.in(socket.room).emit("action_failed","Failed to Generate Gravatr");
+                        io.in(socket.room).emit("gravatarRegenerated",data.gravatarUrl);
                     });
                 } else {
-                    nsp.to(socket.room).emit("action_failed","Classroom not found");
+                    io.in(socket.room).emit("action_failed","Classroom not found");
                 }
             }).catch(err => {
-                nsp.to(socket.room).emit("action_failed","Something went wrong");
+                io.in(socket.room).emit("action_failed","Something went wrong");
             });
         });
 
@@ -175,7 +175,7 @@ export default (server: express.Application) => {
         });
 
         socket.on("indicator_position_changed", (data: any) => {
-            nsp.to(socket.room).emit("new_indicator_position",
+            io.in(socket.room).emit("new_indicator_position",
                 {
                     ...data
                 });
@@ -213,7 +213,7 @@ export default (server: express.Application) => {
                                         console.log(err);
                                     } else if (doc) {
                                         //do stuff
-                                        nsp.to(socket.room).emit("new_image_message",
+                                        io.in(socket.room).emit("new_image_message",
                                             {
                                                 ...msgObject
                                             });
@@ -232,7 +232,6 @@ export default (server: express.Application) => {
         });
 
         socket.on("start_broadcast", (roomID: string) => {
-            console.log("started broadcast by host");
             Classroom.findOne({kid: roomID},(err, users) => {
                 if(users && !err){
                     let usersInThisRoom = users.students.map(s =>  s.socketid).filter(o => o !== socket.id);
@@ -250,9 +249,9 @@ export default (server: express.Application) => {
                             classroom.save((err,kb) => {
                                 console.log(err);
                                 if(kb && !err){
-                                    nsp.to(socket.room).emit("broadcast_status",true,socket.id);
+                                    io.in(socket.room).emit("broadcast_status",true,socket.id);
                                 } else {
-                                    nsp.to(socket.room).emit("broadcast_status",false,socket.id);
+                                    io.in(socket.room).emit("broadcast_status",false,socket.id);
                                 }
                             });
                         } else {
@@ -273,9 +272,9 @@ export default (server: express.Application) => {
                             classroom.isBroadcasting = false;
                             classroom.save((err,kb) => {
                                 if(kb && !err){
-                                    nsp.to(socket.room).emit("broadcast_end_confirmed",true);
+                                    io.in(socket.room).emit("broadcast_end_confirmed",true);
                                 } else {
-                                    nsp.to(socket.room).emit("broadcast_end_confirmed",false);
+                                    io.in(socket.room).emit("broadcast_end_confirmed",false);
                                 }
                             });
                         } else {
@@ -336,7 +335,7 @@ export default (server: express.Application) => {
                             console.log(isBroadcasting);
                             
                             if(isBroadcasting){
-                                nsp.to(data.classroom_id).emit("call_me",{id:user._id,username: user.username || user.communityName,kid:user.kid,socketid: socket.id});
+                                io.in(data.classroom_id).emit("call_me",{id:user._id,username: user.username || user.communityName,kid:user.kid,socketid: socket.id});
                             }
                             
                             ClassroomAttendance.findOne({classroomkid: res.kid }).then((hasClassAttendance: ClassroomAttendanceDocument) => {
@@ -434,7 +433,7 @@ export default (server: express.Application) => {
                                 },
                                 { new: true }).then((d: any) => {});
 
-                            nsp.to(data.classroom_id).emit("someoneJoined",
+                            io.in(data.classroom_id).emit("someoneJoined",
                                 {
                                     by: "server",
                                     msg: data.userId + " reconnected",
@@ -526,14 +525,14 @@ export default (server: express.Application) => {
                             console.log(isBroadcasting);
                             
                             if(isBroadcasting){
-                                nsp.to(socket.room).emit("call_me",{id:user._id,username: user.username || user.communityName,kid:user.kid,socketid: socket.id});
+                                io.in(socket.room).emit("call_me",{id:user._id,username: user.username || user.communityName,kid:user.kid,socketid: socket.id});
                             }
                             const students = res.students;
                             let found = students.filter((s: any) => {
                                 return String(s.id) === String(socket.user);
                             });
                             if(Array.isArray(found) && found[0]){
-                                nsp.to(socket.room).emit("disconnect_user_before_join",data);
+                                io.in(socket.room).emit("disconnect_user_before_join",data);
                             };
                             // console.log("found class");
                             const currentClassStudents = res.students;
@@ -678,7 +677,7 @@ export default (server: express.Application) => {
 
                                     socket.join(data.classroom_id, () => {
 
-                                        nsp.to(data.classroom_id).emit("someoneJoined",
+                                        io.in(data.classroom_id).emit("someoneJoined",
                                             {
                                                 by: "server",
                                                 msg: data.userId + " joined",
@@ -742,7 +741,6 @@ export default (server: express.Application) => {
                 }
                 if (user) {
                     proceedTojoinUser(user);
-
                 } else {
                     Community.findOne({ kid: data.userId }).then((communityAccountDocument: CommunityDocument) => {
                         if(communityAccountDocument){
@@ -753,11 +751,8 @@ export default (server: express.Application) => {
                     });
                 }
             }).catch(err => {
-
                 socket.emit("ErrorFetchingUser");
-
             });
-
         });
 
         socket.on("new_attendance_record", (data: any) => {
@@ -787,7 +782,7 @@ export default (server: express.Application) => {
                         if (recorded) {
                             // console.log(recorded);
                             socket.emit("attendance_recorded", recorded.list.filter(u => u.kid === socket.user)[0]);
-                            nsp.to(socket.room).emit("new_attendance",recorded.list);
+                            io.in(socket.room).emit("new_attendance",recorded.list);
                         }
                     });
                 }
@@ -796,7 +791,7 @@ export default (server: express.Application) => {
         });
 
         socket.on("send_attendance_reminder_init",() => {
-            nsp.to(socket.room).emit("attendance_reminder");
+            io.in(socket.room).emit("attendance_reminder");
         });
 
         socket.on("download_attendance_init",(classroomkid: string) => {
@@ -851,7 +846,7 @@ export default (server: express.Application) => {
         });
 
         socket.on("shutdown_classroom",() => {
-            nsp.to(socket.room).emit("shut_down_emitted",{by:socket.user});
+            io.in(socket.room).emit("shut_down_emitted",{by:socket.user});
 
             
             Classroom.findOneAndUpdate({_id: socket.room},{
@@ -863,7 +858,7 @@ export default (server: express.Application) => {
                     //emit socket to namespace
                     // console.log(doc);
                     setTimeout(() => {
-                        nsp.to(socket.room).emit("shut_down_now");
+                        io.in(socket.room).emit("shut_down_now");
                         
                     }, 7000);
                 }
@@ -936,7 +931,7 @@ export default (server: express.Application) => {
                         if(!err){
                             //emit socket to namespace
                             console.log(doc);
-                            nsp.to(socket.room).emit("blocking_user_success",{user,by: socket.user,newStudents: doc.students});
+                            io.in(socket.room).emit("blocking_user_success",{user,by: socket.user,newStudents: doc.students});
                         }
 
                     });
@@ -989,7 +984,7 @@ export default (server: express.Application) => {
                             },
                             { new: true }).then((d: any) => {
                       
-                            nsp.to(socket.room).emit("new_favourite_action",
+                            io.in(socket.room).emit("new_favourite_action",
                                 { liked: hasLiked ? false : true, user: socket.user });
                         });
 
@@ -1113,21 +1108,21 @@ export default (server: express.Application) => {
                                 // BASE
                                 console.log("sent mail to",email);
                                 sent = true;
-                                nsp.to(socket.room).emit("invite_sent");
+                                io.in(socket.room).emit("invite_sent");
 
                             }
                                 
                         });
                     } catch (e) {
                         console.log(e);
-                        nsp.to(socket.room).emit("error");
+                        io.in(socket.room).emit("error");
                      
                     }
                        
                 } else {
                     // TERMINATION
                     sent = false;
-                    nsp.to(socket.room).emit("user_invite_failed","Failed to send invitation,try again!");
+                    io.in(socket.room).emit("user_invite_failed","Failed to send invitation,try again!");
                     
                 }
             };
@@ -1208,13 +1203,13 @@ export default (server: express.Application) => {
             { new: true },
             (err, doc) => {
                 if (err) console.log(err);
-                nsp.to(classroom).emit("pinned_message_added", doc.pinnedMessages);
+                io.in(classroom).emit("pinned_message_added", doc.pinnedMessages);
             }
             );
         });
 
         socket.on("user_waving", (user: any) => {
-            nsp.to(socket.room).emit("user_waved", { from: socket.username, to: user });
+            io.in(socket.room).emit("user_waved", { from: socket.username, to: user });
         });
 
         socket.on("toogle_class_role", (data: any) => {
@@ -1284,7 +1279,7 @@ export default (server: express.Application) => {
                         },
                         { new: true }).then((d: any) => {
 
-                        nsp.to(socket.room).emit("newuser_role",
+                        io.in(socket.room).emit("newuser_role",
                             {kid:newadminkid, id: id, role, assignedBy: socket.user, newusers: d.students });
                     });
 
@@ -1310,7 +1305,7 @@ export default (server: express.Application) => {
             }, { new: true }, (err, doc) => {
                 if (err) socket.emit("errUpdating", err);
                 if(doc) {
-                    nsp.to(socket.room).emit("newClassInformation", doc);
+                    io.in(socket.room).emit("newClassInformation", doc);
                     console.log("classroom_Information Updated Successfully!");
                 }
                 
@@ -1353,7 +1348,7 @@ export default (server: express.Application) => {
                             console.log(err);
                         } else if (doc) {
                             //do stuff
-                            nsp.to(socket.room).emit("nM",
+                            io.in(socket.room).emit("nM",
                                 {
                                     ...msgObject
                                 });
@@ -1417,7 +1412,7 @@ export default (server: express.Application) => {
                                 console.log("Error updating editors remotely",err);
                             }
                             if(doc) { 
-                                nsp.to(socket.room).emit("class_files_updated",{...data});
+                                io.in(socket.room).emit("class_files_updated",{...data});
                                 // console.log("Class File Updated", doc);
                             }
                         });
@@ -1426,7 +1421,7 @@ export default (server: express.Application) => {
 
             } catch(e) {
                 console.log(e);
-                nsp.to(socket.room).emit("editor_update_error","Failed to Update On Remote Server");
+                io.in(socket.room).emit("editor_update_error","Failed to Update On Remote Server");
             } 
             
             // console.log(classfiles);
@@ -1436,13 +1431,13 @@ export default (server: express.Application) => {
         });
 
         socket.on("user_typing", (data: any): void => {
-            nsp.to(socket.room).emit("utyping", {
+            io.in(socket.room).emit("utyping", {
                 ...data
             });
         });
 
         socket.on("user_typing_cleared", (data: any): void => {
-            nsp.to(socket.room).emit("utyping_cleared", {
+            io.in(socket.room).emit("utyping_cleared", {
                 ...data
             });
         });
@@ -1492,49 +1487,38 @@ export default (server: express.Application) => {
         });
 
         socket.on("disconnect", function () {
-          
-
-            nsp.to(socket.room).emit("updatechat_left", {
-                by: "server",
-                msg: socket.username + " left",
-                for: socket.user,
-                name: socket.username,
-                type: "sLeft",
-                timeSent: moment().format("LT"),
-                msgId: uuidv4(),
-                roomId: socket.room
-            });
             Classroom.findById(socket.room, (err, room: ClassroomDocument) => {
-
                 if (err) {
-
                 } else if (room && room !== null) {
-                    // find user in student field array
                     room.students.forEach((user: { kid: string }, i) => {
                         if (user.kid == socket.user) {
                             let newclassusers: any[];
-
                             newclassusers = room.students.filter((s: any, i) => {
                                 return s.kid != socket.user;
                             });
-
                             Classroom.findOneAndUpdate({ _id: socket.room }, {  numberInClass: newclassusers.length , students: newclassusers }, { new: true }, (err, doc) => {
                                 if (err) console.log("error");
                                 delete clients[socket.id];
-                                socket.leave(socket.room);
+                                console.log(`${socket.username}  disconnected from ${room.name}`);
+                                io.in(socket.room).emit("updatechat_left", {
+                                    by: "server",
+                                    msg: socket.username + " left",
+                                    for: socket.user,
+                                    name: socket.username,
+                                    type: "sLeft",
+                                    timeSent: moment().format("LT"),
+                                    msgId: uuidv4(),
+                                    roomId: socket.room
+                                });
                                 activeSockets = activeSockets.filter(
                                     (existingSocket) =>
                                         existingSocket !== socket.id
                                 );
-                                       
                             });
                         }
                     });
                 }
-
             });
-
-            console.log(`${socket.username}  disconnected`);
         });
     });
 };

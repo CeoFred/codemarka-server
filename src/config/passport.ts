@@ -56,10 +56,10 @@ function(accessToken, refreshToken, profile: any, done) {
             user.profile.name = profile.displayName;
             user.profile.picture = profilePhoto;
             
-            user.profile.firstname = profile.displayName.split(" ")[0];
+            user.profile.firstname = profile.displayName.split(" ")[0] || "";
             user.profile.lastname = profile.displayName.split(" ")[1] || "";
             user.gravatarUrl = profilePhoto;
-
+            user.username = displayName.replace(" ","_");
             // confirm account since user can access github account using same email asssociated with github
             user.isConfirmed = true;
         
@@ -94,10 +94,9 @@ function(accessToken, refreshToken, profile: any, done) {
             
         
                 user.isConfirmed = true;
-                user.username = String(displayName).toLowerCase().trim().replace(" ","_");
+                user.username = String(displayName).toLowerCase().replace(" ","_");
                 user.gravatarUrl = profilePhoto;
-
-                user.profile.firstname = profile.displayName.split(" ")[0];
+                user.profile.firstname = profile.displayName.split(" ")[0] || "";
                 user.profile.lastname = profile.displayName.split(" ")[1] || "";
                 user.profile.name = profile.displayName;
                 user.profile.picture = profilePhoto;
@@ -211,10 +210,10 @@ function(accessToken, refreshToken, profile, done) {
                     // confirm account since user can access github account using same email asssociated with github
                     user.isConfirmed = true;
         
-                    user.save((err, connectGithubUser) => {
+                    user.save((err, googleUserData) => {
                         if(err) done(err,null);
-                        if(connectGithubUser){
-                            return done(null, connectGithubUser);
+                        if(googleUserData){
+                            return done(null, googleUserData);
                         }else {
                             done(null,null);
                         }
@@ -243,11 +242,10 @@ function(accessToken, refreshToken, profile, done) {
             
         
                         user.isConfirmed = true;
-                        user.username = String(displayName).toLowerCase().trim().replace(" ","_");
+                        user.username = String(displayName) ? String(displayName).toLowerCase() : "";
                         user.gravatarUrl = picture;
-
-                        user.profile.firstname = profile.displayName.split(" ")[0];
-                        user.profile.lastname = profile.displayName.split(" ")[1] || "";
+                        user.profile.firstname = profile.displayName ? profile.displayName.split(" ")[0] : "";
+                        user.profile.lastname = profile.displayName ? profile.displayName.split(" ")[1] : "";
 
                         user.profile.name = profile.displayName;
                         user.profile.picture = picture;
