@@ -801,7 +801,11 @@ export default (server: express.Application) => {
                     const classroomDir = __dirname + "/../../main/classrooms/" + classroomkid;
 
                     if(!fs.existsSync(classroomDir)){
-                        fs.mkdirSync(classroomDir);
+                        try {
+                            fs.mkdirSync(classroomDir,{ recursive: true });               
+                        } catch (error) {
+                            console.log(error);
+                        }
                     } else {
                         const files = fs.readdirSync(classroomDir,{withFileTypes:true});
                         // console.log(files);
@@ -813,14 +817,14 @@ export default (server: express.Application) => {
                         });
                     }
                     const fileName = randomString(100);
-                    fs.appendFileSync(classroomDir + "/"+ fileName + ".csv","firstName,lastName,classExpertiseLevel,gender,email,phone,username \n");
+                    fs.appendFileSync(classroomDir + "/"+ fileName + ".csv","id,firstName,lastName,classExpertiseLevel,gender,email,phone,username \n");
 
                     let content = "";
                     let l = res.list;
-                    l.forEach(user => {
+                    l.forEach((user,index) => {
                         delete user._id;
                         delete user.kid;
-                        content+= `${user.firstName},${user.lastName},${user.classExpertiseLevel},${user.gender},${user.email},${user.phone || ""},${user.username} \n`;
+                        content+= `${index+1},${user.firstName || ""},${user.lastName || ""},${user.classExpertiseLevel || ""},${user.gender || ""},${user.email || ""},${user.phone || ""},${user.username} \n`;
                     });
                     fs.appendFileSync(classroomDir + "/"+ fileName + ".csv",content);
 
