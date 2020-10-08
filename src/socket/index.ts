@@ -60,6 +60,13 @@ export default (server: express.Application) => {
             room: string;
         }
 
+
+        socket.on("join_preview_room",(room: string) => {
+            socket.join(`preview--${room}`,() => {
+                socket.emit("preview_connected");
+            });
+        });
+
         socket.on("mute_All",(room: string,time: any) => {
             Classroom.findOne({kid:room }).then(room => {
                 if(room){
@@ -286,222 +293,6 @@ export default (server: express.Application) => {
                 });
             }
         });
-
-
-        socket.on("re_join",(data: JoinObj) => {
-            
-            socket.user = data.userId;
-            socket.room = data.classroom_id;
-            socket.username = data.username;
-            socket.classinfo = data.cdata;
-
-            socket.join(data.classroom_id, () => {
-                function proceedToRejoinUser(user: any){
-                    
-                    Classroom.findById(data.classroom_id, (err, res: any) => {
-                           
-                        
-                       
-                        if(res && res !== null){
-                                    
-                            socket.emit("rejoin_updateMsg", { by: "server",newuserslist: res.students, msgs: res.messages, type: "oldMsgUpdate" });
-
-                            socket.emit("classroom_users", res.students);
-                        
-                            const ownerid = res.owner;
-                            const isBroadcasting = res.isBroadcasting;
-
-                            
-                            let oldStudentsWithoutUser = [];
-                        
-                            const currentClassStudents = res.students;
-                            oldStudentsWithoutUser = currentClassStudents.filter((student: any[]| any) => {
-                                return String(student.kid) !== String(data.userId);
-                            });
-
-                            const studentObj = {
-                                id: String(user._id),
-                                username: user.username || user.communityName.toLowerCase(),
-                                role: "1",
-                                kid: user.kid,
-                                stack: user.techStack || "communityAccount",
-                                avatar: user.gravatarUrl || "communityAvatar",
-                                socketid: socket.id
-                            };
- 
-                            oldStudentsWithoutUser.push(studentObj);
-
-                            const updatedStudentList = oldStudentsWithoutUser;
-                            console.log(isBroadcasting);
-                            
-                            if(isBroadcasting){
-                                io.in(data.classroom_id).emit("call_me",{id:user._id,username: user.username || user.communityName,kid:user.kid,socketid: socket.id});
-                            }
-                            
-                            ClassroomAttendance.findOne({classroomkid: res.kid }).then((hasClassAttendance: ClassroomAttendanceDocument) => {
-                                if(hasClassAttendance){
-                                    // console.log("classroom has attednace document created");
-
-                                    const classroomIsTakingAttendance = res.isTakingAttendance;
-                                    const attendanceList = hasClassAttendance.list;
-                                    const userHasTakenAttedance = attendanceList.some((list) => list.kid === socket.user);
-                                    const isOwner = res.owner === socket.user;
-
-                                    if(isOwner){
-                                        socket.emit("attendance_list",attendanceList);
-                                    }
-                                    if(classroomIsTakingAttendance){
-                                        // console.log("classroom is taking attedance");
-                                        // check if user has taken attendance b4
-
-
-                                        if(userHasTakenAttedance){
-                                            // console.log("user has attendance taken");
-                                            
-                                            const usersAttendance = attendanceList.filter(att => att.kid === socket.user);
-                                            // console.log("users attendance", usersAttendance);
-
-                                            const numberOfUserEntries = usersAttendance.length;
-                                            const lastEntry = numberOfUserEntries <= 1 ? 1 : numberOfUserEntries - 1;
-
-                                            if(numberOfUserEntries === 1){
-                                                // console.log("only one entry for current user");
-                                                // check if attendance is complete
-                                                const { firstName, lastName, email, gender, kid, username } = usersAttendance[0];
-                                                if(!(firstName && lastName && email && gender && kid && username)){
-                                                    //incomplete
-                                                    setTimeout(() => socket.emit("collect_attendance", usersAttendance[0]),30000);
-                                                } else {
-                                                    //complete data
-                                                    // console.log("user has completed attendance data");
-                                                    socket.emit("has_attendance_recorded", usersAttendance[0]);
-                                                }
-
-                                            }
-                                            else if(numberOfUserEntries > 1) {
-                                                //resolve all atttendance and use the last entry
-                                                // console.log("more than one entry,resolving..");
-                                                const lastEntryData = usersAttendance[lastEntry];
-                                                const attendance = attendanceList.filter(att => att.kid !== socket.user);
-                                                attendance.push(lastEntryData);
-
-                                                hasClassAttendance.list = attendance;
-                                                hasClassAttendance.save((err,up) => {
-                                                    if(!up && err){
-                                                        console.log(err);
-                                                    }
-                                                });
-                                            }
-                                        } else {
-                                            // console.log("User has not taken attendance");
-                                            if(!isOwner){
-                                                
-                                                const userAttedance = {kid: socket.user, username: data.username, email: user.email };
-                                                hasClassAttendance.list.push(userAttedance);
-                                                hasClassAttendance.save((err,up) => {
-                                                    if(!up && err){
-                                                        console.log(err);
-                                                    }
-                                                });
-                                                setTimeout(() => socket.emit("collect_attendance", null),30000);
-                                            }
-                                        }
-                                    } else {
-                                        // console.log("classroom is not taking attendace");
-                                        if(!userHasTakenAttedance && !isOwner){
-                                            const userAttedance = {kid: socket.user, username: data.username, email: user.email };
-                                            hasClassAttendance.list.push(userAttedance);
-                                            hasClassAttendance.save((err,up) => {
-                                                if(!up && err){
-                                                    console.log(err);
-                                                }
-                                            });
-                                        }
-
-                                    }
-                                } else {
-                                    console.log("No attendance document found for classroom with kid", res.kid);
-                                }
-                            }).catch((err) => {
-                                console.log(err);
-                            });
-                            Classroom.findOneAndUpdate({ _id: data.classroom_id },
-                                {
-
-                                    students: updatedStudentList,
-                                    $inc: { numberInClass: 1 }
-                                },
-                                { new: true }).then((d: any) => {});
-
-                            io.in(data.classroom_id).emit("someoneJoined",
-                                {
-                                    by: "server",
-                                    msg: data.userId + " reconnected",
-                                    for: data.userId,
-                                    name: data.username.toLowerCase(),
-                                    type: "sJoin",
-                                    msgId: uuidv4(),
-                                    roomId: socket.room,
-                                    newuserslist: updatedStudentList,
-                                    socketid: socket.id
-                                });
-                            classWeb.findOne({ classroomId: data.classroom_id }).then((d: any) => {
-                                if (!d && d === null) {
-                                    socket.emit("classroomFilesError", "Files not found");
-                                } else {
-                                    const cssfileId = d.css.id;
-                                    const jsFileId = d.js.id;
-                                    const htmlFileId = d.html.id;
-                                    const cssContent = d.css.content;
-                                    const cssExternalCDN = d.css.settings.externalCDN;
-                                    const htmlContent = d.html.content;
-                                    const jsContent = d.js.content;
-                                    const jsExternalCDN = d.js.settings.externalCDN;
-                                    console.log(cssExternalCDN,jsExternalCDN);
-                                    if (!cssfileId || !jsFileId || !htmlFileId) {
-                                        socket.emit("classroomFilesError", "File ID not found");
-                                    }
-
-                                        
-                                    const ht = {
-                                        id: htmlFileId,
-                                        content: htmlContent
-                                    };
-                                    const cs = {
-                                        id: cssfileId,
-                                        content: cssContent,
-                                        externalCDN: cssExternalCDN
-                                    };
-                                    const js = {
-                                        id: jsFileId,
-                                        content: jsContent,
-                                        externalCDN: jsExternalCDN
-                                    };
-                                    socket.emit("class_files", cs, ht, js);
-
-                                }
-                            });
-                        }
-                    });
-                }
-                
-                User.findOne({ kid: data.userId }).then(user => {
-                    if(user){
-                        return proceedToRejoinUser(user);
-                    } else {
-                        Community.findOne({ kid: data.userId }).then((communityAccountDocument: CommunityDocument) => {
-                            if(communityAccountDocument){
-                                return proceedToRejoinUser(communityAccountDocument);
-                            }
-                        }).catch((err) => {
-                            socket.emit("error","Failed to join classroom");
-                        });
-                    }
-                });
-               
-            }); 
-
-        });
         // event when someone joins a class
         socket.on("join", (data: JoinObj) => {
             socket.user = data.userId;
@@ -674,9 +465,9 @@ export default (server: express.Application) => {
                                     }).catch((err) => {
                                         console.log(err);
                                     });
+                                    socket.join(`preview--${res.kid}`);
 
                                     socket.join(data.classroom_id, () => {
-
                                         io.in(data.classroom_id).emit("someoneJoined",
                                             {
                                                 by: "server",
@@ -1416,6 +1207,7 @@ export default (server: express.Application) => {
                                 console.log("Error updating editors remotely",err);
                             }
                             if(doc) { 
+                                io.in(`preview--${data.kid}`).emit("preview_changed",data.file);
                                 io.in(socket.room).emit("class_files_updated",{...data});
                                 // console.log("Class File Updated", doc);
                             }
