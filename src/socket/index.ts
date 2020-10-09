@@ -1108,19 +1108,27 @@ export default (server: express.Application) => {
         });
 
         interface NewMessageInterface {
-            message: string;
-            class: string;
-            user: string;
+            readonly  message: string;
+            readonly  class: string;
+            readonly   user: string;
 
-            time: Date;
-            kid: string;
-            messageColor: string;
+            readonly   time: Date;
+            readonly   kid: string;
+            readonly  messageColor: string;
+            readonly   isThread: boolean;
+            readonly   reactions: { emoji: string; userkid: string}[];
+            readonly  isDeleted: boolean;
+            readonly  wasEdited: boolean;
+            readonly  editHistory: { message: string; time: Date}[];
+            readonly   mentions?: [string];
+            readonly  sent: boolean;
+            readonly  hasTags: [string];
         }
 
-        socket.on("newMessage", (data: NewMessageInterface) => {
+        socket.on("newMessage", (data: NewMessageInterface): void => {
             function sendSocketMessage(u: any): void {
 
-                const msgId = uuidv4();
+                const msgId: string = uuidv4();
                 const msgObject = {
                     timeSent: moment(data.time).format("LT"),
                     msgId, 
@@ -1129,7 +1137,14 @@ export default (server: express.Application) => {
                     msg: data.message,
                     color: data.messageColor,
                     oTime: data.time,
-                    type:"text"
+                    type:"text",
+                    reactions: data.reactions,
+                    isDeleted: data.isDeleted,
+                    wasEdited: data.wasEdited,
+                    editHistory: data.editHistory,
+                    mentions: data.mentions,
+                    hasTags: data.hasTags,
+                    sent: data.sent
                 };
                 Classroom.findOneAndUpdate({ kid: data.class, status: 2 },
                     {

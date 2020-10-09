@@ -10,7 +10,7 @@ import { ClassroomAttendance } from "../models/Attendance";
 import { classAliasUrl } from "../models/classAlias";
 import { User, UserDocument } from "../models/User";
 import { randomNumber, randomString } from "../helpers/utility";
-import { successResponseWithData, ErrorResponse } from "../helpers/apiResponse";
+import {successResponse, successResponseWithData, ErrorResponse } from "../helpers/apiResponse";
 import { classWeb } from "../models/classWebFiles";
 import * as apiResponse from "../helpers/apiResponse";
 import { Community, CommunityDocument } from "../models/Community";
@@ -25,6 +25,28 @@ const MAX_PRIVATE_CLASSROOM_REGULAR = 15;
 const MAX_CASSROOM_MEMBERS_REGULAR = 10;
 const MAX_CLASSROOM_MEMBERS_PREMUIM = 30;
 
+
+interface MessageInterface {
+    readonly msgId?: string;
+    readonly thread?: {}[];
+}
+export const getMessageThread = (req: Request, res: Response): void => {
+    const { messageId, userId } = req.body;
+    const { kid } = req.params;
+
+    Classroom.findOne({ kid }).then(classroom => {
+        if(!classroom) ErrorResponse(res, "Classroom not found");
+
+        const messageData: MessageInterface = classroom.messages.find((message: MessageInterface) => message.msgId === messageId);
+
+        User.findOne({kid: userId}).then(user => {
+            if(!user) ErrorResponse(res, "User not found");
+            return successResponse(res,{messageData,username: user.username,image: user.gravatarUrl});
+        });
+    }).catch(() => {
+        return ErrorResponse(res,"Something went wrong");
+    });
+};
 export const addQuestion = (req: Request, res: Response): void => {
     const { question,kid,time } = req.body;
 
@@ -36,7 +58,6 @@ export const addQuestion = (req: Request, res: Response): void => {
             return successResponseWithData(res,"Success",question);
         });
     }).catch(() => {
-        return ErrorResponse(res,"Something went wrong");
     });
 };
 

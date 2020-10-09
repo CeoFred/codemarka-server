@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { User, UserDocument } from "../models/User";
 import { successResponseWithData,ErrorResponse,successResponse } from "../helpers/apiResponse";
+import { Classroom } from "../models/classroom";
 
 /**
  * Get User Information
@@ -111,16 +112,59 @@ export const unfollowUser = (req: Request, res: Response): object => {
 };
 
 export const specialUpdate = (req: Request, res: Response): void => {
-    User.find({}).then(users => {
+    // User.find({}).then(users => {
+    //     let promises: any[] = [];
+    //     let accty: any = [];
+    //     users.map(user => {
+    //         user.username = user.username.toLocaleLowerCase().replace(" ","_");
+    //         user.profile.name = user.profile.name ? user.profile.name.toLocaleLowerCase().replace(" ","_") : ""; 
+    //         user.email = user.email.toLocaleLowerCase();
+    //         user.accountType = Number(user.accountType);
+    //         promises.push(user.save());
+    //         accty.push({username: user.username, accountType:typeof user.accountType});
+    //     });
+    //     // return successResponseWithData(res,"done",accty);
+
+    //     Promise.all(promises)
+    //         .then(resolved => {
+    //             return successResponseWithData(res,"done",resolved);
+    //         }).catch(err => {
+    //             console.log(err);
+    //             return ErrorResponse(res, err);
+    //         });
+    // });
+
+    Classroom.find({}).then(rooms => {
         let promises: any[] = [];
-        let accty: any = [];
-        users.map(user => {
-            user.username = user.username.toLocaleLowerCase().replace(" ","_");
-            user.profile.name = user.profile.name ? user.profile.name.toLocaleLowerCase().replace(" ","_") : ""; 
-            user.email = user.email.toLocaleLowerCase();
-            user.accountType = Number(user.accountType);
-            promises.push(user.save());
-            accty.push({username: user.username, accountType:typeof user.accountType});
+        rooms.forEach(room => {
+            // console.log(room);
+            const messages =  room.messages;
+            const newStructure=  messages.map((message: any) => {
+               
+                const regex = /\B\@([\w\-]+\s)/ig;
+                const mentions = (String(message.msg).match(regex));
+
+                return {
+                    ...message,
+                    isThread: false,
+                    reactions:[],
+                    isDeleted: false,
+                    wasEdited:false,
+                    editHistory:[],
+                    mentions: mentions || [],
+                    hasTags:[],
+                    sent: true,
+                    thread:[]
+                };
+            });
+            room = room;
+            room.isBroadcasting = false;
+            room.owner = room.owner || "ANON";
+            room.topic = room.topic || "NO TOPIC SET";
+            room.name = room.name || "NO NAME SET";
+            room.isTakingAttendance = room.isTakingAttendance || false;
+            room.messages = newStructure;
+            promises.push(room.save());
         });
         // return successResponseWithData(res,"done",accty);
 
