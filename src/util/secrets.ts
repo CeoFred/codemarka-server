@@ -22,6 +22,6 @@ if (!MONGODB_URI) {
     }
     process.exit(1);
 }
-export const SESS_NAME = "sid";
-export const SESS_SECRET = "secret!session";
+export const SESS_NAME = "CODEMARKA_SESS";
+export const SESS_SECRET = "secret!session0O!!SECRETTIII";
 export const SESS_LIFETIME = 1000 * 60 * 60 * 2;

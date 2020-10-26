@@ -152,9 +152,10 @@ export const specialUpdate = (req: Request, res: Response): void => {
                     wasEdited:false,
                     editHistory:[],
                     mentions: mentions || [],
-                    hasTags:[],
+                    hashTags:[],
                     sent: true,
-                    thread:[]
+                    thread:[],
+                    subscribers: []
                 };
             });
             room = room;

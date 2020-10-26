@@ -2,6 +2,7 @@ import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import mongoose from "mongoose";
 import geo from "geoip-lite";
+import jwt from "jsonwebtoken";
 export type UserDocument = mongoose.Document & {
     email: string;
     emailVerified: boolean;
@@ -46,8 +47,9 @@ export type UserDocument = mongoose.Document & {
     publicClassCreated: number;
     confirmOTP: number;
     gravatar: (size: number) => string;
+    updateGeoDetails: (ip: string | string[]) => void;
     emailVerificationToken: string;
-    geoDetails: object;
+    geoDetails: any;
     emailConfirmed: () => void;
     gravatarUrl: string;
     kid: any;
@@ -56,6 +58,7 @@ export type UserDocument = mongoose.Document & {
     githubrepo: string;
     updateAfterLogin: (ip: string | string[],token: any) => void;
     hashPasswordResetAndValidateToken: (password: string, token: string) => boolean;
+    toAuthJSON: () => {id: string; email: string; token: string};
 };
 
 type comparePasswordFunction = (candidatePassword: string, cb: (err: any, isMatch: boolean) => {}) => void;
@@ -87,7 +90,6 @@ const userSchema = new mongoose.Schema({
         default:0
     },
     username: {
-        unique:true,
         type: String,
         default:""
     },
@@ -117,7 +119,9 @@ const userSchema = new mongoose.Schema({
     },
     gravatarUrl: String,
     lastloggedInIp: String,
-    geoDetails: Object,
+    geoDetails: {
+        default:""
+    },
     emailVerified: Boolean,
 
     googleid: {
@@ -193,18 +197,34 @@ const comparePassword: comparePasswordFunction = function (candidatePassword, cb
     });
 };
 
+userSchema.methods.generateJWT = function() {
+    const today = new Date();
+    const expirationDate = new Date(today);
+    expirationDate.setDate(today.getDate() + 60);
 
-const updateAfterLogin = function(ip: any,token: object): void {
-    this.lastLoggedInIp = ip;
-    const geoCord = geo.lookup(ip);
-    console.log(ip);
-    this.geoDetails = geoCord;
-    let tokens = this.tokens;
-    tokens.push(token);
-    this.save();
-    
-
+    return jwt.sign({
+        email: this.email,
+        id: this.kid,
+        exp: parseInt(String(expirationDate.getTime() / 1000), 10),
+    }, process.env.JWT_SECRET);
 };
+
+userSchema.methods.toAuthJSON = function() {
+    return {
+        kid: this.kid,
+        email: this.email,
+        token: this.generateJWT(),
+        displayName: this.username,
+        type:"regular"
+    };
+};
+
+const updateGeoDetails = async function(ip: string): Promise<void> {
+    this.lastLoggedInIp = ip;
+    const geoCord = await geo.lookup(ip);
+    this.geoDetails = geoCord;
+};
+
 const emailConfirmed = function(): void {
     this.isConfirmed = true;
     this.save();
@@ -212,7 +232,7 @@ const emailConfirmed = function(): void {
 
 userSchema.methods.comparePassword = comparePassword;
 userSchema.methods.emailConfirmed = emailConfirmed;
-userSchema.methods.updateAfterLogin = updateAfterLogin;
+userSchema.methods.updateGeoDetails = updateGeoDetails;
 
 /**
  * Helper method for getting user's gravatar.

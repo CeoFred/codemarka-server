@@ -18,6 +18,7 @@ import { classWeb, ClassroomWebFileDocument } from "../models/classWebFiles";
 import { User, UserDocument } from "../models/User";
 import { Community, CommunityDocument } from "../models/Community";
 import { randomString } from "../helpers/utility";
+import { threadId } from "worker_threads";
 
 const cloudi = cloudinary.v2;
 
@@ -43,7 +44,25 @@ export default (server: express.Application) => {
         };
         // register current client  
         clients[socket.id] = socket.client;
+        interface NewMessageInterface {
+            message: string;
+            class: string;
+            user: string;
 
+            time: Date;
+            msgId: string;
+            messageColor: string;
+            isThread: boolean;
+            reactions: { emoji: string; userkid: string}[];
+            isDeleted: boolean;
+            wasEdited: boolean;
+            editHistory: { message: string; time: Date}[];
+            mentions?: [string];
+            sent: boolean;
+            hashTags: [string];
+            subscribers: any;
+            thread: any;
+        }
         interface JoinObj {
             userId: string;
             classroom_id: string;
@@ -60,10 +79,134 @@ export default (server: express.Application) => {
             room: string;
         }
 
+        interface NewThreadMessage {
+            content: string;
+            reply_by: {
+                kid: string;
+                username: string;
+                email: string;
+                image: string;
+            };
+            time: Date;
+            userInfo: string;
+            room: string;
+            messageId: string;
+        }
+
+        interface MessageReaction {
+            emojiObject: {
+                id: string;
+                name: string;
+                unified: string;
+                native: any;
+                short_name: [string];
+            };
+            count: number;
+            subscribers: [string];
+        }
+
+        socket.on("addReactionToMessage", (emojiObject: any, messageData: any) => {
+            Classroom.findOne({kid: messageData.classroomId}).then((classroom: ClassroomDocument) => {
+                if(classroom){
+                    console.log("room found");
+                    const message: any[]  = classroom.messages.filter((message: NewMessageInterface) => message.msgId === messageData.data.msgId && !message.isDeleted);
+                    if(!message[0]) socket.emit("thread_error","Message Deleted");
+
+                    classroom.messages = classroom.messages.map((message: NewMessageInterface): any => {
+                        if(message.msgId === messageData.data.msgId){
+                        
+                            let messageReactions: any = message.reactions;
+                            // check of reaction already exists
+                            const reactionExists = messageReactions.find(((reaction: MessageReaction) => reaction.emojiObject.unified === emojiObject.unified && reaction.count));
+
+                            if(reactionExists){
+                                messageReactions = messageReactions.map((reaction: MessageReaction) => {
+                                    if(reaction.emojiObject.unified === emojiObject.unified){
+                                        const isSubscriber = reaction.subscribers.find((subscriber: any) => subscriber === messageData.userId);
+                                        if(!isSubscriber) reaction.subscribers.push(messageData.userId);
+                                        if(isSubscriber){
+                                            reaction.count--;
+                                        } else {
+                                            reaction.count++;
+                                        }
+
+                                        // chceck if this user has reacted before
+                                    
+                                       
+                                    }
+                                    return reaction;
+                                });
+                                messageReactions =  messageReactions.filter((reaction: MessageReaction) => reaction.count > 0);
+
+                            } else {
+                                messageReactions.push({emojiObject,count:1,subscribers:[messageData.userId]});
+                            }
+                            message.reactions = messageReactions;
+                            return message;
+                        } 
+                        return message;
+                    });
+
+                    // console.log(classroom.messages);
+                    classroom.markModified("messages");
+                    classroom.save((err, room) => {
+                        console.log(err);
+                        if(err) socket.emit("thread_error","Failed to add Thread");
+                        const message: any[]  = room.messages.filter((message: NewMessageInterface) => message.msgId === messageData.data.msgId && !message.isDeleted);
+                        io.in(socket.room).emit("new_message_reaction",message[0].reactions,message[0].subscribers);
+                    });
+                } else {
+                    socket.emit("thread_error","Room not Found or Ended");
+                }
+          
+
+            }).catch((err) => {
+                console.log(err);
+                socket.emit("thread_error","Failed to find room");
+            });
+        });
 
         socket.on("join_preview_room",(room: string) => {
             socket.join(`preview--${room}`,() => {
                 socket.emit("preview_connected");
+            });
+        });
+
+        socket.on("new_thread_reply",(data: NewThreadMessage) => {
+            // push message to everyone that responded to thread
+            Classroom.findOne({kid: data.room}).then((classroom: ClassroomDocument) => {
+                if(!classroom) socket.emit("thread_error","Room not Found or Ended");
+                const messageForThread: any[]  = classroom.messages.filter((message: NewMessageInterface) => message.msgId === data.messageId && !message.isDeleted);
+                if(!messageForThread[0]) socket.emit("thread_error","Message Deleted");
+
+                classroom.messages = classroom.messages.map((message: NewMessageInterface): any => {
+                    if(message.msgId === data.messageId){
+                        
+                        const messagesThread: any = message.thread;
+                        messagesThread.push({...data,threadId: uuidv4(),reactions:[]});
+
+                        message.thread = messagesThread;
+                        message.isThread = true;
+                        const isSubscriber = message.subscribers.find((subscriber: any) => subscriber.kid === data.reply_by.kid);
+                        if(!isSubscriber) message.subscribers.push(data.reply_by);
+                        return message;
+                    } 
+                    return message;
+                });
+
+                // console.log(classroom.messages);
+                classroom.markModified("messages");
+                classroom.save((err, room) => {
+                    console.log(err);
+                    if(err) socket.emit("thread_error","Failed to add Thread");
+                    const messageForThread: any[]  = room.messages.filter((message: NewMessageInterface) => message.msgId === data.messageId && !message.isDeleted);
+
+                    io.in(socket.room).emit("thread_reply",messageForThread[0].thread,messageForThread[0].subscribers);
+                });
+
+            }).catch((err) => {
+                console.log(err);
+                socket.emit("thread_error","Failed to find room");
             });
         });
 
@@ -198,7 +341,7 @@ export default (server: express.Application) => {
                         function sendSocketMessage(u: any): void {
 
                             const msgId = uuidv4();
-                            const msgObject = {
+                            const msgObject: any = {
                                 timeSent: moment(data.time).format("LT"),
                                 msgId, 
                                 name: u.username || u.communityName,
@@ -206,7 +349,6 @@ export default (server: express.Application) => {
                                 color: data.messageColor,
                                 oTime: data.time,
                                 type:"image",
-                                result
                             };
                             Classroom.findOneAndUpdate({ kid: data.room, status: 2 },
                                 {
@@ -1107,23 +1249,7 @@ export default (server: express.Application) => {
             });
         });
 
-        interface NewMessageInterface {
-            readonly  message: string;
-            readonly  class: string;
-            readonly   user: string;
-
-            readonly   time: Date;
-            readonly   kid: string;
-            readonly  messageColor: string;
-            readonly   isThread: boolean;
-            readonly   reactions: { emoji: string; userkid: string}[];
-            readonly  isDeleted: boolean;
-            readonly  wasEdited: boolean;
-            readonly  editHistory: { message: string; time: Date}[];
-            readonly   mentions?: [string];
-            readonly  sent: boolean;
-            readonly  hasTags: [string];
-        }
+   
 
         socket.on("newMessage", (data: NewMessageInterface): void => {
             function sendSocketMessage(u: any): void {
@@ -1143,8 +1269,11 @@ export default (server: express.Application) => {
                     wasEdited: data.wasEdited,
                     editHistory: data.editHistory,
                     mentions: data.mentions,
-                    hasTags: data.hasTags,
-                    sent: data.sent
+                    hashTags: data.hashTags,
+                    sent: data.sent,
+                    thread: data.thread,
+                    isThread:false,
+                    subscribers: data.subscribers
                 };
                 Classroom.findOneAndUpdate({ kid: data.class, status: 2 },
                     {

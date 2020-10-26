@@ -1,6 +1,8 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import google from "passport-google-oauth";
 import github from "passport-github";
+import local from "passport-local";
+
 import _ from "lodash";
 
 import passport from "passport";
@@ -12,7 +14,7 @@ import { randomString } from "../helpers/utility";
 
 const { OAuth2Strategy: GoogleStrategy } = google;
 const { Strategy: GitHubStrategy } = github;
-
+const { Strategy: LocalStrategy } = local;
 export const ENVIRONMENT = process.env.NODE_ENV;
 const prod = ENVIRONMENT === "production";
 
@@ -27,6 +29,27 @@ passport.deserializeUser((kid, done) => {
     });
 });
 
+
+passport.use(new LocalStrategy({
+    usernameField: "email",
+    passwordField: "password",
+    session: true
+}, (email, password, done) => {
+    User.findOne({ email })
+        .then((user) => {
+            if(user){
+                user.comparePassword(password,(err: any, isMatch: boolean): any => {
+                    if(!isMatch || err) {
+                        return done(null, false, { message: "email or password is invalid" });
+                    }
+                    return done(null, user);
+                });
+            } else {
+                return done(null, false, { message: "Account does not exist"});
+            }
+            
+        }).catch(done);
+}));
 
 passport.use(new GitHubStrategy({
     clientID: process.env.GITHUB_CLIENT_ID,

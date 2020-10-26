@@ -2,6 +2,7 @@
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import sgMail  from "@sendgrid/mail";
+import passport from "passport";
 import { User, UserDocument } from "../models/User";
 import { UserDeleted } from "../models/DeletedUsers";
 import { Request, Response, NextFunction } from "express";
@@ -25,6 +26,10 @@ const options = { algorithm: "HS256", noTimestamp: false, audience: "users", iss
  * 
 */
 export const accountRecovery = (req: Request, res: Response, next: NextFunction) => {
+    res.header("Access-Control-Allow-Origin", req.get("origin"));
+    res.header("Access-Control-Allow-Credentials", "true");
+    res.header("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE");
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
     const email: string =  req.body.email;
     
     if(!email){
@@ -173,6 +178,10 @@ export const accountRecovery = (req: Request, res: Response, next: NextFunction)
  * Reset User password by creating a new password
  */
 export const passwordReset = (req: Request | any, res: Response) => {
+    res.header("Access-Control-Allow-Origin", req.get("origin"));
+    res.header("Access-Control-Allow-Credentials", "true");
+    res.header("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE");
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
     const newPassword = (req.body.nPass);
     const newPassword2 = req.body.nPass2;
 
@@ -292,6 +301,10 @@ export const passwordReset = (req: Request | any, res: Response) => {
  * Verify user authrication token
  */
 export const userAuthtokenVerify = (req: Request, res: Response) => {
+    res.header("Access-Control-Allow-Origin", req.get("origin"));
+    res.header("Access-Control-Allow-Credentials", "true");
+    res.header("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE");
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
     try{
         const { kid } = req.body;
         User.findOne( {kid}, (err, user) => {
@@ -318,13 +331,13 @@ export const userAuthtokenVerify = (req: Request, res: Response) => {
     } 
 };
 
-export const postLogin = (req: Request, res: Response) => {
-
+export const postLogin = (req: Request, res: Response, next: NextFunction) => {
+    res.header("Access-Control-Allow-Origin", req.get("origin"));
+    res.header("Access-Control-Allow-Credentials", "true");
+    res.header("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE");
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
     try {
-  
         const errors = validationResult(req);
-        const ip = req.connection.remoteAddress || req.headers["x-forwarded-for"];
-
         if (!errors.isEmpty()) {
             return apiResponse.ErrorResponse(res,errors.array());
         }
@@ -332,34 +345,24 @@ export const postLogin = (req: Request, res: Response) => {
 
             const { email, password } = req.body;
             User.findOne({email}).then((user) => {
-                if(user){
+                if(user !== null){
                     user.comparePassword(password,(err,same) => {
                         if(same){
                             //Check account confirmation.
                             if(user.isConfirmed){
                                 // Check User's account active or not.
                                 if(user.status) {
-                                    let userData = {
-                                        kid: user.kid,
-                                        displayName: user.username,
-                                        type:"regular",
-                                        token:""
-                                    };
-                                    //Prepare JWT token for authentication
-                                    const jwtPayload = userData;
-                                    const jwtData = {
-                                        expiresIn: process.env.JWT_TIMEOUT_DURATION || "10days",
-                                    };
+                                   
+                                    const payload = user.toAuthJSON();
+                                    var ip = req.headers["x-forwarded-for"] || req.connection.remoteAddress;
+                                    user.updateGeoDetails(ip);
+                                    user.save((err, savedIp) => {
+                                        passport.authenticate("local",(error,user,message) => {
+                                            
+                                            return apiResponse.successResponseWithData(res,"Login Success.", payload);
 
-                                    const secret = process.env.JWT_SECRET;
-                                    //Generated JWT token with Payload and secret.
-                                    userData.token = jwt.sign(jwtPayload, secret, jwtData);
-                                    user.username = user.username.replace(" ","_");
-                                    user.updateAfterLogin(ip,{accessToken:userData.token,type: "login"});
-
-                                    // integrate IP change later
-                                 
-                                    return apiResponse.successResponseWithData(res,"Login Success.", userData);
+                                        })(req,res,next);
+                                    });
                                 }else {
                                     return apiResponse.unauthorizedResponse(res, "Account is not active. Please contact admin.");
                                 }
@@ -389,7 +392,10 @@ export const postLogin = (req: Request, res: Response) => {
  * Create a new local account.
  */
 export const postSignup = (req: Request, res: Response, next: NextFunction) => {
-  
+    res.header("Access-Control-Allow-Origin", req.get("origin"));
+    res.header("Access-Control-Allow-Credentials", "true");
+    res.header("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE");
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
     try {
         
         const errors = validationResult(req);
@@ -398,10 +404,11 @@ export const postSignup = (req: Request, res: Response, next: NextFunction) => {
             // return res.status(422).json(failed(errors.array()));
             return apiResponse.ErrorResponse(res,errors.array());
         }else{
-            const { email, password, username, techStack } = req.body;
+            const { email, password, username, field, firstname, lastname } = req.body;
             	// generate OTP for confirmation
-            let otp = randomNumber(4);
             const verificationToken = randomString(70);
+            if(!firstname) apiResponse.ErrorResponse(res,"Firstname is required");
+            if(!lastname) apiResponse.ErrorResponse(res,"Lastname is required");
 
             User.findOne({email},(err,userf) => {
                 if (err) { return apiResponse.ErrorResponse(res, err); }
@@ -421,10 +428,14 @@ export const postSignup = (req: Request, res: Response, next: NextFunction) => {
                                 username: username.toLowerCase().replace(" ","_"),
                                 email: email.toLowerCase(),
                                 confirmOTP: 1,
+                                profile:{
+                                    firstname,
+                                    lastname
+                                },
                                 isConfirmed: false,
                                 status:1,
                                 emailVerificationToken:verificationToken,
-                                techStack:techStack || "",
+                                techStack:field || "",
                                 kid: randomString(40)
                             }
                         );
@@ -684,7 +695,10 @@ export const emailVerification = (req: Request, res: Response, next: NextFunctio
  * Update profile information.
  */
 export const postUpdateProfile = (req: Request, res: Response, next: NextFunction) => {
-    
+    res.header("Access-Control-Allow-Origin", req.get("origin"));
+    res.header("Access-Control-Allow-Credentials", "true");
+    res.header("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE");
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
     const errors = validationResult(req);
 
     if (!errors.isEmpty()) {
@@ -709,7 +723,10 @@ export const postUpdateProfile = (req: Request, res: Response, next: NextFunctio
  * Update current password.
  */
 export const postUpdatePassword = (req: Request, res: Response, next: NextFunction) => {
-    
+    res.header("Access-Control-Allow-Origin", req.get("origin"));
+    res.header("Access-Control-Allow-Credentials", "true");
+    res.header("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE");
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
     const errors = validationResult(req);
 
     if (!errors.isEmpty()) {

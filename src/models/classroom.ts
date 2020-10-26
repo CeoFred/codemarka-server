@@ -29,7 +29,7 @@ export type ClassroomDocument = mongoose.Document & {
     reports: [Record<string, any>];
     questions: [Record<string, any>];
     settings: any;
-    messages: {}[];
+    messages: any;
 };
 
 
