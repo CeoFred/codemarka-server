@@ -64,7 +64,7 @@ app.use(session({
         secure: true,
         maxAge: (SESS_LIFETIME),
         httpOnly: true,
-        sameSite: "none"
+        sameSite: false,
     }
 }));
 require("./config/passport");
