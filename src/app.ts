@@ -61,9 +61,9 @@ app.use(session({
         return uuid.v4();
     },
     cookie: {
-        secure: app.get("NODE_ENV") === "production",
+        secure: true,
         maxAge: (SESS_LIFETIME),
-        httpOnly:true,
+        httpOnly: true,
         sameSite: "none"
     }
 }));
