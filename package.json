@@ -75,7 +75,7 @@
     "winston": "3.2.1"
   },
   "devDependencies": {
-    "@sendgrid/mail": "6.4.0",
+    "@sendgrid/mail": "^6.4.0",
     "@types/archiver": "3.0.0",
     "@types/async": "3.0.2",
     "@types/bcryptjs": "2.4.2",
