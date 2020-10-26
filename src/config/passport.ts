@@ -14,27 +14,18 @@ import { randomString } from "../helpers/utility";
 
 const { OAuth2Strategy: GoogleStrategy } = google;
 const { Strategy: GitHubStrategy } = github;
-const { Strategy: LocalStrategy } = local;
+const LocalStrategy = require("passport-local").Strategy;
+
 export const ENVIRONMENT = process.env.NODE_ENV;
 const prod = ENVIRONMENT === "production";
 
 const host = prod ? "https://code-marka.herokuapp.com" : "http://localhost:2001";
-passport.serializeUser((user: any, done) => {
-    done(null, user.kid);
-});
-
-passport.deserializeUser((kid, done) => {
-    User.findOne({kid}, (err, user) => {
-        done(err, user);
-    });
-});
 
 
 passport.use(new LocalStrategy({
     usernameField: "email",
     passwordField: "password",
-    session: true
-}, (email, password, done) => {
+}, (email: string, password: string, done: any) => {
     User.findOne({ email })
         .then((user) => {
             if(user){
@@ -346,3 +337,13 @@ function(accessToken, refreshToken, profile, done) {
 
 }
 ));
+
+passport.serializeUser((user: any, done) => {
+    done(null, user);
+});
+
+passport.deserializeUser(({kid}, done) => {
+    User.findOne({kid}, (err, user) => {
+        done(err, user);
+    });
+});

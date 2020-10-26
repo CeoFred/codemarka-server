@@ -14,6 +14,8 @@ import {postDeleteAccount,
 import express from "express";
 import passport from "passport";
 import {check} from "../middleware/check_Auth";
+import {isAuth} from "../middleware/authMiddleware";
+
 
 import {validate} from "../middleware/authValidate";
 
@@ -33,7 +35,7 @@ router.get("/google/callback", passport.authenticate("google", { failureRedirect
 // update password
 router.patch("/user/password/update", validate("passwordUpdate"),postUpdatePassword);
 //login a user
-router.post("/user/signin",validate("login"), postLogin );
+router.post("/user/signin", validate("login"), postLogin );
 
 //signup a user
 router.post("/user/signup",validate("signup"), postSignup);

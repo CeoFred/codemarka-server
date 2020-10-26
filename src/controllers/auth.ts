@@ -332,10 +332,8 @@ export const userAuthtokenVerify = (req: Request, res: Response) => {
 };
 
 export const postLogin = (req: Request, res: Response, next: NextFunction) => {
-    res.header("Access-Control-Allow-Origin", req.get("origin"));
-    res.header("Access-Control-Allow-Credentials", "true");
-    res.header("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE");
-    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+    
+    
     try {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
@@ -358,7 +356,11 @@ export const postLogin = (req: Request, res: Response, next: NextFunction) => {
                                     user.updateGeoDetails(ip);
                                     user.save((err, savedIp) => {
                                         passport.authenticate("local",(error,user,message) => {
-                                            
+                                            res.header("Access-Control-Allow-Origin", req.get("origin"));
+                                            res.header("Access-Control-Allow-Credentials", "true");
+                                            res.header("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE");
+                                            res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+                                            req.session.user = user;
                                             return apiResponse.successResponseWithData(res,"Login Success.", payload);
 
                                         })(req,res,next);
@@ -778,7 +780,7 @@ export const logout = async (req: Request,res: Response) => {
 
             User.findOneAndUpdate(kid,{tokens},(err,user) => {
                 if (err) return apiResponse.ErrorResponse(res,"Whoops! Something went wrong");
-
+                req.session = undefined;
                 return apiResponse.successResponse(res,"Logged out successfully");
             });
         } else {

@@ -9,9 +9,7 @@ import passport from "passport";
 import session from "express-session";
 import connectStore from "connect-mongo";
 import mongoose from "./config/db";
-import "./config/passport";
 import cookieParser from "cookie-parser";
-
 import { SESS_NAME, SESS_SECRET , SESS_LIFETIME } from "./util/secrets";
 
 import auth from "./routes/auth";
@@ -20,6 +18,7 @@ import community from "./routes/community";
 import user from "./routes/user";
 
 import { NextFunction, Request, Response } from "express";
+import uuid from "uuid";
 
 const MongoStore = connectStore(session);
 
@@ -37,9 +36,6 @@ const corsOptions = {
     }
 };
 
-app.use((req, res,next) => {
-    next();
-});
 /**
  * API keys and Passport configuration.
  */
@@ -48,7 +44,9 @@ app.use((req, res,next) => {
 app.use(compression());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
+
 app.use(cookieParser());
+
 app.use(session({
     name: SESS_NAME,
     secret: SESS_SECRET,
@@ -59,13 +57,15 @@ app.use(session({
         collection: "session",
         ttl: (SESS_LIFETIME) / 1000
     }),
+    genid: function (req) {
+        return uuid.v4();
+    },
     cookie: {
-        sameSite: true,
         secure: app.get("NODE_ENV") === "production",
         maxAge: (SESS_LIFETIME),
-        httpOnly: true
     }
 }));
+require("./config/passport");
 
 app.use(passport.initialize());
 app.use(passport.session());
@@ -82,11 +82,15 @@ app.disable("x-powered-by");
 app.use(lusca.xssProtection(true));
 // app.use(express.static(path.join(__dirname, "public"), { maxAge: 31557600000 }));
 
+app.use((req, res,next) => {
+    console.log(req.session.user);
+    next();
+});
 // routes as middlewares
-app.use("/api/v1/auth", cors(), auth);
-app.use("/api/v1/classroom",cors(), classroom);
-app.use("/api/v1/community",cors(), community);
-app.use("/api/v1/user",cors(), user);
+app.use("/api/v1/auth", auth);
+app.use("/api/v1/classroom", classroom);
+app.use("/api/v1/community" ,community);
+app.use("/api/v1/user", user);
 
 app.get("/", (req, res) => {
     res.json({ message: "Looking for something??" });
@@ -123,12 +127,6 @@ function errorHandler(err: Error, req: Request, res: Response, next: NextFunctio
 function fourofour(req: Request, res: Response) {
     res.status(404).json({ status: "failed", error: "Sorry can't find that!" });
 }
-app.use((req, res, next) => {
-    if (req.cookies.user_sid && !req.session.user) {
-        res.clearCookie(SESS_NAME);        
-    }
-    next();
-});
 app.use(logErrors);
 app.use(clientErrorHandler);
 app.use(errorHandler);

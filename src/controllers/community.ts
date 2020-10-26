@@ -504,7 +504,7 @@ export const CommunityAuthLogout = (req: Request, res: Response): object| void =
 
             Community.findOneAndUpdate(kid,{tokens},(err,community) => {
                 if (err) return apiResponse.ErrorResponse(res,"Whoops! Something went wrong");
-
+                req.session = undefined;
                 return apiResponse.successResponse(res,"Logged out successfully");
             });
         } else {
