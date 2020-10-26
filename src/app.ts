@@ -63,6 +63,8 @@ app.use(session({
     cookie: {
         secure: app.get("NODE_ENV") === "production",
         maxAge: (SESS_LIFETIME),
+        httpOnly:true,
+        sameSite: "none"
     }
 }));
 require("./config/passport");
