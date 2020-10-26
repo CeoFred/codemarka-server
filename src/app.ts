@@ -62,7 +62,8 @@ app.use(session({
     },
     cookie: {
         httpOnly: true,
-        sameSite: "none"
+        sameSite: "none",
+        secure: true
     }
 }));
 require("./config/passport");
