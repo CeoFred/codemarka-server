@@ -63,7 +63,10 @@ app.use(session({
     cookie: {
         httpOnly: true,
         sameSite: "none",
-        secure: true
+        secure: true,
+        maxAge: 3478765,
+        path:"/",
+        signed:true,
     }
 }));
 require("./config/passport");
