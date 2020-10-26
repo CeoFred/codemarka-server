@@ -60,12 +60,12 @@ app.use(session({
     genid: function (req) {
         return uuid.v4();
     },
-    cookie: {
-        secure: true,
-        maxAge: (SESS_LIFETIME),
-        httpOnly: true,
-        sameSite: false,
-    }
+    // cookie: {
+    //     secure: true,
+    //     maxAge: (SESS_LIFETIME),
+    //     httpOnly: true,
+    //     sameSite: false,
+    // }
 }));
 require("./config/passport");
 
