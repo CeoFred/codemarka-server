@@ -61,12 +61,10 @@ app.use(session({
         return uuid.v4();
     },
     cookie: {
-        httpOnly: true,
-        sameSite: "none",
-        secure: true,
-        maxAge: 3478765,
-        path:"/",
-        signed:true,
+        secure: app.get("NODE_ENV") === "production",
+        maxAge: (SESS_LIFETIME),
+        httpOnly:true,
+        sameSite: "lax"
     }
 }));
 require("./config/passport");

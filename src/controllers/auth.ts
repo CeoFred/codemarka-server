@@ -354,16 +354,8 @@ export const postLogin = (req: Request, res: Response, next: NextFunction) => {
                                     const payload = user.toAuthJSON();
                                     var ip = req.headers["x-forwarded-for"] || req.connection.remoteAddress;
                                     user.updateGeoDetails(ip);
-                                    user.save((err, savedIp) => {
-                                        passport.authenticate("local",(error,user,message) => {
-                                            res.header("Access-Control-Allow-Origin", req.get("origin"));
-                                            res.header("Access-Control-Allow-Credentials", "true");
-                                            res.header("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE");
-                                            res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-                                            req.session.user = user;
-                                            return apiResponse.successResponseWithData(res,"Login Success.", payload);
-
-                                        })(req,res,next);
+                                    user.save((err, savedIp) => {                                          
+                                        return apiResponse.successResponseWithData(res,"Login Success.", payload);
                                     });
                                 }else {
                                     return apiResponse.unauthorizedResponse(res, "Account is not active. Please contact admin.");
