@@ -349,6 +349,7 @@ export default (server: express.Application) => {
                                 color: data.messageColor,
                                 oTime: data.time,
                                 type:"image",
+                                result
                             };
                             Classroom.findOneAndUpdate({ kid: data.room, status: 2 },
                                 {
