@@ -14,7 +14,7 @@ import {successResponse, successResponseWithData, ErrorResponse } from "../helpe
 import { classWeb } from "../models/classWebFiles";
 import * as apiResponse from "../helpers/apiResponse";
 import { Community, CommunityDocument } from "../models/Community";
-import { classReportSchema, classroomReport } from "../models/Reports";
+import { classroomReport } from "../models/Reports";
 
 import { CLASSROOM } from "../config/url";
 const notStarted = 1;
@@ -29,9 +29,10 @@ const MAX_CLASSROOM_MEMBERS_PREMUIM = 30;
 interface MessageInterface {
     readonly msgId?: string;
     readonly thread?: {}[];
+    readonly by: string;
 }
 export const getMessageThread = (req: Request, res: Response): void => {
-    const { messageId, userId } = req.body;
+    const { messageId } = req.body;
     const { kid } = req.params;
 
     Classroom.findOne({ kid }).then(classroom => {
@@ -39,7 +40,7 @@ export const getMessageThread = (req: Request, res: Response): void => {
 
         const messageData: MessageInterface = classroom.messages.find((message: MessageInterface) => message.msgId === messageId);
 
-        User.findOne({kid: userId}).then(user => {
+        User.findOne({kid: messageData.by}).then(user => {
             if(!user) ErrorResponse(res, "User not found");
             return successResponse(res,{messageData,username: user.username,image: user.gravatarUrl});
         });

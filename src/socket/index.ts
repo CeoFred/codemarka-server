@@ -349,7 +349,12 @@ export default (server: express.Application) => {
                                 color: data.messageColor,
                                 oTime: data.time,
                                 type:"image",
-                                result
+                                result,
+                                sent:true,
+                                isDeleted: false,
+                                isThread:false,
+                                subscribers:[],
+                                mentions:[]
                             };
                             Classroom.findOneAndUpdate({ kid: data.room, status: 2 },
                                 {
@@ -1271,7 +1276,7 @@ export default (server: express.Application) => {
                     editHistory: data.editHistory,
                     mentions: data.mentions,
                     hashTags: data.hashTags,
-                    sent: data.sent,
+                    sent: true,
                     thread: data.thread,
                     isThread:false,
                     subscribers: data.subscribers

@@ -146,16 +146,16 @@ export const specialUpdate = (req: Request, res: Response): void => {
 
                 return {
                     ...message,
-                    isThread: false,
-                    reactions:[],
-                    isDeleted: false,
-                    wasEdited:false,
-                    editHistory:[],
+                    isThread: message.isThread || false,
+                    reactions:message.reactions || [],
+                    isDeleted: message.isDeleted || false,
+                    wasEdited:message.wasEdited || false,
+                    editHistory: message.editHistory ||[],
                     mentions: mentions || [],
                     hashTags:[],
                     sent: true,
-                    thread:[],
-                    subscribers: []
+                    thread: message.thread ||[],
+                    subscribers: message.subscribers ||[]
                 };
             });
             room = room;
