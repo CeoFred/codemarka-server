@@ -108,7 +108,6 @@ export default (server: express.Application) => {
         socket.on("addReactionToMessage", (emojiObject: any, messageData: any) => {
             Classroom.findOne({kid: messageData.classroomId}).then((classroom: ClassroomDocument) => {
                 if(classroom){
-                    console.log("room found");
                     const message: any[]  = classroom.messages.filter((message: NewMessageInterface) => message.msgId === messageData.data.msgId && !message.isDeleted);
                     if(!message[0]) socket.emit("thread_error","Message Deleted");
 
@@ -182,7 +181,7 @@ export default (server: express.Application) => {
                 classroom.messages = classroom.messages.map((message: NewMessageInterface): any => {
                     if(message.msgId === data.messageId){
                         
-                        const messagesThread: any = message.thread;
+                        const messagesThread: any = message.thread ? message.thread : [];
                         messagesThread.push({...data,threadId: uuidv4(),reactions:[]});
 
                         message.thread = messagesThread;
@@ -334,7 +333,6 @@ export default (server: express.Application) => {
         socket.on("image_upload", (data: ImageUploadData) => {
             cloudi.uploader.upload(data.data, 
                 function(error, result) {
-                    console.log(result, error);
                     if(result){
                         socket.emit("image_upload_complete",result,data);
                      
@@ -354,7 +352,12 @@ export default (server: express.Application) => {
                                 isDeleted: false,
                                 isThread:false,
                                 subscribers:[],
-                                mentions:[]
+                                mentions:[],
+                                thread:[],
+                                reactions: [],
+                                wasEdited: false,
+                                editHistory:[],
+                                hashTags: [],
                             };
                             Classroom.findOneAndUpdate({ kid: data.room, status: 2 },
                                 {
@@ -459,9 +462,7 @@ export default (server: express.Application) => {
                         if (err) throw err;
                         
                         if (res && res !== null) {
-                            const ownerid = res.owner;
                             const isBroadcasting = res.isBroadcasting;
-                            console.log(isBroadcasting);
                             
                             if(isBroadcasting){
                                 io.in(socket.room).emit("call_me",{id:user._id,username: user.username || user.communityName,kid:user.kid,socketid: socket.id});
@@ -595,7 +596,6 @@ export default (server: express.Application) => {
                                                     }
                                                 }
                                             } else {
-                                                console.log("classroom is not taking attendace");
                                                 if(!userHasTakenAttedance && !isOwner){
                                                     const userAttedance = {kid: socket.user, username: data.username, email: user.email };
                                                     hasClassAttendance.list.push(userAttedance);
@@ -642,7 +642,6 @@ export default (server: express.Application) => {
                                                 const htmlContent = d.html.content;
                                                 const jsContent = d.js.content;
                                                 const jsExternalCDN = d.js.settings.externalCDN;
-                                                console.log(cssExternalCDN,jsExternalCDN);
                                                 if (!cssfileId || !jsFileId || !htmlFileId) {
                                                     socket.emit("classroomFilesError", "File ID not found");
                                                 }

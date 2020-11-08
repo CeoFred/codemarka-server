@@ -11,12 +11,17 @@
         "baseUrl": ".",
         "paths": {
             "*": [
-                "node_modules/*",
                 "src/types/*"
             ]
-        }
+        },
+         "types": ["node", "jest", "express","mongoose",]
     },
     "include": [
         "src/**/*"
+    ],
+     "exclude": [
+        "node_modules",
+        "test/**/*.ts",
+        "**/*.spec.ts"
     ]
 }

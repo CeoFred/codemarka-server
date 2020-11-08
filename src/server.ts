@@ -46,10 +46,6 @@ server.start();
 
 let connections: any[] = [];
 
-// setInterval(() => http.getConnections(
-//     (err: any, connections: any) => console.log(`${connections} connections currently open`)
-// ), 1000);
-
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 function shutDown() {
     console.log("Received kill signal, shutting down gracefully");
@@ -75,4 +71,4 @@ http.on("connection", (connection: object|any) => {
     connection.on("close", () => connections = connections.filter(curr => curr !== connection));
 });
 
-export default server;
+export default http;

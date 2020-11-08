@@ -25,22 +25,6 @@ const MongoStore = connectStore(session);
 // Create Express server
 const app = express();
 
-const whitelist = ["http://localhost:2001/", "http://localhost:3000", "https://codemarka.dev", "https://cmarka.xyz","https://localhost:3006", "https://sandbox.codemarka.dev"];
-const corsOptions = {
-    origin(origin: string, callback: Function) {
-        if (whitelist.indexOf(origin) !== -1) {
-            callback(null, true);
-        } else {
-            callback(new Error("Not allowed by CORS"));
-        }
-    }
-};
-
-/**
- * API keys and Passport configuration.
- */
-
-
 app.use(compression());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
@@ -82,19 +66,13 @@ app.use(lusca.xframe("SAMEORIGIN"));
 app.disable("x-powered-by");
 
 app.use(lusca.xssProtection(true));
-// app.use(express.static(path.join(__dirname, "public"), { maxAge: 31557600000 }));
-
-app.use((req, res,next) => {
-    console.log(req.session.user);
-    next();
-});
 // routes as middlewares
 app.use("/api/v1/auth", auth);
 app.use("/api/v1/classroom", classroom);
 app.use("/api/v1/community" ,community);
 app.use("/api/v1/user", user);
 
-app.get("/", (req, res) => {
+app.get("/api/v1", (req, res) => {
     res.json({ message: "Looking for something??" });
 });
 
