@@ -102,28 +102,30 @@ export default (server: express.Application) => {
                 short_name: [string];
             };
             count: number;
-            subscribers: [string];
+            subscribers: [string] | string[];
         }
 
-        socket.on("addReactionToMessage", (emojiObject: any, messageData: any) => {
-            Classroom.findOne({kid: messageData.classroomId}).then((classroom: ClassroomDocument) => {
+        socket.on("add_reaction_to_message", (emojiObject: any, messageId: string,room: string,userid: string) => {
+            Classroom.findOne({kid: room}).then((classroom: ClassroomDocument) => {
                 if(classroom){
-                    const message: any[]  = classroom.messages.filter((message: NewMessageInterface) => message.msgId === messageData.data.msgId && !message.isDeleted);
+                    const message: any[]  = classroom.messages.filter((message: NewMessageInterface) => message.msgId === messageId && !message.isDeleted);
                     if(!message[0]) socket.emit("thread_error","Message Deleted");
 
                     classroom.messages = classroom.messages.map((message: NewMessageInterface): any => {
-                        if(message.msgId === messageData.data.msgId){
-                        
-                            let messageReactions: any = message.reactions;
-                            // check of reaction already exists
+                        if(message.msgId === messageId){
+                            // message Target
+
+                            let messageReactions: any = message.reactions; // check reactcions
+
                             const reactionExists = messageReactions.find(((reaction: MessageReaction) => reaction.emojiObject.unified === emojiObject.unified && reaction.count));
 
                             if(reactionExists){
                                 messageReactions = messageReactions.map((reaction: MessageReaction) => {
                                     if(reaction.emojiObject.unified === emojiObject.unified){
-                                        const isSubscriber = reaction.subscribers.find((subscriber: any) => subscriber === messageData.userId);
-                                        if(!isSubscriber) reaction.subscribers.push(messageData.userId);
+                                        const isSubscriber = reaction.subscribers.find((subscriber: string) => subscriber === userid);
+                                        if(!isSubscriber) reaction.subscribers.push(userid);
                                         if(isSubscriber){
+                                            reaction.subscribers = reaction.subscribers.filter((subscriber: string) => subscriber !== userid);
                                             reaction.count--;
                                         } else {
                                             reaction.count++;
@@ -138,7 +140,7 @@ export default (server: express.Application) => {
                                 messageReactions =  messageReactions.filter((reaction: MessageReaction) => reaction.count > 0);
 
                             } else {
-                                messageReactions.push({emojiObject,count:1,subscribers:[messageData.userId]});
+                                messageReactions.push({emojiObject,count:1,subscribers:[userid]});
                             }
                             message.reactions = messageReactions;
                             return message;
@@ -151,8 +153,8 @@ export default (server: express.Application) => {
                     classroom.save((err, room) => {
                         console.log(err);
                         if(err) socket.emit("thread_error","Failed to add Thread");
-                        const message: any[]  = room.messages.filter((message: NewMessageInterface) => message.msgId === messageData.data.msgId && !message.isDeleted);
-                        io.in(socket.room).emit("new_message_reaction",message[0].reactions,message[0].subscribers);
+                        const message: any[]  = room.messages.filter((message: NewMessageInterface) => message.msgId === messageId && !message.isDeleted);
+                        io.in(socket.room).emit("new_message_reaction",message[0]);
                     });
                 } else {
                     socket.emit("thread_error","Room not Found or Ended");
@@ -984,43 +986,15 @@ export default (server: express.Application) => {
                     <div style="margin:15px;padding:10px;border:1px solid grey;justify-content;">
                     <div style="text-align:center">
                     </div>
-                    <h4><b>Hi ${username},</b></h4>
-                    <p>You've been invited by ${classroomInfo.username} to join a classroom session on codemarka, more details about this classroom 
+                    <h4><b>Hey there,</b></h4>
+                    <p>You've been invited by ${classroomInfo.username} to join a session on codemarka, join
                     below. </p>
+ ${joinLink}
                     <div>
-                    <p>Classroom Name - ${classroomInfo.name}</p>
-                    <p>Classroom Topic - ${classroomInfo.topic}</p>
-                    <p>Classroom Description - ${classroomInfo.description}</p>
-                    <p>Short Url - ${classroomInfo.shortUrl}</p>
-
+                    <p> Name - ${classroomInfo.name}</p>
+                    <p> Topic - ${classroomInfo.topic}</p>
+                    <p> Description - ${classroomInfo.description}</p>
                     </div>
-                    <button type='button' style="
-                        display: inline-block;
-    font-weight: 600;
-    text-align: center;
-    vertical-align: middle;
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
-    background-color: transparent;
-    border: 1px solid transparent;
-    padding: .75rem 1.75rem;
-    font-size: 1rem;
-    line-height: 1.5;
-    border-radius: .375rem;
-    transition: color .15s ease-in-out,background-color .15s ease-in-out,border-color .15s ease-in-out,box-shadow .15s ease-in-out;
-    color: #fff;
-    background-color: #2dca8c;
-    border-color: #2dca8c;
-    box-shadow: inset 0 1px 0 rgba(255,255,255,.15);
-"><a href='${joinLink}'>Join</a></button>
-                    <br/>
-                    copy link below to your browser if button above does not work on your device.
-                    ${joinLink}
-
-                    <br/>
-
                     </div>
 
                     `;
@@ -1029,8 +1003,8 @@ export default (server: express.Application) => {
 
                 const msg = {
                     to: email,
-                    from: "no-reply@codemarak.dev",
-                    subject: "Classroom Invitation",
+                    from: `${classroomInfo.username}@codemarka.dev`,
+                    subject: "Classroom Invitation On Codemarka",
                     text: `Click to join ${joinLink}`,
                     html: emailTemplate,
                 };
