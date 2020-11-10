@@ -46,6 +46,7 @@ export default (server: express.Application) => {
         clients[socket.id] = socket.client;
         interface NewMessageInterface {
             message: string;
+            msg: string;
             class: string;
             user: string;
 
@@ -105,6 +106,70 @@ export default (server: express.Application) => {
             subscribers: [string] | string[];
         }
 
+        socket.on("edit_message",(data: NewThreadMessage) => {
+            console.log(data);
+            Classroom.findOne({kid: data.room}).then((classroom: ClassroomDocument) => {
+                if(classroom && classroom.messages){
+                    const messageFoundAndActive: any[]  = classroom.messages.find((message: NewMessageInterface) => message.msgId === data.messageId && !message.isDeleted);
+                    if(messageFoundAndActive){
+                        
+                        classroom.messages = classroom.messages.map((message: NewMessageInterface): any => {
+                            if(message.msgId === data.messageId && data.content !== message.msg){
+                                message.msg = data.content;
+                                message.wasEdited = true;
+                                message.editHistory.push({time:data.time, message: data.content});
+                                return message;
+                            } 
+                            return message;
+                        });   
+
+                        classroom.markModified("messages");
+                        classroom.save((err, room) => {
+                            console.log(err);
+                            if(err) socket.emit("edit_message_error","Failed to edit message");
+                            const messageForEditing: any[]  = room.messages.filter((message: NewMessageInterface) => message.msgId === data.messageId && !message.isDeleted);
+
+                            io.in(socket.room).emit("message_edit_or_delete_success",messageForEditing[0]);
+                        });
+                    } else {
+                        return socket.emit("edit_message_error","Message Deleted");
+                    }
+                }
+            }).catch((err) => {
+                console.log(err);
+                socket.emit("edit_message_error","Failed to find room");
+            });
+        });
+
+        socket.on("delete_message",(data: NewThreadMessage) => {
+            Classroom.findOne({kid: data.room}).then((classroom: ClassroomDocument) => {
+                if(!classroom) socket.emit("delete_message_error","Room not Found or Ended");
+                const messageForThread: any[]  = classroom.messages.filter((message: NewMessageInterface) => message.msgId === data.messageId && !message.isDeleted);
+                if(!messageForThread[0]) socket.emit("edit_message_error","Message Deleted");
+
+                classroom.messages = classroom.messages.map((message: NewMessageInterface): any => {
+                    if(message.msgId === data.messageId){                        
+                        message.isDeleted = true;
+                        return message;
+                    } 
+                    return message;
+                });
+
+                // console.log(classroom.messages);
+                classroom.markModified("messages");
+                classroom.save((err, room) => {
+                    console.log(err);
+                    if(err) socket.emit("delete_message_error","Failed to delete message");
+                    const messageForThread: any[]  = room.messages.filter((message: NewMessageInterface) => message.msgId === data.messageId);
+
+                    io.in(socket.room).emit("message_edit_or_delete_success",messageForThread[0]);
+                });
+
+            }).catch((err) => {
+                console.log(err);
+                socket.emit("edit_message_error","Failed to find room");
+            });
+        });
         socket.on("add_reaction_to_message", (emojiObject: any, messageId: string,room: string,userid: string) => {
             Classroom.findOne({kid: room}).then((classroom: ClassroomDocument) => {
                 if(classroom){
@@ -129,7 +194,7 @@ export default (server: express.Application) => {
                                             reaction.count--;
                                         } else {
                                             reaction.count++;
-                                        }
+                                        }   
 
                                         // chceck if this user has reacted before
                                     
@@ -1226,15 +1291,13 @@ export default (server: express.Application) => {
                 }
                 
             });
-        });
-
-   
+        });  
 
         socket.on("newMessage", (data: NewMessageInterface): void => {
             function sendSocketMessage(u: any): void {
 
                 const msgId: string = uuidv4();
-                const msgObject = {
+                const msgObject: any = {
                     timeSent: moment(data.time).format("LT"),
                     msgId, 
                     name: u.username || u.communityName,
@@ -1243,16 +1306,16 @@ export default (server: express.Application) => {
                     color: data.messageColor,
                     oTime: data.time,
                     type:"text",
-                    reactions: data.reactions,
-                    isDeleted: data.isDeleted,
-                    wasEdited: data.wasEdited,
-                    editHistory: data.editHistory,
-                    mentions: data.mentions,
-                    hashTags: data.hashTags,
+                    reactions: [],
+                    isDeleted: false,
+                    wasEdited: false,
+                    editHistory: [],
+                    mentions: [],
+                    hashTags: [],
                     sent: true,
-                    thread: data.thread,
+                    thread: [],
                     isThread:false,
-                    subscribers: data.subscribers
+                    subscribers: []
                 };
                 Classroom.findOneAndUpdate({ kid: data.class, status: 2 },
                     {
