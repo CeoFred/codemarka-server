@@ -3,7 +3,6 @@ import jwt from "jsonwebtoken";
 
 export const check = (req: Request, res: Response, next: NextFunction): void | object => {
     let token;
-    console.log(req.isAuthenticated());
     if (req.body.token) {
         token = req.body.token;
     } else if (req.headers.authorization) {

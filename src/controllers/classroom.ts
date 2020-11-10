@@ -121,7 +121,6 @@ export const getLanguageSettings = (req: Request, res: Response): void => {
 export const createClassRoom = (
     req: Request,
     res: Response,
-    next: NextFunction
 ): object => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -141,7 +140,7 @@ export const createClassRoom = (
     } = req.body;
     const { accountType: creatorsAccountType } = userData;
 
-    const accountid: string = req.body.decoded.kid;
+    const accountid: string = req.body.decoded.id;
     // find user and validate classroom creation limit.
     let userAccountType: number, privateClassroomsCreated, user;
 
@@ -353,6 +352,7 @@ export const createClassRoom = (
                     );
                 });
         }
+        console.log(accountid);
         User.findOne({ kid: accountid })
             .then((respo: any) => {
                 if (respo) {
