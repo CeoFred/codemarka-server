@@ -30,7 +30,7 @@ export const findUser = function (id: string): unknown {
 
   
 };
-export const successResponse = function (res: Response, msg: string | object | number): object {
+export const successResponse = function (res: Response, msg: string | object | number | boolean): object {
     var data = {
         status: 1,
         message: msg

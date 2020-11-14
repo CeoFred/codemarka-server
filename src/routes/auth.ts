@@ -9,12 +9,11 @@ import {postDeleteAccount,
     passwordReset,
     accountRecovery,
     userAuthtokenVerify,
-    handelGitHubAuthCallback
+    handelGitHubAuthCallback,
 } from "../controllers/auth";
 import express from "express";
 import passport from "passport";
 import {check} from "../middleware/check_Auth";
-import {isAuth} from "../middleware/authMiddleware";
 
 
 import {validate} from "../middleware/authValidate";
@@ -43,6 +42,9 @@ router.post("/user/signup",validate("signup"), postSignup);
 //logout a user
 
 router.get("/user/logout",check, logout);
+
+//check is username exists
+
 
 // delete user account
 router.delete("/user/delete/:userId",check, postDeleteAccount);

@@ -2,7 +2,21 @@ import { Request, Response, NextFunction } from "express";
 import { User, UserDocument } from "../models/User";
 import { successResponseWithData,ErrorResponse,successResponse } from "../helpers/apiResponse";
 import { Classroom } from "../models/classroom";
+export const checkUsername = (req: Request, res: Response): object => {
+    const { username } = req.query;
+    if(username){
+        User.find({ username: username}).then((username) => {
+            if(username && username.length > 0){
+                return successResponse(res,false);
+            } else {
+                return successResponse(res,true);
 
+            }
+        });
+    } else {
+        return ErrorResponse(res,"Invalid Username");
+    }
+};
 /**
  * Get User Information
  */
