@@ -107,26 +107,31 @@ export default (server: express.Application) => {
         }
 
         interface OfferPayload {
-            target: string;
-            caller: string;
-            sdp: string;
+            target: {
+                socketid: string;
+            };
+            caller: object;
+            sdp: object;
         }
 
         interface CandidateOffer {
-            target: string;
+            target: {
+                socketid: string;
+            };
             candidate: string;
             sender: string;
         }
+
         socket.on("offer", (payload: OfferPayload) => {
-            io.to(payload.target).emit("offer", payload);
+            io.to(payload.target.socketid).emit("offer", payload);
         }); 
 
         socket.on("answer", (payload: OfferPayload) => {
-            io.to(payload.target).emit("answer", payload);
+            io.to(payload.target.socketid).emit("answer", payload);
         });
 
         socket.on("ice-candidate", (incoming: CandidateOffer) => {
-            io.to(incoming.target).emit("ice-candidate", incoming);
+            io.to(incoming.target.socketid).emit("ice-candidate", incoming);
         });
 
         socket.on("edit_message",(data: NewThreadMessage) => {
