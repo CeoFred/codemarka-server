@@ -20,6 +20,7 @@ import * as CLIENT_URLS from "../config/url";
 import { communityAccountLogin,communityAuthtokenVerify,CommunityAuthLogout } from "./community";
 
 const options = { algorithm: "HS256", noTimestamp: false, audience: "users", issuer: "codemarka", subject: "auth", expiresIn: "7d" };
+
 /** 
  *
  *Account recovery for user 
@@ -386,10 +387,6 @@ export const postLogin = (req: Request, res: Response, next: NextFunction) => {
  * Create a new local account.
  */
 export const postSignup = (req: Request, res: Response, next: NextFunction) => {
-    res.header("Access-Control-Allow-Origin", req.get("origin"));
-    res.header("Access-Control-Allow-Credentials", "true");
-    res.header("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE");
-    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
     try {
         
         const errors = validationResult(req);
@@ -398,11 +395,9 @@ export const postSignup = (req: Request, res: Response, next: NextFunction) => {
             // return res.status(422).json(failed(errors.array()));
             return apiResponse.ErrorResponse(res,errors.array());
         }else{
-            const { email, password, username, field, firstname, lastname } = req.body;
+            const { email, password, username } = req.body;
             	// generate OTP for confirmation
             const verificationToken = randomString(70);
-            if(!firstname) apiResponse.ErrorResponse(res,"Firstname is required");
-            if(!lastname) apiResponse.ErrorResponse(res,"Lastname is required");
 
             User.findOne({email},(err,userf) => {
                 if (err) { return apiResponse.ErrorResponse(res, err); }
@@ -423,13 +418,13 @@ export const postSignup = (req: Request, res: Response, next: NextFunction) => {
                                 email: email.toLowerCase(),
                                 confirmOTP: 1,
                                 profile:{
-                                    firstname,
-                                    lastname
+                                    firstname:"",
+                                    lastname: ""
                                 },
                                 isConfirmed: false,
                                 status:1,
                                 emailVerificationToken:verificationToken,
-                                techStack:field || "",
+                                techStack: "",
                                 kid: randomString(40)
                             }
                         );

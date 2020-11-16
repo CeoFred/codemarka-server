@@ -106,6 +106,29 @@ export default (server: express.Application) => {
             subscribers: [string] | string[];
         }
 
+        interface OfferPayload {
+            target: string;
+            caller: string;
+            sdp: string;
+        }
+
+        interface CandidateOffer {
+            target: string;
+            candidate: string;
+            sender: string;
+        }
+        socket.on("offer", (payload: OfferPayload) => {
+            io.to(payload.target).emit("offer", payload);
+        }); 
+
+        socket.on("answer", (payload: OfferPayload) => {
+            io.to(payload.target).emit("answer", payload);
+        });
+
+        socket.on("ice-candidate", (incoming: CandidateOffer) => {
+            io.to(incoming.target).emit("ice-candidate", incoming);
+        });
+
         socket.on("edit_message",(data: NewThreadMessage) => {
             console.log(data);
             Classroom.findOne({kid: data.room}).then((classroom: ClassroomDocument) => {
@@ -591,6 +614,7 @@ export default (server: express.Application) => {
                                     socket.emit("updateMsg", { by: "server", msgs: d.messages, type: "oldMsgUpdate" });
 
                                     socket.emit("classroom_users", d.students);
+                                    console.log(d.students);
                                     
                                     socket.emit("class_favourites", d.likes);
                                   
