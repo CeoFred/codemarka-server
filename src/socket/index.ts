@@ -107,26 +107,72 @@ export default (server: express.Application) => {
         }
 
         interface OfferPayload {
-            target: string;
-            caller: string;
-            sdp: string;
+            target: {
+                socketid: string;
+            };
+            caller: object;
+            sdp: object;
         }
 
         interface CandidateOffer {
-            target: string;
+            target: {
+                socketid: string;
+            };
             candidate: string;
             sender: string;
         }
+
+        interface VideoToggeleData {
+            socketid: string;
+
+            usersData: {
+                displayImg: string;
+                kid: string;
+                id: string;
+            };
+        }
+
+        interface UserWEBRTC {
+            socketid: string;
+            kid: string;
+        }
+
+        socket.on("mute_user_audio_webrtc", (user: UserWEBRTC) => {
+            io.to(user.socketid).emit("mute_user_audio_webrtc");
+        });
+
+        
+        socket.on("wave_to_user_webrtc", (data: UserWEBRTC) => {
+            console.log(data);
+            io.to(data.socketid).emit("wave_to_user_webrtc_", data);
+        });
+
+        socket.on("audio_toggle_complete",(status: boolean, user: UserWEBRTC) => {
+            io.in(socket.room).emit("audio_toggle_complete",status, user);
+        });
+
+        socket.on("wave_to_user_webrtc", (user: UserWEBRTC) => {
+            io.to(user.socketid).emit("wave_to_user_webrtc");
+        });
+
+        socket.on("video_toggle", (data: VideoToggeleData) => {
+            io.in(socket.room).emit("video_toggle", data);
+        });
+
         socket.on("offer", (payload: OfferPayload) => {
-            io.to(payload.target).emit("offer", payload);
+            io.to(payload.target.socketid).emit("offer", payload);
         }); 
 
         socket.on("answer", (payload: OfferPayload) => {
-            io.to(payload.target).emit("answer", payload);
+            io.to(payload.target.socketid).emit("answer", payload);
+        });
+
+        socket.on("disconnect_user_webrtc", (user: UserWEBRTC) => {
+            io.to(user.socketid).emit("disconnection_request");
         });
 
         socket.on("ice-candidate", (incoming: CandidateOffer) => {
-            io.to(incoming.target).emit("ice-candidate", incoming);
+            io.to(incoming.target.socketid).emit("ice-candidate", incoming);
         });
 
         socket.on("edit_message",(data: NewThreadMessage) => {

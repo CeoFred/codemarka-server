@@ -14,7 +14,7 @@
                 "src/types/*"
             ]
         },
-         "types": ["node", "jest", "express","mongoose",]
+         "types": ["node","mocha"]
     },
     "include": [
         "src/**/*"

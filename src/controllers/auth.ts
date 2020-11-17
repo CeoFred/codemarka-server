@@ -27,10 +27,6 @@ const options = { algorithm: "HS256", noTimestamp: false, audience: "users", iss
  * 
 */
 export const accountRecovery = (req: Request, res: Response, next: NextFunction) => {
-    res.header("Access-Control-Allow-Origin", req.get("origin"));
-    res.header("Access-Control-Allow-Credentials", "true");
-    res.header("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE");
-    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
     const email: string =  req.body.email;
     
     if(!email){
@@ -54,19 +50,10 @@ export const accountRecovery = (req: Request, res: Response, next: NextFunction)
             const buf = crypto.randomBytes(26);
             token = buf.toString("hex");
             let userid;
-            if(resp){
-                userid = resp._id;
-                if(resp.googleid.trim() !== "" && resp.googleid !== null && resp.googleid !== undefined){
-                    return apiResponse.ErrorResponse(res,"Try logging in with a google account associated with this email");
-                }
-                if(resp.githubid.trim() !== "" && resp.githubid !== null && resp.githubid !== undefined){
-                    return apiResponse.ErrorResponse(res,"Try logging in with a github account associated with this email");
-                }
-            } else {
+            if(!resp){
                 return apiResponse.ErrorResponse(res,"Whoops! Email does not exits, try signing up.");
             }
-            
-            
+            userid = resp._id;
             User.findByIdAndUpdate({ _id : userid },{ resetPasswordToken: token, resetPasswordExpires: Date.now() + 86400000  }, { upsert: true, new: true },(err,doc: UserDocument) => {
                 if(err){
                     return apiResponse.ErrorResponse(res,"Whoops! Something went wrong");
@@ -76,16 +63,14 @@ export const accountRecovery = (req: Request, res: Response, next: NextFunction)
                     let trial = 0;
                     let maxTrial = 2;
                     let sent = false;
-                    const PasswordResetLink = `${req.hostname === "localhost" ? "http://localhost:3000" : "https://codemarka.dev"}/api/v1/auth/user/account/password/reset/${token}/${user}`;
+                    const PasswordResetLink = `${req.hostname === "localhost" ? "http://localhost:3000" : "https://codemarka.dev"}/auth/user/account/password/reset/${token}/${user}`;
                     console.log(PasswordResetLink);
                     const sendPasswordResetMail = (email: string) => {
 
                         const trimedEmail = email.trim();
 
                         const emailTemplate = `
-                    <div style="margin:15px;padding:10px;border:1px solid grey;justify-content;">
-                    <div style="text-align:center">
-                    </div>
+                    <div style="margin:15px;padding:10px;">
                     <h4><b>Hi ${username},</b></h4>
                     <p>Let's help you reset your password so you can get back to collaborating and learning.</p>
                     <button type='button' style="
@@ -101,6 +86,7 @@ export const accountRecovery = (req: Request, res: Response, next: NextFunction)
     border: 1px solid transparent;
     padding: .75rem 1.75rem;
     font-size: 1rem;
+    margin-bottom:'30';
     line-height: 1.5;
     border-radius: .375rem;
     transition: color .15s ease-in-out,background-color .15s ease-in-out,border-color .15s ease-in-out,box-shadow .15s ease-in-out;
@@ -108,7 +94,7 @@ export const accountRecovery = (req: Request, res: Response, next: NextFunction)
     background-color: #2dca8c;
     border-color: #2dca8c;
     box-shadow: inset 0 1px 0 rgba(255,255,255,.15);
-"><a href='${PasswordResetLink}'>Password Reset</a></button>
+"><a href='${PasswordResetLink}' style='color:#fff'>Password Reset</a></button>
                     <br/>
                     copy link below to your browser if button above does not work on your device.
                     ${PasswordResetLink}
