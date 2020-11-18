@@ -18,7 +18,6 @@ import { classWeb, ClassroomWebFileDocument } from "../models/classWebFiles";
 import { User, UserDocument } from "../models/User";
 import { Community, CommunityDocument } from "../models/Community";
 import { randomString } from "../helpers/utility";
-import { threadId } from "worker_threads";
 
 const cloudi = cloudinary.v2;
 
@@ -33,6 +32,7 @@ export default (server: express.Application) => {
     
     const io = require("socket.io")(server, chat);
     const clients: any[] = [];
+    const usersonline: any = {} ;
     // const nsp = io.of("/api/v1/classrooms");
 
     io.on("connection", function (socket: any) {
@@ -44,6 +44,7 @@ export default (server: express.Application) => {
         };
         // register current client  
         clients[socket.id] = socket.client;
+        usersonline[socket.id] = { socket, kid: null, inRoom: false, room: null};
         interface NewMessageInterface {
             message: string;
             msg: string;
@@ -137,13 +138,39 @@ export default (server: express.Application) => {
             kid: string;
         }
 
+        socket.on("rtc_ready_state",(room: string) => {
+            console.log(room);
+            room && Classroom.findOne({kid: room},(error, roomFound) => {
+                if(roomFound){
+                    socket.emit("rtc_setup_users", roomFound.students);
+                } else {
+                    socket.emit("rtc_search_failed");
+                }
+            });
+        });
+
+        socket.on("rtc_setup_users_complete",(usersToCall: [object],beepstrength: number) => {
+
+            usersToCall.length && usersToCall.forEach((user: any) => {
+                // beep users
+                console.log("beeping user ",user);
+                io.to(user.socketid).emit("rtc_beep",{ from: socket.id, beepstrength });
+                socket.emit("beep_delivery",user);
+            });
+        });
+
+        socket.on("rtc_beep_success",(target: string, mydata: any) => {
+            // allow target to call me
+            io.to(target).emit("rtc_beep_initite",mydata);
+        });
+
         socket.on("mute_user_audio_webrtc", (user: UserWEBRTC) => {
             io.to(user.socketid).emit("mute_user_audio_webrtc");
         });
 
         
         socket.on("wave_to_user_webrtc", (data: UserWEBRTC) => {
-            console.log(data);
+            // console.log(data);
             io.to(data.socketid).emit("wave_to_user_webrtc_", data);
         });
 
@@ -176,7 +203,7 @@ export default (server: express.Application) => {
         });
 
         socket.on("edit_message",(data: NewThreadMessage) => {
-            console.log(data);
+            // console.log(data);
             Classroom.findOne({kid: data.room}).then((classroom: ClassroomDocument) => {
                 if(classroom && classroom.messages){
                     const messageFoundAndActive: any[]  = classroom.messages.find((message: NewMessageInterface) => message.msgId === data.messageId && !message.isDeleted);
@@ -194,7 +221,7 @@ export default (server: express.Application) => {
 
                         classroom.markModified("messages");
                         classroom.save((err, room) => {
-                            console.log(err);
+                            // console.log(err);
                             if(err) socket.emit("edit_message_error","Failed to edit message");
                             const messageForEditing: any[]  = room.messages.filter((message: NewMessageInterface) => message.msgId === data.messageId && !message.isDeleted);
 
@@ -205,7 +232,7 @@ export default (server: express.Application) => {
                     }
                 }
             }).catch((err) => {
-                console.log(err);
+                // console.log(err);
                 socket.emit("edit_message_error","Failed to find room");
             });
         });
@@ -660,7 +687,7 @@ export default (server: express.Application) => {
                                     socket.emit("updateMsg", { by: "server", msgs: d.messages, type: "oldMsgUpdate" });
 
                                     socket.emit("classroom_users", d.students);
-                                    console.log(d.students);
+                                    // console.log(d.students);
                                     
                                     socket.emit("class_favourites", d.likes);
                                   
@@ -753,6 +780,12 @@ export default (server: express.Application) => {
                                     socket.join(`preview--${res.kid}`);
 
                                     socket.join(data.classroom_id, () => {
+                                        
+                                        usersonline[socket.id].room = data.classroom_id;
+                                        usersonline[socket.id].inRoom = true;
+                                        usersonline[socket.id].kid = data.userId;
+                                        // console.log(usersonline[socket.id]);
+
                                         io.in(data.classroom_id).emit("someoneJoined",
                                             {
                                                 by: "server",
@@ -1551,6 +1584,7 @@ export default (server: express.Application) => {
                             Classroom.findOneAndUpdate({ _id: socket.room }, {  numberInClass: newclassusers.length , students: newclassusers }, { new: true }, (err, doc) => {
                                 if (err) console.log("error");
                                 delete clients[socket.id];
+                                delete usersonline[socket.id];
                                 console.log(`${socket.username}  disconnected from ${room.name}`);
                                 io.in(socket.room).emit("updatechat_left", {
                                     by: "server",
@@ -1566,6 +1600,7 @@ export default (server: express.Application) => {
                                     (existingSocket) =>
                                         existingSocket !== socket.id
                                 );
+                                console.log(clients.length, " sockets active");
                             });
                         }
                     });
