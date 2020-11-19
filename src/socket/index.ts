@@ -138,6 +138,10 @@ export default (server: express.Application) => {
             kid: string;
         }
 
+        socket.on("force_disconnect",(socketid: string) => {
+            io.to(socketid).emit("force_disconnect");
+        });
+
         socket.on("rtc_ready_state",(room: string) => {
             console.log(room);
             room && Classroom.findOne({kid: room},(error, roomFound) => {
@@ -648,7 +652,6 @@ export default (server: express.Application) => {
                                 username: user.username || user.communityName.toLowerCase(),
                                 role: "1",
                                 kid: user.kid,
-                                stack: user.techStack || "communityAccount",
                                 avatar: user.gravatarUrl || user.Logo,
                                 socketid: socket.id
                             };
@@ -785,8 +788,9 @@ export default (server: express.Application) => {
                                         usersonline[socket.id].inRoom = true;
                                         usersonline[socket.id].kid = data.userId;
                                         // console.log(usersonline[socket.id]);
+                                        console.log(Object.keys(usersonline).length, " sockets active");
 
-                                        io.in(data.classroom_id).emit("someoneJoined",
+                                        socket.to(data.classroom_id).emit("someoneJoined",
                                             {
                                                 by: "server",
                                                 msg: data.userId + " joined",
@@ -1576,7 +1580,7 @@ export default (server: express.Application) => {
                 if (err) {
                 } else if (room && room !== null) {
                     room.students.forEach((user: { kid: string }, i) => {
-                        if (user.kid == socket.user) {
+                        if (user.kid === socket.user) {
                             let newclassusers: any[];
                             newclassusers = room.students.filter((s: any, i) => {
                                 return s.kid != socket.user;
@@ -1600,7 +1604,7 @@ export default (server: express.Application) => {
                                     (existingSocket) =>
                                         existingSocket !== socket.id
                                 );
-                                console.log(clients.length, " sockets active");
+                                console.log(Object.keys(usersonline).length, " sockets active");
                             });
                         }
                     });

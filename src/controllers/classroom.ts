@@ -31,6 +31,43 @@ interface MessageInterface {
     readonly thread?: {}[];
     readonly by: string;
 }
+
+export const disconnectUserFromRoom = (req: Request, res: Response): object => {
+    const { room, kid } = req.body;
+
+    if(room && kid){
+        Classroom.findOne({kid: room}).then((roomDocument: any) => {
+            if(roomDocument){
+                let { students } =  roomDocument;
+
+                let socket: string;
+                const stud = students.find((student: any) => {
+                    return student.kid === kid;
+                });
+                console.log(stud);
+                socket =  stud && stud.socketid;
+
+                const students_ = students.filter((student: any) => {
+                    return student.kid !== kid;
+                });
+                roomDocument.students =  students_;
+                console.log(students_);
+
+                roomDocument.markModified("students");
+                roomDocument.save((err: any,data: any) => {
+                    if(!err && data){
+                        return successResponse(res, socket);
+                    } else {
+                        return ErrorResponse(res,"Failed to save");
+                    }
+                });
+            }
+        });
+    } else {
+        return ErrorResponse(res,"Action Failed");
+    }
+};
+
 export const getMessageThread = (req: Request, res: Response): void => {
     const { messageId } = req.body;
     const { kid } = req.params;
