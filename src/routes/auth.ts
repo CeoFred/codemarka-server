@@ -10,6 +10,9 @@ import {postDeleteAccount,
     accountRecovery,
     userAuthtokenVerify,
     handelGitHubAuthCallback,
+    handleSlackAuth,
+    verifyOauthFinalStepsToken,
+    completeOauthAccountSetup
 } from "../controllers/auth";
 import express from "express";
 import passport from "passport";
@@ -67,6 +70,12 @@ router.post("/user/account/password/reset", passwordReset);
 
 router.get("/account/user/verify/:token/:user", emailVerification);
 // password reset 
+
+router.get("/user/slack/oauth/external", handleSlackAuth);
+
+router.get("/user/oauth/verify/:token/:userkid", verifyOauthFinalStepsToken);
+
+router.post("/user/oauth/complete/:token/:userkid", completeOauthAccountSetup);
 
 // all users
 export default router;

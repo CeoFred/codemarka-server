@@ -8,6 +8,7 @@ export type UserDocument = mongoose.Document & {
     emailVerified: boolean;
     googleid: string;
     githubid: string;
+    slackid: string;
     name: string;
     profile: {
         name: string;
@@ -89,9 +90,14 @@ const userSchema = new mongoose.Schema({
         type: Number,
         default:0
     },
+    slackid: {
+        type: String,
+        unique: true
+    },
     username: {
         type: String,
-        default:""
+        default:"",
+        unique: true
     },
     status: {
         default: true,
@@ -111,7 +117,8 @@ const userSchema = new mongoose.Schema({
         type: Number
     },
     confirmOTP: {
-        type: Number
+        type: Number,
+        default: 0
     },
     techStack : String,
     emailVerificationToken : {

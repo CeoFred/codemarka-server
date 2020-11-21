@@ -155,6 +155,9 @@ export const getLanguageSettings = (req: Request, res: Response): void => {
         }
     });
 };
+/**
+ * Create a new room
+ */
 export const createClassRoom = (
     req: Request,
     res: Response,

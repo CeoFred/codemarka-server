@@ -1,8 +1,11 @@
+/* eslint-disable @typescript-eslint/camelcase */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import sgMail  from "@sendgrid/mail";
-import passport from "passport";
+import axios from "axios";
+import qs from "qs";
+
 import { User, UserDocument } from "../models/User";
 import { UserDeleted } from "../models/DeletedUsers";
 import { Request, Response, NextFunction } from "express";
@@ -10,7 +13,7 @@ import { WriteError } from "mongodb";
 import { validationResult } from "express-validator";
 import crypto from "crypto";
 import { successMessage } from "../helpers/response";
-import { successResponseWithData } from "../helpers/apiResponse";
+import { ErrorResponse, successResponseWithData } from "../helpers/apiResponse";
 import { randomNumber,randomString } from "../helpers/utility";
 
 import jwt from "jsonwebtoken";
@@ -21,6 +24,147 @@ import { communityAccountLogin,communityAuthtokenVerify,CommunityAuthLogout } fr
 
 const options = { algorithm: "HS256", noTimestamp: false, audience: "users", issuer: "codemarka", subject: "auth", expiresIn: "7d" };
 
+
+
+export const completeOauthAccountSetup = async (req: Request, res: Response) => {
+    const { token: token_, userkid } =  req.params;
+    const { email, username } = req.body;
+
+    !token_ || !userkid  && ErrorResponse(res,"Failed");
+
+    if(!email || !username){
+        return ErrorResponse(res,"Invalid Input ");
+    }
+
+    token_ && userkid && User.findOne({kid: userkid}).then((user) => {
+        
+        const { tokens } =  user && user;
+        const valid = tokens && tokens.find(tok => {
+            return tok.type === "auth_setup" && tok.token  === token_;
+        });
+
+        !valid && ErrorResponse(res, "Failed"); 
+
+        if(valid){
+            user.tokens = user.tokens.filter(t => t.token !== token_);
+            user.username = username;
+            user.email = email;
+
+            user.save((err,updatedUser) => {
+                if(!err && updatedUser){
+                    return successResponseWithData(res,"done",updatedUser.toAuthJSON());
+                } else {
+                    return ErrorResponse(res,"Whooops! SOmething went wrong");
+                }
+            });
+        }
+
+    }).catch((err) => {
+        return ErrorResponse(res,"Failed");
+    });
+
+
+};
+
+export const verifyOauthFinalStepsToken = async (req: Request, res: Response) => {
+    const { token: token_, userkid } =  req.params;
+    !token_ || !userkid && ErrorResponse(res,"Failed");
+
+    console.log(token_, userkid);
+    token_ && userkid && User.findOne({kid: userkid}).then((user) => {
+        
+        const { tokens } =  user && user;
+        const valid = tokens && tokens.find(tok => {
+            return tok.type === "auth_setup" && tok.token  === token_;
+        });
+
+        !valid && ErrorResponse(res, "Failed"); 
+
+        valid && successResponseWithData(res,"success",{ email: user.email, username: user.username, ok: true});
+
+    }).catch((err) => {
+        return ErrorResponse(res,"Failed");
+    });
+};
+
+/**
+ * Slack Oauth
+ */
+export const handleSlackAuth = async (req: Request, res: Response) => {
+    const {code} = req.query;
+    var fullUrl = "http://localhost:2001/api/v1/auth/user/slack/oauth/external";
+    console.log(req.query);
+    const data = {
+        code,
+        client_id:"1021312075858.1524283231284",
+        client_secret:"10aab867d3539707bb791a63dc9e1f4d",
+        redirect_uri: fullUrl
+    };
+    try {
+        const headers =  {headers:{"Content-Type": "application/x-www-form-urlencoded"}};
+        
+        axios.post("https://slack.com/api/oauth.v2.access",qs.stringify(data),headers).then(data_ => {
+            console.log(data_.data);
+            const { authed_user } = data_.data;
+            const { id, access_token } =  authed_user;
+            // eslint-disable-next-line quotes
+            const getSlackUser =  `https://slack.com/api/users.info?token=${access_token}&user=${id}&include_locale=true`;
+            id && access_token && axios.get(getSlackUser,headers).then(userData => {
+                
+                console.log(userData.data);
+                // save user and redirect back to codemarka
+
+                User.findOne({slackid: userData.data.user.id}).then(u_ => {
+                    if(u_){
+                        const payload = u_.toAuthJSON();
+                        const redirect = `${req.hostname === "localhost" ? "http://localhost:3000/" : "https://codemarka.dev/"}auth/user/oauth/success/${payload.token}/${u_.kid}`;
+                        return res.status(200).redirect(redirect);
+                    } else {
+                        const user =  new User();
+                        user.email = userData.data.user.name + "@slack.com";
+                        user.username =  `${userData.data.user.profile.display_name}_slack`;
+                        user.slackid = userData.data.user.id;
+                        user.gravatarUrl = userData.data.user.profile.image_original;
+                        user.location = userData.data.user.tz;
+                        user.isConfirmed = true;
+                        user.kid = randomString(40);
+                        user.emailVerified = true;
+                        const buf = crypto.randomBytes(56);
+                        const auth_setup_token = buf.toString("hex");
+                        user.tokens = [{ type: "access_token", token : access_token}, {type: "auth_setup", token: auth_setup_token}];
+
+                        user.save((saveerr, slackuser) => {
+                            if(!saveerr && slackuser){
+                                const redirect = `${req.hostname === "localhost" ? "http://localhost:3000/" : "https://codemarka.dev/"}auth/account/user/finalSteps/${auth_setup_token}/${slackuser.kid}`;
+                                return res.status(201).redirect(redirect);
+                            } else {
+                                console.log(saveerr);
+                                return ErrorResponse(res,"Action Failed");
+                            }
+                        });
+                    }
+                }).catch(err => {
+                    console.log(err);
+                    return ErrorResponse(res,"Action Failed");
+                });
+
+            }).catch(err => {
+                console.log(err);
+                return ErrorResponse(res,"Action Failed");
+            });
+
+        }).catch(err => { 
+            console.log(err);
+            return ErrorResponse(res,"Action Failed");
+        });
+        
+    } catch (error) {
+        console.log(error);
+        return ErrorResponse(res,"Action Failed");
+        
+    }
+    
+};
 /** 
  *
  *Account recovery for user 
@@ -47,7 +191,7 @@ export const accountRecovery = (req: Request, res: Response, next: NextFunction)
         
         User.findOne({email: formattedMail}).exec((err,resp) => {
             let token = "";
-            const buf = crypto.randomBytes(26);
+            const buf = crypto.randomBytes(46);
             token = buf.toString("hex");
             let userid;
             if(!resp){
@@ -424,7 +568,7 @@ export const postSignup = (req: Request, res: Response, next: NextFunction) => {
                             let trial = 0;
                             let maxTrial = 2;
                             let sent = false;
-                            const vLink = `${req.hostname === "localhost" ? "http://localhost:2001/" : "https://code-marka.herokuapp.com/"}api/v1/auth/account/user/verify/${verificationToken}/${user._id}`;
+                            const vLink = `${req.hostname === "localhost" ? "http://localhost:2001/" : "https://api.secure.codemarka.dev/"}api/v1/auth/account/user/verify/${verificationToken}/${user._id}`;
                             console.log(vLink);
                             const sendMailToNewUser = (email: string) => {
             
