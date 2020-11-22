@@ -1,1 +1,1 @@
-web: node dist/server.js
+web: forever start dist/server.js

@@ -16,6 +16,7 @@ import auth from "./routes/auth";
 import classroom from "./routes/classroom";
 import community from "./routes/community";
 import user from "./routes/user";
+import slack from "./routes/slack";
 
 import { NextFunction, Request, Response } from "express";
 import uuid from "uuid";
@@ -71,6 +72,7 @@ app.use("/api/v1/auth", auth);
 app.use("/api/v1/classroom", classroom);
 app.use("/api/v1/community" ,community);
 app.use("/api/v1/user", user);
+app.use("/api/v1/slack", slack);
 
 app.get("/api/v1", (req, res) => {
     res.json({ message: "Looking for something??" });
