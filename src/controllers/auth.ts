@@ -92,7 +92,9 @@ export const verifyOauthFinalStepsToken = async (req: Request, res: Response) =>
  */
 export const handleSlackAuth = async (req: Request, res: Response) => {
     const {code} = req.query;
-    var fullUrl = "http://localhost:2001/api/v1/auth/user/slack/oauth/external";
+    const host = process.env.NODE_ENV === "production" ? "https://api.secure.codemarka.dev" : "http://localhost:2001";
+
+    var fullUrl = `${host}/api/v1/auth/user/slack/oauth/external`;
     console.log(req.query);
     const data = {
         code,
