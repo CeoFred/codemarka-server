@@ -92,39 +92,46 @@ export const verifyOauthFinalStepsToken = async (req: Request, res: Response) =>
  */
 export const handleSlackAuth = async (req: Request, res: Response) => {
     const {code} = req.query;
-    const host = process.env.NODE_ENV === "production" ? "https://api.secure.codemarka.dev" : "http://localhost:2001";
+    const host = process.env.NODE_ENV == "production" ? "https://api.secure.codemarka.dev" : "http://localhost:2001";
 
-    var fullUrl = `${host}/api/v1/auth/user/slack/oauth/external`;
-    console.log(req.query);
+    var fullUrl = `${host}/api/v1/auth/user/slack/oauth/external` + (req.query.rdir && req.query.rdir.length > 0 ? "?rdir="+req.query.rdir : "");
+    // console.log(req.query, fullUrl);
+
     const data = {
         code,
         client_id:"1021312075858.1524283231284",
         client_secret:"10aab867d3539707bb791a63dc9e1f4d",
-        redirect_uri: fullUrl
+        redirect_uri: fullUrl.trim().toLocaleLowerCase()
     };
     try {
         const headers =  {headers:{"Content-Type": "application/x-www-form-urlencoded"}};
         
         axios.post("https://slack.com/api/oauth.v2.access",qs.stringify(data),headers).then(data_ => {
-            console.log(data_.data);
             const { authed_user } = data_.data;
+            // console.log(data_.data, authed_user);
+
             const { id, access_token } =  authed_user;
             // eslint-disable-next-line quotes
             const getSlackUser =  `https://slack.com/api/users.info?token=${access_token}&user=${id}&include_locale=true`;
             id && access_token && axios.get(getSlackUser,headers).then(userData => {
                 
-                console.log(userData.data);
+                // console.log(userData.data);
                 // save user and redirect back to codemarka
 
                 User.findOne({slackid: userData.data.user.id}).then(u_ => {
                     if(u_){
                         const payload = u_.toAuthJSON();
-                        const redirect = `${req.hostname === "localhost" ? "http://localhost:3000/" : "https://codemarka.dev/"}auth/user/oauth/success/${payload.token}/${u_.kid}`;
+                        let redirect = `${req.hostname === "localhost" ? "http://localhost:3000/" : "https://codemarka.dev/"}auth/user/oauth/success/${payload.token}/${u_.kid}`;
+
+                        const setupComplete  = u_.tokens.find(t => t.type === "auth_setup");
+
+                        redirect = setupComplete ? `${req.hostname === "localhost" ? "http://localhost:3000/" : "https://codemarka.dev/"}auth/account/user/finalSteps/${setupComplete.token}/${u_.kid}` : redirect;
+                        // console.log("old user");
                         return res.status(200).redirect(redirect);
                     } else {
                         const user =  new User();
                         user.email = userData.data.user.name + "@slack.com";
-                        user.username =  `${userData.data.user.profile.display_name}_slack`;
+                        user.username =  `${userData.data.user.profile.display_name.replace(" ","_")}_slack`;
                         user.slackid = userData.data.user.id;
                         user.gravatarUrl = userData.data.user.profile.image_original;
                         user.location = userData.data.user.tz;
@@ -146,7 +153,7 @@ export const handleSlackAuth = async (req: Request, res: Response) => {
                         });
                     }
                 }).catch(err => {
-                    console.log(err);
+                    // console.log(err);
                     return ErrorResponse(res,"Action Failed");
                 });
 
