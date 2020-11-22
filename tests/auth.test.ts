@@ -17,3 +17,11 @@ describe("Index Auth Test", () => {
         await expect(res.status).to.equal(200);
     });
 });
+
+
+describe("Slack", () => {
+    it("should redirect to a qualified slack oauth",async function () {
+        const res = await request(app).get("/api/v1/slack/install");
+        await expect(res.status).to.equal(302);
+    });
+});
