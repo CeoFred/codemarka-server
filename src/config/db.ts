@@ -5,7 +5,7 @@ import logger from "../util/logger";
 // import { MONGODB_URI } from "../util/secrets";
 
 export const ENVIRONMENT = process.env.NODE_ENV;
-const prod = ENVIRONMENT === "production"; // Anything else is treated as 'dev'
+const prod = ENVIRONMENT === "production" || ENVIRONMENT === "staging"; // Anything else is treated as 'dev'
 export const MONGODB_URI = prod ? process.env["MONGODB_URI"] : process.env["MONGODB_URI_LOCAL"];
 
 // console.log(`.env.${process.env.NODE_ENV}`);
