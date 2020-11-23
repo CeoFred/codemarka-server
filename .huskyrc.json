@@ -1,6 +1,6 @@
 {
     "hooks": {
         "pre-commit": "npm run lint",
-        "pre-push": "npm run build && export NODE_ENV=test && npm test"
+        "pre-push": "npm run build && npm run test"
     }
 }
