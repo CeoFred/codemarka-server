@@ -1,9 +1,23 @@
 import mongoose from "mongoose";
 import bluebird from "bluebird";
 import chalk from "chalk";
+import logger from "../util/logger";
+// import { MONGODB_URI } from "../util/secrets";
 
-import { MONGODB_URI } from "../util/secrets";
+export const ENVIRONMENT = process.env.NODE_ENV;
+const prod = ENVIRONMENT === "production"; // Anything else is treated as 'dev'
+export const MONGODB_URI = prod ? process.env["MONGODB_URI"] : process.env["MONGODB_URI_LOCAL"];
 
+// console.log(`.env.${process.env.NODE_ENV}`);
+
+if (!MONGODB_URI) {
+    if (prod) {
+        logger.error("No mongo connection string. Set MONGODB_URI environment variable.");
+    } else {
+        logger.error("No mongo connection string. Set MONGODB_URI_LOCAL environment variable.");
+    }
+    process.exit(1);
+}
 // // Connect to MongoDB
 const mongoUrl = MONGODB_URI;
 mongoose.Promise = bluebird;

@@ -1,7 +1,8 @@
 import errorHandler from "errorhandler";
 import express from "express";
+// import path from "path";
+
 import app from "./app";
-import dotenv from "dotenv";
 import socket from "./socket/index";
 // const key = fs.readFileSync(__dirname + '/../sslCert/key.pem')
 // const cert = fs.readFileSync(__dirname + '/../sslCert/cert.pem')
@@ -10,7 +11,8 @@ const http = require("http").createServer(app);
 
 socket(http);
 
-dotenv.config();
+// dotenv.config();
+
 class Server {
     public app: express.Application
 
@@ -21,7 +23,8 @@ class Server {
      * start
      */
     public start(): void {
-        
+        this.app.set("port", process.env.PORT || process.env.OPENSHIFT_NODEJS_PORT || 8080);
+        // console.log(this.app.get("port"));
         http.listen(this.app.get("port"), () => {
             console.log(
                 "  App is running at http://localhost:%d in %s mode",

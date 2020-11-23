@@ -2,9 +2,7 @@ import {expect} from "chai";
 import app from "../src/server";
 import {agent as request} from "supertest";
 
-after((done) => {
-    app.close(done);
-});
+process.env.NODE_ENV = "test";
 
 
 describe("Index Auth Test", () => {

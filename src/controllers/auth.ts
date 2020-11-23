@@ -823,26 +823,28 @@ export const emailVerification = (req: Request, res: Response, next: NextFunctio
  * Update profile information.
  */
 export const postUpdateProfile = (req: Request, res: Response, next: NextFunction) => {
-    res.header("Access-Control-Allow-Origin", req.get("origin"));
-    res.header("Access-Control-Allow-Credentials", "true");
-    res.header("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE");
-    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
     const errors = validationResult(req);
 
+    console.log(req.body);
     if (!errors.isEmpty()) {
         // return res.status(422).json(failed(errors.array()));
         return apiResponse.ErrorResponse(res,errors.array());
     }
-    User.findOne({ kid: req.body.decoded.kid }, (err, user: UserDocument) => {
+    User.findOne({ kid: req.body.decoded.id }, (err, user: UserDocument) => {
         if (err) { return next(err); }
-        user.profile =  {...user.profile, ...req.body.profile};
-        user.social =  {...user.social, ...req.body.social};
-        user.save((err: WriteError,data) => {
-            if (err) {
-                return next(err);
-            }
-            return successResponseWithData(res,"Success", data);
-        });
+        if(user){
+            
+            user.profile =  {...user.profile, ...req.body.profile};
+            user.social =  {...user.social, ...req.body.social};
+            user.save((err: WriteError,data) => {
+                if (err) {
+                    return next(err);
+                }
+                return successResponseWithData(res,"Success", data);
+            });
+        } else {
+            return apiResponse.ErrorResponse(res,"User Not Found");
+        }
     });
 };
 
@@ -851,10 +853,7 @@ export const postUpdateProfile = (req: Request, res: Response, next: NextFunctio
  * Update current password.
  */
 export const postUpdatePassword = (req: Request, res: Response, next: NextFunction) => {
-    res.header("Access-Control-Allow-Origin", req.get("origin"));
-    res.header("Access-Control-Allow-Credentials", "true");
-    res.header("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE");
-    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+
     const errors = validationResult(req);
 
     if (!errors.isEmpty()) {

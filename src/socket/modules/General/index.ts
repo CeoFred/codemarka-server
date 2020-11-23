@@ -22,6 +22,7 @@ export default function GeneralSocketEvent(socket: Socket | any, io: Socket, use
         });
     });
 
+    
     socket.on("gravatarRegenerate",(data: any) => {
         Classroom.findOne({kid: data.room }).then(room => {
             if(room){
@@ -29,7 +30,7 @@ export default function GeneralSocketEvent(socket: Socket | any, io: Socket, use
                 room.actions.push({message: "Gravatar Updated",user: socket.user,timestamp: data.time });
                 room.save((err, data) => {
                     if(err) io.in(socket.room).emit("action_failed","Failed to Generate Gravatr");
-                    io.in(socket.room).emit("gravatarRegenerated",data.gravatarUrl);
+                    io.in(socket.room).emit("gravatar_image_upload_complete",data.gravatarUrl);
                 });
             } else {
                 io.in(socket.room).emit("action_failed","Classroom not found");

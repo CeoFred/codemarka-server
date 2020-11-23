@@ -5,11 +5,16 @@ import bodyParser from "body-parser";
 import lusca from "lusca";
 import methodOverride from "method-override";
 import cors from "cors";
-import passport from "passport";
+import dotenv from "dotenv";
+import path from "path";
+import cookieParser from "cookie-parser";
+import { NextFunction, Request, Response } from "express";
+import uuid from "uuid";
+
 import session from "express-session";
 import connectStore from "connect-mongo";
-import mongoose from "./config/db";
-import cookieParser from "cookie-parser";
+// import passport from "passport";
+
 import { SESS_NAME, SESS_SECRET , SESS_LIFETIME } from "./util/secrets";
 
 import auth from "./routes/auth";
@@ -18,13 +23,19 @@ import community from "./routes/community";
 import user from "./routes/user";
 import slack from "./routes/slack";
 
-import { NextFunction, Request, Response } from "express";
-import uuid from "uuid";
 
 const MongoStore = connectStore(session);
 
 // Create Express server
 const app = express();
+if (process.env.NODE_ENV !== "production") {
+    const result = dotenv.config({ path: path.resolve(process.cwd(), `.env.${app.get("env").trim()}`)});
+ 
+    if (result.error) {
+        throw result.error;
+    }
+}
+import mongoose from "./config/db";
 
 app.use(compression());
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -42,7 +53,7 @@ app.use(session({
         collection: "session",
         ttl: (SESS_LIFETIME) / 1000
     }),
-    genid: function (req) {
+    genid: function () {
         return uuid.v4();
     },
     cookie: {
@@ -52,13 +63,12 @@ app.use(session({
         sameSite: "lax"
     }
 }));
-require("./config/passport");
+// require("./config/passport");
 
-app.use(passport.initialize());
-app.use(passport.session());
+// app.use(passport.initialize());
+// app.use(passport.session());
 
 app.set("host", process.env.OPENSHIFT_NODEJS_IP || "0.0.0.0");
-app.set("port", process.env.PORT || process.env.OPENSHIFT_NODEJS_PORT || 8080);
 
 app.use(methodOverride());
 app.use(cors({credentials: true, origin: ["http://localhost:8080","http://localhost:3000","https://codemarka.dev","https://sandbox.codemarka.dev"]}));
