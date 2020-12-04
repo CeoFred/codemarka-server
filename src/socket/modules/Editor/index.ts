@@ -40,10 +40,9 @@ export default function webrtcSocketFactory(socket: any, io: Socket): void{
         });
 
     });
-
     socket.on("editorChanged", (data: EditorChangedInterface) => {
         try {
-            classWeb.findOne({classroomKid:data.kid}, (err,res) => {
+            classWeb.findOne({classroomKid:data.kid}, (err,res: any) => {
 
                 if(err) {
                     socket.emit("classroom_error");
@@ -54,16 +53,8 @@ export default function webrtcSocketFactory(socket: any, io: Socket): void{
                     console.log("class not found",res);
                 }
                 if(res){
-                    if(data.file === "js"){
-                        res.js.content = data.content;
-                    }
-                    if(data.file === "css"){
-                        res.css.content = data.content;
-                    }
-                    if(data.file === "html"){
-                        res.html.content = data.content;
-                    }
-                    res.save((err,doc) => {
+                    res[data.file].content = data.content;
+                    res.save((err: any,doc: any) => {
                         if(err) {
                             socket.emit("classroom_error");
                             console.log("Error updating editors remotely",err);

@@ -11,6 +11,8 @@ export type ClassroomWebFileDocument = mongoose.Document & {
             preprocessor: string;
             externalCDN: Record<string, any>[];
         };
+        lastupdateat: string;
+        lastupdateby: string;
     };
     "css": {
         content: string;
@@ -19,6 +21,8 @@ export type ClassroomWebFileDocument = mongoose.Document & {
             preprocessor: string;
             externalCDN: Record<string, any>[];
         };
+        lastupdateat: string;
+        lastupdateby: string;
     };
     "html": {
         content: string;
@@ -27,6 +31,8 @@ export type ClassroomWebFileDocument = mongoose.Document & {
             preprocessor: string;
             classes: Record<string, any>[];
         };
+        lastupdateat: string;
+        lastupdateby: string;
     };
 };
 
@@ -36,6 +42,7 @@ const classWebFiles = new mongoose.Schema({
         type: String,
         required: true
     },
+
     classroomKid:{
         type: String,
         required: true
@@ -57,6 +64,13 @@ const classWebFiles = new mongoose.Schema({
                 type: Array,
                 default:[]
             }
+        },
+        lastupdateat: {
+            type: Date
+        },
+        lastupdateby: {
+            type: String || null,
+            default: null
         }
     },
     css:{
@@ -77,6 +91,14 @@ const classWebFiles = new mongoose.Schema({
                 default:[]
             }
         }
+        ,
+        lastupdateat: {
+            type: Date
+        },
+        lastupdateby: {
+            type: String || null,
+            default: null
+        }
     },
     html: {
         content:{
@@ -95,6 +117,13 @@ const classWebFiles = new mongoose.Schema({
                 type: Array,
                 default:[]
             }
+        },
+        lastupdateat: {
+            type: Date
+        },
+        lastupdateby: {
+            type: String || null,
+            default: null
         }
     }
 }, { timestamps: true });
