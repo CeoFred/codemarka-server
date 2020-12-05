@@ -564,6 +564,7 @@ export const postSignup = (req: Request, res: Response, next: NextFunction) => {
                                 status:1,
                                 emailVerificationToken:verificationToken,
                                 techStack: "",
+                                slackid:randomString(40),
                                 kid: randomString(40)
                             }
                         );

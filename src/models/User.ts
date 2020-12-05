@@ -92,7 +92,8 @@ const userSchema = new mongoose.Schema({
     },
     slackid: {
         type: String,
-        default: ""
+        required: false,
+        unique: false
     },
     username: {
         type: String,
