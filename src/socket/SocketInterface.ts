@@ -39,6 +39,7 @@ export interface JoinObj {
     classroom_id: string;
     username: string;
     cdata: ClassroomDocument;
+    entryTime: Date;
 }
 
 export interface ImageUploadData {

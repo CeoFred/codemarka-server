@@ -6,10 +6,9 @@ import sgMail  from "@sendgrid/mail";
 import fs from "fs";
 
 import {Classroom, ClassroomDocument} from "../../../models/classroom";
-import {User} from "../../../models/User";
+import {User, UserDocument} from "../../../models/User";
 import {ClassroomAttendance, ClassroomAttendanceDocument} from "../../../models/Attendance";
 import {classWeb} from "../../../models/classWebFiles";
-import { Community, CommunityDocument} from "../../../models/Community";
 
 import { randomString} from "../../../helpers/utility";
 import { JoinObj } from "../../SocketInterface";
@@ -77,229 +76,230 @@ export default function GeneralSocketEvent(socket: Socket | any, io: Socket, use
         // find user and update
         User.findOne({ kid: data.userId }).then(user => {
             let studentObj;
-            function proceedTojoinUser(user: any): void{
+            function proceedTojoinUser(user: UserDocument): void{
                 // check if user is already in classm, filter and push new user object
-                Classroom.findById(data.classroom_id, (err, res) => {
+                Classroom.findById(data.classroom_id, (err, room) => {
                     if (err) throw err;
                         
-                    if (res && res !== null) {
-                        const isBroadcasting = res.isBroadcasting;
-                            
-                        if(isBroadcasting){
-                            io.in(socket.room).emit("call_me",{id:user._id,username: user.username || user.communityName,kid:user.kid,socketid: socket.id});
+                    if (room && room !== null) {
+                         
+                        let participants = room.participants;
+
+                        const hasJoinedBefore = participants.find(participant => {
+                            return String(participant.kid) === String(data.userId);
+                        });
+
+                        if(hasJoinedBefore){
+                            participants = participants.map(participant => {
+                                if(participant.kid === data.userId){
+                                    return {
+                                        ...participant,
+                                        inClass: true,
+                                        socketid: socket.id,
+                                        username: user.username
+                                    };
+                                }
+                                return participant;
+                            });
+                        } else {
+                            const participantData = {
+                                id: String(user._id),
+                                username: user.username,
+                                kid: user.kid,
+                                avatar: user.gravatarUrl,
+                                socketid: socket.id,
+                                inClass: true,
+                                accessControls: {
+                                    editors: {
+                                        read: true,
+                                        write: false,
+                                        upload: false,
+                                        administrative: false // includes inviting to collaborate
+                                    },
+                                    conversation: {
+                                        read: true,
+                                        write: true,
+                                        administrative: false // includes deleting another users message
+                                    },
+                                    videoConference: {
+                                        read: true,
+                                        write: true,
+                                        administrative: false // includes muting mics, removing and adding users
+                                    }
+                                },
+                                hasRoomAccess: true,
+                                lastTimeEntry: data.entryTime
+                            };
+                            participants.push(participantData);
+
                         }
-                        const students = res.students;
-                        let found = students.filter((s: any) => {
-                            return String(s.id) === String(socket.user);
-                        });
-                        if(Array.isArray(found) && found[0]){
-                            io.in(socket.room).emit("disconnect_user_before_join",data);
-                        };
-                        // console.log("found class");
-                        const currentClassStudents = res.students;
-                        oldStudentsWithoutUser = currentClassStudents.filter(student => {
-                            return String(student.kid) !== String(data.userId);
+                        room.participants = participants;
+                        room.numberInClass++;
+                        
+                        let ratings = room.ratings;
+                        let foundRating = ratings.filter(rating => {
+                            return String(socket.user) === String(rating.user);
                         });
 
-                        studentObj = {
-                            id: String(user._id),
-                            username: user.username || user.communityName.toLowerCase(),
-                            role: "1",
-                            kid: user.kid,
-                            avatar: user.gravatarUrl || user.Logo,
-                            socketid: socket.id
-                        };
- 
-                        oldStudentsWithoutUser.push(studentObj);
+                        if (foundRating && Array.isArray(foundRating) && foundRating.length > 0) {
+                            socket.emit("rated_class", true);
+                        } else {
+                            socket.emit("rated_class", false);
+                        }
 
+                        socket.emit("updateMsg", { by: "server", msgs: room.messages, type: "oldMsgUpdate" });
 
-                        const updatedStudentList = oldStudentsWithoutUser;
-                        // console.log(updatedStudentList);
-                        Classroom.findOneAndUpdate({ _id: data.classroom_id },
-                            {
-
-                                students: updatedStudentList,
-                                $inc: { numberInClass: 1 }
-                            },
-                            { new: true }).then((d: any) => {
-
-                            if (d) {
-                                const classroom = socket.room;
-
-                                Classroom.findById(classroom, (err, res) => {
-                                    if (err) console.log(err);
-                                    let ratings = res.ratings;
-                                    let foundRating = ratings.filter(rating => {
-                                        return String(socket.user) === String(rating.user);
-                                    });
-
-                                    if (foundRating && Array.isArray(foundRating) && foundRating.length > 0) {
-                                        return socket.emit("rated_class", true);
-                                    } else {
-                                        return socket.emit("rated_class", false);
-
-                                    }
-
-                                });
-                                socket.emit("updateMsg", { by: "server", msgs: d.messages, type: "oldMsgUpdate" });
-
-                                socket.emit("classroom_users", d.students);
-                                // console.log(d.students);
+                        socket.emit("classroom_users", participants);
                                     
-                                socket.emit("class_favourites", d.likes);
-                                  
+                        socket.emit("class_favourites", room.likes);
+                        
+                        socket.join(`preview--${room.kid}`);
 
-                            
-                                ClassroomAttendance.findOne({classroomkid: res.kid }).then((hasClassAttendance: ClassroomAttendanceDocument) => {
-                                    if(hasClassAttendance){
-                                        // console.log("classroom has attednace document created");
-
-                                        const classroomIsTakingAttendance = res.isTakingAttendance;
-                                        const attendanceList = hasClassAttendance.list;
-                                        const userHasTakenAttedance = attendanceList.some((list) => list.kid === socket.user);
-                                        const isOwner = res.owner === socket.user;
-
-                                        if(classroomIsTakingAttendance){
-                                            // console.log("classroom is taking attedance");
-                                            // check if user has taken attendance b4
-
-                                            if(res.owner === socket.user){
-                                                socket.emit("attendance_list",attendanceList);
-                                            }
-                                            if(userHasTakenAttedance){
-                                                // console.log("user has attendance taken");
-                                                    
-                                                const usersAttendance = attendanceList.filter(att => att.kid === socket.user);
-                                                // console.log("users attendance", usersAttendance);
-
-                                                const numberOfUserEntries = usersAttendance.length;
-                                                const lastEntry = numberOfUserEntries <= 1 ? 1 : numberOfUserEntries - 1;
-
-                                                if(numberOfUserEntries === 1){
-                                                    // console.log("only one entry for current user");
-                                                    // check if attendance is complete
-                                                    const { firstName, lastName, email, gender, kid, username } = usersAttendance[0];
-                                                    if(!(firstName && lastName && email && gender && kid && username)){
-                                                        //incomplete
-                                                        setTimeout(() => socket.emit("collect_attendance", usersAttendance[0]),30000);
-                                                    } else {
-                                                        //complete data
-                                                        console.log("user has completed attendance data");
-                                                        socket.emit("has_attendance_recorded", usersAttendance[0]);
-                                                    }
-
-                                                }
-                                                else if(numberOfUserEntries > 1) {
-                                                    //resolve all atttendance and use the last entry
-                                                    console.log("more than one entry,resolving..");
-                                                    const lastEntryData = usersAttendance[lastEntry];
-                                                    const attendance = attendanceList.filter(att => att.kid !== socket.user);
-                                                    attendance.push(lastEntryData);
-
-                                                    hasClassAttendance.list = attendance;
-                                                    hasClassAttendance.save((err,up) => {
-                                                        if(!up && err){
-                                                            console.log(err);
-                                                        }
-                                                    });
-                                                }
-                                            } else {
-                                                // console.log("User has not taken attendance");
-                                                if(!isOwner){
-                                                        
-                                                    const userAttedance = {kid: socket.user, username: data.username, email: user.email };
-                                                    hasClassAttendance.list.push(userAttedance);
-                                                    hasClassAttendance.save((err,up) => {
-                                                        if(!up && err){
-                                                            console.log(err);
-                                                        }});
-                                                    setTimeout(() => socket.emit("collect_attendance", null),30000);
-                                                }
-                                            }
-                                        } else {
-                                            if(!userHasTakenAttedance && !isOwner){
-                                                const userAttedance = {kid: socket.user, username: data.username, email: user.email };
-                                                hasClassAttendance.list.push(userAttedance);
-                                                hasClassAttendance.save((err,up) => {
-                                                    if(!up && err){
-                                                        console.log(err);
-                                                    }
-                                                });
-                                            }
-
-                                        }
-                                    } else {
-                                        console.log("No attendance document found for classroom with kid", res.kid);
-                                    }
-                                }).catch((err) => {
-                                    console.log(err);
-                                });
-                                socket.join(`preview--${res.kid}`);
-
-                                socket.join(data.classroom_id, () => {
+                        socket.join(data.classroom_id, () => {
                                         
-                                    usersonline[socket.id].room = data.classroom_id;
-                                    usersonline[socket.id].inRoom = true;
-                                    usersonline[socket.id].kid = data.userId;
-                                    // console.log(usersonline[socket.id]);
-                                    console.log(Object.keys(usersonline).length, " sockets active");
+                            usersonline[socket.id].room = data.classroom_id;
+                            usersonline[socket.id].inRoom = true;
+                            usersonline[socket.id].kid = data.userId;
 
-                                    socket.to(data.classroom_id).emit("someoneJoined",
-                                        {
-                                            by: "server",
-                                            msg: data.userId + " joined",
-                                            for: data.userId,
-                                            name: data.username.toLowerCase(),
-                                            type: "sJoin",
-                                            msgId: uuidv4(),
-                                            newuserslist: updatedStudentList,
-                                            socketid: socket.id
-                                        });
+                            socket.to(data.classroom_id).emit("someoneJoined",
+                                {
+                                    by: "server",
+                                    msg: data.userId + " joined",
+                                    for: data.userId,
+                                    name: data.username.toLowerCase(),
+                                    type: "sJoin",
+                                    msgId: uuidv4(),
+                                    newuserslist: participants,
+                                    socketid: socket.id
+                                });
 
 
-                                    classWeb.findOne({ classroomId: data.classroom_id }).then((d: any) => {
-                                        if (!d && d === null) {
-                                            socket.emit("classroomFilesError", "Files not found");
-                                        } else {
+                            classWeb.findOne({ classroomId: data.classroom_id }).then((d: any) => {
+                                if (!d && d === null) {
+                                    socket.emit("classroomFilesError", "Files not found");
+                                } else {
 
-                                            const cssfileId = d.css.id;
-                                            const jsFileId = d.js.id;
-                                            const htmlFileId = d.html.id;
-                                            const cssContent = d.css.content;
-                                            const cssExternalCDN = d.css.settings.externalCDN;
-                                            const htmlContent = d.html.content;
-                                            const jsContent = d.js.content;
-                                            const jsExternalCDN = d.js.settings.externalCDN;
-                                            if (!cssfileId || !jsFileId || !htmlFileId) {
-                                                socket.emit("classroomFilesError", "File ID not found");
-                                            }
+                                    const cssfileId = d.css.id;
+                                    const jsFileId = d.js.id;
+                                    const htmlFileId = d.html.id;
+                                    const cssContent = d.css.content;
+                                    const cssExternalCDN = d.css.settings.externalCDN;
+                                    const htmlContent = d.html.content;
+                                    const jsContent = d.js.content;
+                                    const jsExternalCDN = d.js.settings.externalCDN;
+                                    if (!cssfileId || !jsFileId || !htmlFileId) {
+                                        socket.emit("classroomFilesError", "File ID not found");
+                                    }
             
                                                     
-                                            const ht = {
-                                                id: htmlFileId,
-                                                content: htmlContent
-                                            };
-                                            const cs = {
-                                                id: cssfileId,
-                                                content: cssContent,
-                                                externalCDN: cssExternalCDN
-                                            };
-                                            const js = {
-                                                id: jsFileId,
-                                                content: jsContent,
-                                                externalCDN: jsExternalCDN
-                                            };
-                                            socket.emit("class_files", cs, ht, js);
+                                    const ht = {
+                                        id: htmlFileId,
+                                        content: htmlContent
+                                    };
+                                    const cs = {
+                                        id: cssfileId,
+                                        content: cssContent,
+                                        externalCDN: cssExternalCDN
+                                    };
+                                    const js = {
+                                        id: jsFileId,
+                                        content: jsContent,
+                                        externalCDN: jsExternalCDN
+                                    };
+                                    socket.emit("class_files", cs, ht, js);
+
+                                }
+                            });
+                        });
+
+                        /**
+                         * Validate Classroom Attendance
+                         */
+                        ClassroomAttendance.findOne({classroomkid: room.kid }).then((hasClassAttendance: ClassroomAttendanceDocument) => {
+                            if(hasClassAttendance){
+                                const classroomIsTakingAttendance = room.isTakingAttendance;
+                                const attendanceList = hasClassAttendance.list;
+                                const userHasTakenAttedance = attendanceList.some((list) => list.kid === socket.user);
+                                const isOwner = room.owner === socket.user;
+
+                                if(classroomIsTakingAttendance){
+                                    // console.log("classroom is taking attedance");
+                                    // check if user has taken attendance b4
+
+                                    if(isOwner){
+                                        socket.emit("attendance_list",attendanceList);
+                                    }
+                                    if(userHasTakenAttedance){
+                                        // console.log("user has attendance taken");
+                                                    
+                                        const usersAttendance = attendanceList.filter(att => att.kid === socket.user);
+                                        // console.log("users attendance", usersAttendance);
+
+                                        const numberOfUserEntries = usersAttendance.length;
+                                        const lastEntry = numberOfUserEntries <= 1 ? 1 : numberOfUserEntries - 1;
+
+                                        if(numberOfUserEntries === 1){
+                                            // console.log("only one entry for current user");
+                                            // check if attendance is complete
+                                            const { firstName, lastName, email, gender, kid, username } = usersAttendance[0];
+                                            if(!(firstName && lastName && email && gender && kid && username)){
+                                                //incomplete
+                                                setTimeout(() => socket.emit("collect_attendance", usersAttendance[0]),30000);
+                                            } else {
+                                                //complete data
+                                                console.log("user has completed attendance data");
+                                                socket.emit("has_attendance_recorded", usersAttendance[0]);
+                                            }
 
                                         }
-                                    });
-                                });
+                                        else if(numberOfUserEntries > 1) {
+                                            //resolve all atttendance and use the last entry
+                                            console.log("more than one entry,resolving..");
+                                            const lastEntryData = usersAttendance[lastEntry];
+                                            const attendance = attendanceList.filter(att => att.kid !== socket.user);
+                                            attendance.push(lastEntryData);
+
+                                            hasClassAttendance.list = attendance;
+                                            hasClassAttendance.save((err,up) => {
+                                                if(!up && err){
+                                                    console.log(err);
+                                                }
+                                            });
+                                        }
+                                    } else {
+                                        // console.log("User has not taken attendance");
+                                        if(!isOwner){
+                                                        
+                                            const userAttedance = {kid: socket.user, username: data.username, email: user.email };
+                                            hasClassAttendance.list.push(userAttedance);
+                                            hasClassAttendance.save((err,up) => {
+                                                if(!up && err){
+                                                    console.log(err);
+                                                }});
+                                            setTimeout(() => socket.emit("collect_attendance", null),30000);
+                                        }
+                                    }
+                                } else {
+                                    if(!userHasTakenAttedance && !isOwner){
+                                        const userAttedance = {kid: socket.user, username: data.username, email: user.email };
+                                        hasClassAttendance.list.push(userAttedance);
+                                        hasClassAttendance.save((err,up) => {
+                                            if(!up && err){
+                                                console.log(err);
+                                            }
+                                        });
+                                    }
+
+                                }
                             } else {
-                                socket.emit("classroomError", null);
+                                console.log("No attendance document found for ", room.kid);
                             }
-                        }).catch(e => {
-                            console.log(e);
+                        }).catch((err) => {
+                            console.log(err);
                         });
+                              
+
+                        room.save();
                     }
 
                 });
@@ -307,17 +307,9 @@ export default function GeneralSocketEvent(socket: Socket | any, io: Socket, use
             }
             if (user) {
                 proceedTojoinUser(user);
-            } else {
-                Community.findOne({ kid: data.userId }).then((communityAccountDocument: CommunityDocument) => {
-                    if(communityAccountDocument){
-                        return proceedTojoinUser(communityAccountDocument);
-                    }
-                }).catch((err) => {
-                    socket.emit("error","Failed to join classroom");
-                });
             }
         }).catch(err => {
-            socket.emit("ErrorFetchingUser");
+            socket.emit("error");
         });
     });
 
@@ -417,24 +409,15 @@ export default function GeneralSocketEvent(socket: Socket | any, io: Socket, use
 
     socket.on("shutdown_classroom",() => {
         io.in(socket.room).emit("shut_down_emitted",{by:socket.user});
-
-            
         Classroom.findOneAndUpdate({_id: socket.room},{
             status:3
-
         },{new: true},(err, doc) => {
-
             if(!err){
-                //emit socket to namespace
-                // console.log(doc);
                 setTimeout(() => {
                     io.in(socket.room).emit("shut_down_now");
-                        
                 }, 7000);
             }
-
         });
-
     });
 
     socket.on("block_user",(user: any) => {
@@ -442,76 +425,41 @@ export default function GeneralSocketEvent(socket: Socket | any, io: Socket, use
         const userToBlock =  user.id;
 
         // find classroom of user
-        Classroom.findById(classroom, (err, res) => {
+        Classroom.findById(classroom, (err, room) => {
                 
             if(err) {
                 console.log(err);
+                return socket.emit("blocking_failed", user);
             }
 
-            if(res && res !== null) {
-                    
-                // All students in a class
-                const students = res.students;
+            if(room && room !== null) {
+                // All participants in a class
+                const participants = room.participants;
 
-                const studentSearch = students.filter(student => {
-    
-                    return String(student.id) === String(userToBlock);
-                         
-                });
-
-                const isBlocked = res.blocked.filter(blockedStudent => {
-                    return blockedStudent.user.id === String(userToBlock);
-                });
-
-                if(isBlocked && isBlocked.length > 0 && Array.isArray(isBlocked)){
-                    socket.emit("blocking_user_failed",{user,reason:"User is already blocked"});
-                    // return;
-                };
-
-                let studentInClass = undefined;
-                let newStudentsInClassArray;
-
-                if(studentSearch && Array.isArray(studentSearch) && studentSearch.length > 0){
-                    studentInClass = true;
-                } else {
-                    studentInClass = false;
-                }
-
-
-
-                if(studentInClass){
-                    // remove user from classroom table as a student
-
-                    newStudentsInClassArray = students.filter((student) => {
-                        return String(student.id) !== String(userToBlock);
-                    });
-                } else {
-                    socket.emit("blocking_user_failed",{user,reason:"User is not a student in class"});
-                    return true;
-                }
-
-
-                Classroom.findOneAndUpdate({_id: classroom},{
-                    $push : {
-                        blocked : { user,by: socket.user, at: moment.now() }
-                    },
-                    students: newStudentsInClassArray,
-                },{new: true},(err, doc) => {
-
-                    if(!err){
-                        //emit socket to namespace
-                        console.log(doc);
-                        io.in(socket.room).emit("blocking_user_success",{user,by: socket.user,newStudents: doc.students});
+                room.participants = participants.map(participant => {
+                    if(String(participant.id) === String(userToBlock)){
+                        return {
+                            ...participant,
+                            hasRoomAccess: false,
+                            blocked: true,
+                            inClass: false,
+                        };
+                    } else {
+                        return participant;
                     }
-
                 });
+                room.numberInClass = room.numberInClass - 1 ;
 
-
+                room.save((savingError: any, saved: ClassroomDocument) => {
+                    if(saved && !savingError) {
+                        return socket.emit("blocking_completed", user);
+                    } else if (savingError) {
+                        // additional Logging
+                        return socket.emit("blocking_failed", user);
+                    }
+                });
             }
-
         });
-
-
     });
 
     socket.on("add_to_favourite", () => {
@@ -724,83 +672,6 @@ export default function GeneralSocketEvent(socket: Socket | any, io: Socket, use
         io.in(socket.room).emit("user_waved", { from: socket.username, to: user });
     });
 
-    socket.on("toogle_class_role", (data: any) => {
-        const username = data.user.username;
-        const id = data.user.id;
-        const role = data.new_role;
-        let newadminkid: string;
-        // query classroom classroom and update 
-        // console.log(`Incoming role toogle data ${data}`);
-
-        Classroom.findById(socket.room, (err, data) => {
-            if (err) console.log(err);
-
-            if (data) {
-
-                // All students in a class
-                const students = data.students;
-
-                const newStudentsList = students.map(student => {
-
-                    if (String(student.id) === String(id)) {
-                        // console.log(`fOUND STUDENT AND UPDATING CLASS ROLE TO ${role}`)
-                        newadminkid = student.kid;
-                        return { ...student,role };
-                    } else {
-                        // console.log(`Found student not to be updaed = ${student}`);
-                        return student;
-                    }
-                });
-                    // console.log(`Updated student role`, newStudentsList);
-
-                let subAdmins = data.subAdmins;
-
-                let newSubAdmins;
-
-                // console.log(`old sub Admin ${subAdmins}`);
-
-                let foundSubAdminIndex;
-
-                // search if user to assign role is a sub Admin
-                foundSubAdminIndex = subAdmins.filter((admin: { id: any }, i) => {
-                    return String(admin.id) === String(id);
-                });
-
-
-                if (Array.isArray(foundSubAdminIndex) && foundSubAdminIndex.length > 0) {
-                    // was a sub Admin, update role
-                    newSubAdmins = subAdmins.map((admin: { id: string }) => {
-                        if (admin.id === String(id)) {
-                            return { id: String(id), role, assignedBy: socket.user };
-                        } else {
-                            return admin;
-                        }
-                    });
-                } else {
-                    // was not a sub Admin, add user as sub Admin and assign role
-                    subAdmins.push({ id: String(id), role, assignedBy: socket.user });
-                    newSubAdmins = subAdmins;
-
-                }
-
-                Classroom.findOneAndUpdate({ _id: socket.room, status: 2 },
-                    {
-
-                        students: newStudentsList,
-                        subAdmins: newSubAdmins
-                    },
-                    { new: true }).then((d: any) => {
-
-                    io.in(socket.room).emit("newuser_role",
-                        {kid:newadminkid, id: id, role, assignedBy: socket.user, newusers: d.students });
-                });
-
-            }
-        });
-
-
-    });
-
     socket.on("classInformationUpdate", (data: any) => {
 
         const classid = socket.room;
@@ -830,34 +701,29 @@ export default function GeneralSocketEvent(socket: Socket | any, io: Socket, use
         Classroom.findById(socket.room, (err, room: ClassroomDocument) => {
             if (err) {
             } else if (room && room !== null) {
-                room.students.forEach((user: { kid: string }, i) => {
+                room.participants = room.participants.map((user: { kid: string }) => {
                     if (user.kid === socket.user) {
-                        let newclassusers: any[];
-                        newclassusers = room.students.filter((s: any, i) => {
-                            return s.kid != socket.user;
-                        });
-                        Classroom.findOneAndUpdate({ _id: socket.room }, {  numberInClass: newclassusers.length , students: newclassusers }, { new: true }, (err, doc) => {
-                            if (err) console.log("error");
-                            delete clients[socket.id];
-                            delete usersonline[socket.id];
-                            console.log(`${socket.username}  disconnected from ${room.name}`);
-                            io.in(socket.room).emit("updatechat_left", {
-                                by: "server",
-                                msg: socket.username + " left",
-                                for: socket.user,
-                                name: socket.username,
-                                type: "sLeft",
-                                timeSent: moment().format("LT"),
-                                msgId: uuidv4(),
-                                roomId: socket.room
-                            });
-                            activeSockets = activeSockets.filter(
-                                (existingSocket: any) =>
-                                    existingSocket !== socket.id
-                            );
-                            console.log(Object.keys(usersonline).length, " sockets active");
-                        });
+                        return {
+                            ...user,
+                            inRoom: false,
+                            socketid: null
+                        };
+                    } else {
+                        return user;
                     }
+                });
+                room.numberInClass = Number(room.numberInClass)  - 1;
+                room.save(() => {
+                    io.in(socket.room).emit("updatechat_left", {
+                        by: "server",
+                        msg: socket.username + " left",
+                        for: socket.user,
+                        name: socket.username,
+                        type: "sLeft",
+                        timeSent: moment().format("LT"),
+                        msgId: uuidv4(),
+                        roomId: socket.room
+                    });
                 });
             }
         });

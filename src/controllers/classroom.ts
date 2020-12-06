@@ -36,24 +36,24 @@ export const disconnectUserFromRoom = (req: Request, res: Response): object => {
     const { room, kid } = req.body;
 
     if(room && kid){
-        Classroom.findOne({kid: room}).then((roomDocument: any) => {
+        Classroom.findOne({kid: room}).then((roomDocument: ClassroomDocument) => {
             if(roomDocument){
-                let { students } =  roomDocument;
+                let { participants } =  roomDocument;
 
                 let socket: string;
-                const stud = students.find((student: any) => {
-                    return student.kid === kid;
+                roomDocument.participants = participants.map((participant: any) => {
+                    if(participant.kid === kid){
+                        socket =  participant.socket;
+                        return {
+                            ...participant,
+                            inRoom: false
+                        };
+                    } else {
+                        return participant;
+                    }
                 });
-                console.log(stud);
-                socket =  stud && stud.socketid;
 
-                const students_ = students.filter((student: any) => {
-                    return student.kid !== kid;
-                });
-                roomDocument.students =  students_;
-                console.log(students_);
-
-                roomDocument.markModified("students");
+                roomDocument.markModified("participants");
                 roomDocument.save((err: any,data: any) => {
                     if(!err && data){
                         return successResponse(res, socket);
@@ -782,7 +782,7 @@ export const getTrending = (req: Request, res: Response): object => {
                     return {
                         visits: classroom.visits,
                         likes: classroom.likes,
-                        students: classroom.students,
+                        students: classroom.participants,
                         location: classroom.location,
                         name: classroom.name,
                         description: classroom.description,

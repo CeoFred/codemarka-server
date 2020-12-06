@@ -11,7 +11,7 @@ export default function webrtcSocketFactory(socket: any, io: Socket): void{
         console.log(room);
         room && Classroom.findOne({kid: room},(error, roomFound) => {
             if(roomFound){
-                socket.emit("rtc_setup_users", roomFound.students);
+                socket.emit("rtc_setup_users", roomFound.participants);
             } else {
                 socket.emit("rtc_search_failed");
             }

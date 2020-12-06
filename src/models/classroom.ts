@@ -5,7 +5,8 @@ export type ClassroomDocument = mongoose.Document & {
     owner: string;
     status: number;
     classVisibility: string;
-    students: [Record<string, any>];
+    participants: any[];
+    numberInClass: number;
     subAdmins: [Record<string, any>];
     likes: [Record<string, any>];
     pinnedMessages: [Record<string, any>];
@@ -25,11 +26,11 @@ export type ClassroomDocument = mongoose.Document & {
     topic: string;
     isTakingAttendance: boolean;
     isBroadcasting: boolean;
-    actions: [Record<string, any>];
-    reports: [Record<string, any>];
-    questions: [Record<string, any>];
+    actions: any[];
+    reports: any[];
+    questions: any[];
     settings: any;
-    messages: any;
+    messages: any[];
 };
 
 
@@ -104,7 +105,9 @@ const classroomSchema = new mongoose.Schema({
         type: String,
         default:"https://cmarka.xyz"
     },
-    students: [Object],
+    participants: {
+        type: [],
+    },
     pinnedMessages: [Object],
     gravatarUrl: String,
     maxUsers: Number    ,
@@ -126,7 +129,7 @@ const classroomSchema = new mongoose.Schema({
             default: true,
             type: Boolean
         }
-    }
+    },
 }, { timestamps: true });
 
 /**
