@@ -32,6 +32,25 @@ interface MessageInterface {
     readonly by: string;
 }
 
+export const getEditorCollaborators = (req: Request, res: Response): void => {
+    const { room } = req.params;
+    if(room){
+        Classroom.findOne({kid: room}).then((roomDocument: ClassroomDocument) => {
+            if(roomDocument){
+                let { participants }  = roomDocument;
+                const participantsWithEditorAccess = participants.filter(participant => {
+                    const { write, administrative } = participant.accessControls.editors;
+                    return write || administrative || participant.isowner && !participant.blocked;
+                });
+                return successResponse(res,participantsWithEditorAccess);
+            } else {
+                return ErrorResponse(res,"failed");
+            }
+        }).catch(err => {
+            return ErrorResponse(res,"failed");
+        });
+    }
+};
 export const disconnectUserFromRoom = (req: Request, res: Response): object => {
     const { room, kid } = req.body;
 

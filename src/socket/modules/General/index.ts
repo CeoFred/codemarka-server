@@ -72,10 +72,8 @@ export default function GeneralSocketEvent(socket: Socket | any, io: Socket, use
         socket.classinfo = data.cdata;
 
         socket.userModel;
-        let oldStudentsWithoutUser: any[] = [];
         // find user and update
         User.findOne({ kid: data.userId }).then(user => {
-            let studentObj;
             function proceedTojoinUser(user: UserDocument): void{
                 // check if user is already in classm, filter and push new user object
                 Classroom.findById(data.classroom_id, (err, room) => {
@@ -96,7 +94,10 @@ export default function GeneralSocketEvent(socket: Socket | any, io: Socket, use
                                         ...participant,
                                         inClass: true,
                                         socketid: socket.id,
-                                        username: user.username
+                                        username: user.username,
+                                        isowner: room.owner === socket.user,
+                                        avatar: user.gravatarUrl,
+                                        inRoom: true
                                     };
                                 }
                                 return participant;
@@ -112,23 +113,25 @@ export default function GeneralSocketEvent(socket: Socket | any, io: Socket, use
                                 accessControls: {
                                     editors: {
                                         read: true,
-                                        write: false,
-                                        upload: false,
-                                        administrative: false // includes inviting to collaborate
+                                        write: room.owner === socket.user,
+                                        upload: room.owner === socket.user,
+                                        administrative: room.owner === socket.user // includes inviting to collaborate
                                     },
                                     conversation: {
                                         read: true,
                                         write: true,
-                                        administrative: false // includes deleting another users message
+                                        administrative: room.owner === socket.user // includes deleting another users message
                                     },
                                     videoConference: {
                                         read: true,
                                         write: true,
-                                        administrative: false // includes muting mics, removing and adding users
+                                        administrative: room.owner === socket.user // includes muting mics, removing and adding users
                                     }
                                 },
                                 hasRoomAccess: true,
-                                lastTimeEntry: data.entryTime
+                                lastTimeEntry: data.entryTime,
+                                isowner: room.owner === socket.user,
+                                blocked: false
                             };
                             participants.push(participantData);
 
@@ -701,7 +704,7 @@ export default function GeneralSocketEvent(socket: Socket | any, io: Socket, use
         Classroom.findById(socket.room, (err, room: ClassroomDocument) => {
             if (err) {
             } else if (room && room !== null) {
-                room.participants = room.participants.map((user: { kid: string }) => {
+                room.participants = room.participants.map((user: any) => {
                     if (user.kid === socket.user) {
                         return {
                             ...user,

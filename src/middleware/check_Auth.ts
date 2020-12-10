@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 
 export const check = (req: Request, res: Response, next: NextFunction): void | object => {
     let token;
+
     if (req.body.token) {
         token = req.body.token;
     } else if (req.headers.authorization) {
@@ -14,7 +15,7 @@ export const check = (req: Request, res: Response, next: NextFunction): void | o
         req.body.decoded = decoded;
         req.body.token = token;
     } catch (err) {
-        return res.status(404).json({
+        return res.status(403).json({
             message: "Auth Failed",
             error:err
         });

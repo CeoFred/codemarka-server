@@ -1,5 +1,5 @@
 import express from "express";
-import {disconnectUserFromRoom, getMessageThread , addReport , addQuestion , getAllLanguageSettings, getLanguageSettings, downloadAttendance, getLiveClassroomSessions, getUpcomingClassroomSessions, fecthClassByUrlAlias,findClassRoom,downloadClassfiles, classroomPreview, createClassRoom,verifyClassroom, getTrending, verifyUserClassroom, getUserClassrooms} from "../controllers/classroom";
+import {getEditorCollaborators, disconnectUserFromRoom, getMessageThread , addReport , addQuestion , getAllLanguageSettings, getLanguageSettings, downloadAttendance, getLiveClassroomSessions, getUpcomingClassroomSessions, fecthClassByUrlAlias,findClassRoom,downloadClassfiles, classroomPreview, createClassRoom,verifyClassroom, getTrending, verifyUserClassroom, getUserClassrooms} from "../controllers/classroom";
 import {check} from "../middleware/check_Auth";
 
 const router = express.Router();
@@ -44,4 +44,6 @@ router.post("/thread/:kid", check, getMessageThread);
 router.get("/urlalias/validate/:id", fecthClassByUrlAlias);
 
 router.post("/socket/disconnect",check, disconnectUserFromRoom);
+
+router.get("/editor/contributors/:room", check, getEditorCollaborators);
 export default router;

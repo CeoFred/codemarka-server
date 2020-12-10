@@ -560,7 +560,7 @@ export const postSignup = (req: Request, res: Response, next: NextFunction) => {
                                     firstname:"",
                                     lastname: ""
                                 },
-                                isConfirmed: false,
+                                isConfirmed: process.env.NODE_ENV === "test" ? true : false,
                                 status:1,
                                 emailVerificationToken:verificationToken,
                                 techStack: "",

@@ -1,11 +1,13 @@
 import mongoose from "mongoose";
 import crypto from "crypto";
 import { randomString } from "../helpers/utility";
+
+import {  RoomParticipant } from "../socket/SocketInterface";
 export type ClassroomDocument = mongoose.Document & {
     owner: string;
     status: number;
     classVisibility: string;
-    participants: any[];
+    participants: RoomParticipant[];
     numberInClass: number;
     subAdmins: [Record<string, any>];
     likes: [Record<string, any>];
@@ -31,6 +33,7 @@ export type ClassroomDocument = mongoose.Document & {
     questions: any[];
     settings: any;
     messages: any[];
+    tokens: {type: string; for: string; createdat: string; token: string}[];
 };
 
 
@@ -130,6 +133,10 @@ const classroomSchema = new mongoose.Schema({
             type: Boolean
         }
     },
+    tokens: {
+        type: [ { type: String , token: String, for: String , createdat: String, expiresOn: String}],
+        default: []
+    }
 }, { timestamps: true });
 
 /**

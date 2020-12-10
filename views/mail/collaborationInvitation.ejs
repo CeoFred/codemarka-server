@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Editor Collaboration Invitation</title>
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:ital,wght@1,200&display=swap" rel="stylesheet">
+</head>
+<style>
+  body{
+    padding:0;
+    margin:0;
+    box-sizing: border-box;
+    font-family: 'Nunito Sans', sans-serif;
+  }
+  .container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    max-height: 100vh;
+    height: 100vh;
+    padding:0;
+    flex-direction: column;
+    margin: 0;
+    position: relative;
+    padding: 0 50px;
+  }
+
+  .message{
+    text-align: center;
+  }
+
+  .footer-description {
+    color: grey;
+    justify-content:center;
+    text-align: center;
+    border-top: 1px solid grey;
+    padding-top:20px;
+  }
+
+  footer {
+    position: absolute;
+    bottom: 40px;
+    padding: 0 50px;
+  }
+  .codemarka_logo{
+      height: 128px;
+  }
+
+  .room_logo{
+    height: 60px;
+  }
+
+  .logo_container{
+    position: absolute;
+    top: 40px;
+  }
+
+  .accept_button {
+    background: none;
+    padding: 13px;
+    border-radius: 5px;
+    margin: 8px 0px;
+    border: 2px solid;
+    cursor: pointer;
+  }
+
+  .room_details {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    margin-top:50px
+  }
+
+  .room_name {
+    margin-top:20px
+  }
+</style>
+<body>
+  <div class="container">
+    <div class="logo_container">
+      <a href="http://codemarka.dev"><img src="https://res.cloudinary.com/codemarka/image/upload/v1602158178/bk5antftnjit6jfvhgiw.png" class="codemarka_logo" alt="logo"/>
+        </a>
+      </div>
+    <div class="message">
+      <b>CeoFred</b>
+      <p>Has invited you to edit their editor files.</p>
+      <div class="room_details">
+      <img src="https://res.cloudinary.com/codemarka/image/upload/v1606156041/w1ubjxynrojz4lleijik.png" class="room_logo" alt="logo"/>
+         <b class="room_name">"Doing's Classroom"</b>
+      </div>
+
+      <button class="accept_button">Accept Invitation</button>
+    </div>
+    <footer>
+      <div class="footer-description">Remote Technical workshops, Interviews, Meetups on the cloud leveraging real time technology.
+      </div>
+    </footer>
+  </div>
+</body>
+</html>

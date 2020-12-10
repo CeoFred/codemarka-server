@@ -40,7 +40,7 @@ import mongoose from "./config/db";
 app.use(compression());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
-
+app.set("view engine", "ejs");
 app.use(cookieParser());
 
 app.use(session({
@@ -83,7 +83,9 @@ app.use("/api/v1/classroom", classroom);
 app.use("/api/v1/community" ,community);
 app.use("/api/v1/user", user);
 app.use("/api/v1/slack", slack);
-
+app.get("/mail", function (req, res) {
+    return res.render("mail/collaborationInvitation");
+});
 app.get("/api/v1", (req, res) => {
     res.json({ message: "Looking for something??" });
 });

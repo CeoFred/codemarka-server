@@ -1,7 +1,26 @@
 import { Request, Response, NextFunction } from "express";
 import { User, UserDocument } from "../models/User";
 import { successResponseWithData,ErrorResponse,successResponse } from "../helpers/apiResponse";
-import { Classroom } from "../models/classroom";
+// import { Classroom } from "../models/classroom";
+
+export const getUserWithEmailOrUsername = (req: Request, res: Response): void => {
+    
+    const { emailOrUsername } =  req.params;
+
+    const regex = `.*${emailOrUsername}.*`;
+
+    User.find({ $or:[ {"username": { $regex:regex} }, {"email": { $regex: regex } } ], },{kid: true, username: true} ,(err, user: UserDocument[]) => {
+        if(err){
+            console.log(err);
+            return successResponse(res,[]);
+        }
+        if(user){
+            return successResponse(res, user);
+        } else {
+            return successResponse(res,[]);
+        }  
+    });
+};
 export const checkUsername = (req: Request, res: Response): object => {
     const { username } = req.query;
     if(username){

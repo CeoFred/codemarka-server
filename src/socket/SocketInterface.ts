@@ -1,5 +1,34 @@
 import { ClassroomDocument } from "../models/classroom";
-
+export interface RoomParticipant {
+    id: string;
+    username: string;
+    kid: string;
+    avatar: string;
+    socketid: string;
+    inClass: boolean;
+    accessControls: {
+        editors: {
+            read: boolean;
+            write: boolean;
+            upload: boolean;
+            administrative: boolean;// includes inviting to collaborate
+        };
+        conversation: {
+            read: boolean;
+            write: boolean;
+            administrative: boolean;// includes deleting another users message
+        };
+        videoConference: {
+            read: boolean;
+            write: boolean;
+            administrative: boolean;// includes muting mics, removing and adding users
+        };
+    };
+    hasRoomAccess: boolean;
+    lastTimeEntry: Date;
+    isowner: boolean;
+    blocked: boolean;
+}
 export interface EditorSettingsData {
     classroom: string;
     preprocessor: any;

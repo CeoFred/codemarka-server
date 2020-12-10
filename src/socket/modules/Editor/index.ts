@@ -1,10 +1,81 @@
 import {Socket} from "socket.io";
+import Mongoose from "mongoose";
+import ejs from "ejs";
+import path from "path";
+import crypto from "crypto";
 
 import { classWeb,ClassroomWebFileDocument } from "../../../models/classWebFiles";
+import { User } from "../../../models/User";
+import { Classroom, ClassroomDocument } from "../../../models/classroom";
 import {EditorSettingsData, EditorChangedInterface} from "../../SocketInterface";
 import { randomString } from "../../../helpers/utility";
 
-export default function webrtcSocketFactory(socket: any, io: Socket): void{
+export default function webrtcSocketFactory(socket: Socket | any, io: Socket): void{
+
+    socket.on("invite_to_collaborate", (emailOrUsername: string) => {
+        
+        if(!emailOrUsername) {
+            socket.emit("error","Failed to send Invitation", emailOrUsername);
+            return;
+        }
+
+        Classroom.findOne({kid: socket.room }, (err: Mongoose.Error, room: ClassroomDocument) => {
+            if(err){
+                socket.emit("error","Failed to send Invitation",err);
+                return;
+            } else if(room){
+                const { participants } =  room;
+                const hasPriviledge =  participants.find(participant => {
+                    return participant.kid === socket.user && (participant.isowner || participant.accessControls.editors.administrative); 
+                });
+
+                if(!hasPriviledge){
+                    socket.emit("error", "Invalid Priviledge");
+                    return;
+                } else {
+                    // check if user already in room
+                    User.findOne({ $or : [ { email: emailOrUsername }, { username: emailOrUsername}]}, (err: Mongoose.Error, user) => {
+                        if(err) {
+                            socket.emit("error"," Failed to send Invitation", err);
+                            return;
+                        } else if ( user ){
+                            const { kid, email } =  user;
+                            const userIsInRoom =  participants.find(participant => {
+                                return participant.kid === kid && (participant.inClass); 
+                            });
+                            if(userIsInRoom){
+                                socket.emit("invitation_finalize", "inRoom");
+                            } else {
+                                // send invitation mail
+                                room.tokens.push({ type: "editor_collaboration", for: kid, token: "d", createdat: String(new Date())});
+                                let emailTemplate;
+                                let capitalizedFirstName;
+                                const to = email;
+
+                                ejs
+                                    .renderFile(path.join(__dirname, "views/welcome-mail.ejs"),
+                                        {
+                                            roomLink: capitalizedFirstName,
+                                            token: "",
+                                            from:"",
+                                            roomName: ""
+                                        })
+                                    .then(result => {
+                                        emailTemplate = result;
+                                    })
+                                    .catch(err => {
+ 
+                                    });
+                            }
+                        }
+                    });
+                }
+            }
+        });
+
+        
+
+    });
 
     socket.on("editor_settings_changed", (editorSettingsData: EditorSettingsData):  void => {
         const { preprocessor, externalCDN} = editorSettingsData;

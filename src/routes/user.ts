@@ -1,7 +1,7 @@
 import express from "express";
 import {check} from "../middleware/check_Auth";
 import {getUserInfo,unfollowUser,  followUser, specialUpdate,
-    checkUsername
+    checkUsername, getUserWithEmailOrUsername
 } from "../controllers/user";
 const router = express.Router();
 
@@ -14,5 +14,7 @@ router.post("/unfollow/:kid", check , unfollowUser);
 router.get("/special/updates", specialUpdate);
 
 router.get("/username", checkUsername);
+
+router.get("/find/:emailOrUsername", check, getUserWithEmailOrUsername);
 
 export default router;
