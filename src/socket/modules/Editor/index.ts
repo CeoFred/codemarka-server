@@ -3,6 +3,7 @@ import Mongoose from "mongoose";
 import ejs from "ejs";
 import path from "path";
 import crypto from "crypto";
+import sgMail  from "@sendgrid/mail";
 
 import { classWeb,ClassroomWebFileDocument } from "../../../models/classWebFiles";
 import { User } from "../../../models/User";
@@ -12,64 +13,97 @@ import { randomString } from "../../../helpers/utility";
 
 export default function webrtcSocketFactory(socket: Socket | any, io: Socket): void{
 
-    socket.on("invite_to_collaborate", (emailOrUsername: string) => {
-        
-        if(!emailOrUsername) {
-            socket.emit("error","Failed to send Invitation", emailOrUsername);
+    socket.on("invite_to_collaborate", (emailOrUsername: string, class__: string) => {
+        console.log(emailOrUsername, class__);
+        if(!emailOrUsername ) {
+            socket.emit("action_error","Failed to send Invitation", "invalid_username");
             return;
         }
 
-        Classroom.findOne({kid: socket.room }, (err: Mongoose.Error, room: ClassroomDocument) => {
+        Classroom.findOne({kid: class__ }, (err: Mongoose.Error, room: ClassroomDocument) => {
             if(err){
-                socket.emit("error","Failed to send Invitation",err);
+                console.log(err);
+                socket.emit("action_error","Failed to send Invitation",err);
                 return;
             } else if(room){
+
                 const { participants } =  room;
                 const hasPriviledge =  participants.find(participant => {
                     return participant.kid === socket.user && (participant.isowner || participant.accessControls.editors.administrative); 
                 });
 
                 if(!hasPriviledge){
-                    socket.emit("error", "Invalid Priviledge");
+                    
+                    console.log("invalid privileges");
+                    socket.emit("action_error", "Invalid Priviledge");
                     return;
+
                 } else {
                     // check if user already in room
                     User.findOne({ $or : [ { email: emailOrUsername }, { username: emailOrUsername}]}, (err: Mongoose.Error, user) => {
                         if(err) {
-                            socket.emit("error"," Failed to send Invitation", err);
+                            console.log(err);
+                            socket.emit("action_error"," Failed to send Invitation", err);
                             return;
                         } else if ( user ){
-                            const { kid, email } =  user;
+                            const { kid, username, email } =  user;
                             const userIsInRoom =  participants.find(participant => {
                                 return participant.kid === kid && (participant.inClass); 
                             });
                             if(userIsInRoom){
-                                socket.emit("invitation_finalize", "inRoom");
+                                
+                                console.log("userinRoom");
+                                socket.to(userIsInRoom.socketid).emit("editor_collaboration_invitation");
+                                socket.emit("invitation_finalize", true);
+
                             } else {
+                                console.log("external iv");
                                 // send invitation mail
-                                room.tokens.push({ type: "editor_collaboration", for: kid, token: "d", createdat: String(new Date())});
+                                const buffer = crypto.randomBytes(482);
+                                const token = buffer.toString("hex");
+
+                                room.tokens.push({ type: "editor_collaboration", for: kid, token, createdat: String(new Date())});
                                 let emailTemplate;
-                                let capitalizedFirstName;
-                                const to = email;
+                                const to = username;
 
                                 ejs
-                                    .renderFile(path.join(__dirname, "views/welcome-mail.ejs"),
+                                    .renderFile(path.join(__dirname, "../../../../views/mail/collaborationInvitation.ejs"),
                                         {
-                                            roomLink: capitalizedFirstName,
-                                            token: "",
-                                            from:"",
-                                            roomName: ""
+                                            roomLink: room.kid,
+                                            token,
+                                            from:socket.username,
+                                            roomName: room.name,
+                                            to,
                                         })
                                     .then(result => {
+                                        console.log("sending mail");
                                         emailTemplate = result;
+                                        const message = {
+                                            to: email,
+                                            from: { email: "no-reply@codemarka.dev", name: "codemarka" },
+                                            subject: "Invitation To Collaborate On Codemarka",
+                                            html: emailTemplate
+                                        };
+                                        sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+                                        sgMail.send(message).then(sent => {
+                                            console.log(sent[0]);
+                                        }).catch((err) => {
+                                            console.log(err.response.body);
+                                        });
                                     })
                                     .catch(err => {
- 
+                                        console.log(err);   
+                                        
                                     });
                             }
+                        } else {
+                            console.log("user not found");
+                            socket.emit("invitation_finalize", false, "user not found");
                         }
                     });
                 }
+            } else {
+                console.log("room not found");
             }
         });
 

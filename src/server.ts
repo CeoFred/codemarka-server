@@ -1,5 +1,6 @@
 import errorHandler from "errorhandler";
 import express from "express";
+import {  Classroom, ClassroomDocument} from "./models/classroom";
 // import path from "path";
 
 import app from "./app";
@@ -32,6 +33,16 @@ class Server {
                 this.app.get("env")
             );
             console.log("  Press CTRL-C to stop\n");
+            Classroom.find({},(err, rooms) => {
+                rooms.forEach(room => {
+                    room.numberInClass = 0;
+                    room.save((err,savedroom) => {
+                        if(!err && savedroom){
+                            console.log("Updated", savedroom.name);
+                        }
+                    });
+                });
+            });
         });
           
     }

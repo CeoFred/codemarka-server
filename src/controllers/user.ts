@@ -9,7 +9,7 @@ export const getUserWithEmailOrUsername = (req: Request, res: Response): void =>
 
     const regex = `.*${emailOrUsername}.*`;
 
-    User.find({ $or:[ {"username": { $regex:regex} }, {"email": { $regex: regex } } ], },{kid: true, username: true} ,(err, user: UserDocument[]) => {
+    User.find({ $or:[ {"username": { $regex:regex} }, {"email": { $regex: regex } } ], },{kid: true, username: true,gravatarUrl: true,_id:false} ,(err, user: UserDocument[]) => {
         if(err){
             console.log(err);
             return successResponse(res,[]);

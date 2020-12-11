@@ -1,103 +1,161 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Editor Collaboration Invitation</title>
-  <link rel="preconnect" href="https://fonts.gstatic.com">
-<link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:ital,wght@1,200&display=swap" rel="stylesheet">
-</head>
-<style>
-  body{
-    padding:0;
-    margin:0;
-    box-sizing: border-box;
-    font-family: 'Nunito Sans', sans-serif;
-  }
-  .container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    max-height: 100vh;
-    height: 100vh;
-    padding:0;
-    flex-direction: column;
-    margin: 0;
-    position: relative;
-    padding: 0 50px;
-  }
-
-  .message{
-    text-align: center;
-  }
-
-  .footer-description {
-    color: grey;
-    justify-content:center;
-    text-align: center;
-    border-top: 1px solid grey;
-    padding-top:20px;
-  }
-
-  footer {
-    position: absolute;
-    bottom: 40px;
-    padding: 0 50px;
-  }
-  .codemarka_logo{
-      height: 128px;
-  }
-
-  .room_logo{
-    height: 60px;
-  }
-
-  .logo_container{
-    position: absolute;
-    top: 40px;
-  }
-
-  .accept_button {
-    background: none;
-    padding: 13px;
-    border-radius: 5px;
-    margin: 8px 0px;
-    border: 2px solid;
-    cursor: pointer;
-  }
-
-  .room_details {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    margin-top:50px
-  }
-
-  .room_name {
-    margin-top:20px
-  }
-</style>
-<body>
-  <div class="container">
-    <div class="logo_container">
-      <a href="http://codemarka.dev"><img src="https://res.cloudinary.com/codemarka/image/upload/v1602158178/bk5antftnjit6jfvhgiw.png" class="codemarka_logo" alt="logo"/>
-        </a>
-      </div>
-    <div class="message">
-      <b>CeoFred</b>
-      <p>Has invited you to edit their editor files.</p>
-      <div class="room_details">
-      <img src="https://res.cloudinary.com/codemarka/image/upload/v1606156041/w1ubjxynrojz4lleijik.png" class="room_logo" alt="logo"/>
-         <b class="room_name">"Doing's Classroom"</b>
-      </div>
-
-      <button class="accept_button">Accept Invitation</button>
-    </div>
-    <footer>
-      <div class="footer-description">Remote Technical workshops, Interviews, Meetups on the cloud leveraging real time technology.
-      </div>
-    </footer>
-  </div>
-</body>
-</html>
+<table width="100%" cellpadding="0" cellspacing="0" border="0">
+    <tbody>
+      <tr>
+        <td width="100%">
+          <div style="max-width:600px;Margin:0 auto">
+            <table
+              align="center"
+              cellpadding="0"
+              cellspacing="0"
+              style="border-spacing:0;font-family:gt-eesti,ArialMT,Helvetica,Arial,sans-serif;Margin:0 auto;padding:24px;width:100%;max-width:500px"
+            >
+              <tbody>
+                <tr>
+                  <td>
+                    <table style="margin-bottom:40px;width:100%" width="100%">
+                      <tbody>
+                        <tr align="center">
+                          <td>
+                            <a
+                              href="https://codemarka.dev/?ref=mail"
+                              style="font-family:Helvetica,Arial,sans-serif;color:#0086bf"
+                              target="_blank"
+                            >
+                              <img
+                                src="https://res.cloudinary.com/codemarka/image/upload/v1602158178/bk5antftnjit6jfvhgiw.png"
+                                style="display:block"
+                                width="200"
+                              />
+                            </a>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="text-align:justify;word-break:break-word">
+                    <table style="margin-bottom:20px;width:100%" width="100%">
+                      <tbody>
+                        <tr>
+                          <td>
+                            <table
+                              style="width:100%;margin-bottom:20px"
+                              width="100%"
+                              cellpadding="0"
+                              cellspacing="0"
+                            >
+                              <tbody>
+                                <tr>
+                                  <td>
+                                    <strong style="font-family:Helvetica,Arial,sans-serif;color:#000">Hi <%= to %>, </strong>
+                                    
+                                    <h1
+                                      style="font-size:26px;line-height:30px;color:#000;word-break:normal"
+                                    >
+                                    You have recieved an invitation to collaborate with @<%= from %> on codemarka.
+                                    </h1>
+                                  </td>
+                                </tr>
+                              </tbody>
+                            </table>
+                          </td>
+                        </tr>
+  
+                        <tr>
+                          <td>
+                            <center>
+                              <table
+                                style="background-color:#fff;margin-bottom:20px;table-layout:fixed"
+                                align="center"
+                                width=""
+                                cellspacing="0"
+                                cellpadding="0"
+                              >
+                                <tbody>
+                                  <tr>
+                                    <td
+                                      style="background-color:#242944;color:#fff;text-align:center;border-radius:48px;padding:16px 24px;border-color:transparent;font-weight:bold;font-size:16px;line-height:1"
+                                    >
+                                      <a style="color: white; text-decoration: none;" href= <%= roomLink  %>> Accept </a>
+                                    </td>
+                                  </tr>
+                                </tbody>
+                              </table>
+                            </center>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </td>
+                </tr>
+                <tr>
+                  <td></td>
+                </tr>
+                <tr>
+                  <td>
+                    <table width="100%" style="margin-bottom:20px;width:100%">
+                      <tbody>
+                        <tr>
+                          <td width="100%">
+                            <div
+                              style="width:100%;height:1px;background-color:#ddd"
+                              color="#DDD"
+                              width="100%"
+                            ></div>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </td>
+                </tr>
+  
+                <tr>
+                  <td style="text-align:center;font-size:13px">
+                    <a
+                      href="http://codemarka.dev/?ref=mail"
+                      style="color:#242944;"
+                      target="_blank"
+                    >
+                      Home
+                    </a>
+                    <span style="color:#242944;">|</span>
+                    <a
+                      href="https://codemarka.dev/FAQ"
+                      style="color:#242944;"
+                      target="_blank"
+                    >
+                      FAQ
+                    </a>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="text-align:center">
+                    <table
+                      style="max-width:100%;width:100%;text-align:center;font-family:ArialMT,Arial,sans-serif"
+                      cellspacing="0"
+                      cellpadding="0"
+                    >
+                      <tbody>
+                        <tr>
+                          <td style="text-align:center">
+                            <p
+                              style="font-size:10px;color:#708c91;text-align:center;padding:0;margin-top:10px;margin-bottom:2px"
+                            >
+                              This email was sent to you by
+                              no-reply@codemarka.dev (Do not reply)
+                            </p>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+  

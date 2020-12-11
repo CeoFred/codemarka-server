@@ -10,7 +10,7 @@ import { ClassroomAttendance } from "../models/Attendance";
 import { classAliasUrl } from "../models/classAlias";
 import { User, UserDocument } from "../models/User";
 import { randomNumber, randomString } from "../helpers/utility";
-import {successResponse, successResponseWithData, ErrorResponse } from "../helpers/apiResponse";
+import {successResponse, successResponseWithData, ErrorResponse, ErrorResponse } from "../helpers/apiResponse";
 import { classWeb } from "../models/classWebFiles";
 import * as apiResponse from "../helpers/apiResponse";
 import { Community, CommunityDocument } from "../models/Community";
@@ -31,6 +31,11 @@ interface MessageInterface {
     readonly thread?: {}[];
     readonly by: string;
 }
+
+export const inviteEditorCollaborator = (req: Request, res: Response): any => {
+    const { user, room,emailOrUsername } = req.body;
+   
+};
 
 export const getEditorCollaborators = (req: Request, res: Response): void => {
     const { room } = req.params;

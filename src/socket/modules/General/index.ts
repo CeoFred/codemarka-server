@@ -713,7 +713,7 @@ export default function GeneralSocketEvent(socket: Socket | any, io: Socket, use
                         };
                     } else {
                         return user;
-                    }
+                    }   
                 });
                 room.numberInClass = Number(room.numberInClass)  - 1;
                 room.save(() => {

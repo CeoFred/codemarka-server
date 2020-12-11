@@ -134,8 +134,7 @@ const classroomSchema = new mongoose.Schema({
         }
     },
     tokens: {
-        type: [ { type: String , token: String, for: String , createdat: String, expiresOn: String}],
-        default: []
+        type: []
     }
 }, { timestamps: true });
 
