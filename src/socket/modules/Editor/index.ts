@@ -35,7 +35,7 @@ export default function webrtcSocketFactory(socket: Socket | any, io: Socket): v
                 if(!hasPriviledge){
                     
                     console.log("invalid privileges");
-                    socket.emit("action_error", "Invalid Priviledge");
+                    socket.emit("editor_invitation_action_error", "Invalid Priviledge");
                     return;
 
                 } else {
@@ -43,7 +43,7 @@ export default function webrtcSocketFactory(socket: Socket | any, io: Socket): v
                     User.findOne({ $or : [ { email: emailOrUsername }, { username: emailOrUsername}]}, (err: Mongoose.Error, user) => {
                         if(err) {
                             console.log(err);
-                            socket.emit("action_error"," Failed to send Invitation", err);
+                            socket.emit("editor_invitation_action_error"," Failed to send Invitation", err);
                             return;
                         } else if ( user ){
                             const { kid, username, email } =  user;
@@ -51,11 +51,13 @@ export default function webrtcSocketFactory(socket: Socket | any, io: Socket): v
                                 return participant.kid === kid && (participant.inClass); 
                             });
                             if(userIsInRoom){
-                                
-                                console.log("userinRoom");
-                                socket.to(userIsInRoom.socketid).emit("editor_collaboration_invitation");
-                                socket.emit("invitation_finalize", true);
-
+                                console.log(userIsInRoom);
+                                if(!userIsInRoom.accessControls.editors.administrative || !userIsInRoom.accessControls.editors.write){
+                                    socket.to(userIsInRoom.socketid).emit("editor_collaboration_invitation");
+                                    socket.emit("editor_invitation_action_success", true,username);
+                                } else {
+                                    socket.emit("editor_invitation_action_error", false, "User already a collaborator.");
+                                }
                             } else {
                                 console.log("external iv");
                                 // send invitation mail
@@ -87,8 +89,10 @@ export default function webrtcSocketFactory(socket: Socket | any, io: Socket): v
                                         sgMail.setApiKey(process.env.SENDGRID_API_KEY);
                                         sgMail.send(message).then(sent => {
                                             console.log(sent[0]);
+                                            socket.emit("editor_invitation_action_success",true,to);
                                         }).catch((err) => {
                                             console.log(err.response.body);
+                                            socket.emit("editor_invitation_action_error", false, "Failed, try again!");
                                         });
                                     })
                                     .catch(err => {
@@ -98,12 +102,14 @@ export default function webrtcSocketFactory(socket: Socket | any, io: Socket): v
                             }
                         } else {
                             console.log("user not found");
-                            socket.emit("invitation_finalize", false, "user not found");
+                            socket.emit("editor_invitation_action_error", false, "user not found");
                         }
                     });
                 }
             } else {
                 console.log("room not found");
+                socket.emit("editor_invitation_action_error", false, "Failed to process");
+
             }
         });
 

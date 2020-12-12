@@ -37,8 +37,8 @@ class Server {
                 rooms.forEach(room => {
                     room.numberInClass = 0;
                     room.save((err,savedroom) => {
-                        if(!err && savedroom){
-                            console.log("Updated", savedroom.name);
+                        if(err){
+                            console.log(err);
                         }
                     });
                 });

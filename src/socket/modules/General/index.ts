@@ -86,7 +86,24 @@ export default function GeneralSocketEvent(socket: Socket | any, io: Socket, use
                         const hasJoinedBefore = participants.find(participant => {
                             return String(participant.kid) === String(data.userId);
                         });
-
+                        const accessControls = {
+                            editors: {
+                                read: true,
+                                write: room.owner === socket.user,
+                                upload: room.owner === socket.user,
+                                administrative: room.owner === socket.user // includes inviting to collaborate
+                            },
+                            conversation: {
+                                read: true,
+                                write: true,
+                                administrative: room.owner === socket.user // includes deleting another users message
+                            },
+                            videoConference: {
+                                read: true,
+                                write: true,
+                                administrative: room.owner === socket.user // includes muting mics, removing and adding users
+                            }
+                        };
                         if(hasJoinedBefore){
                             participants = participants.map(participant => {
                                 if(participant.kid === data.userId){
@@ -97,7 +114,8 @@ export default function GeneralSocketEvent(socket: Socket | any, io: Socket, use
                                         username: user.username,
                                         isowner: room.owner === socket.user,
                                         avatar: user.gravatarUrl,
-                                        inRoom: true
+                                        inRoom: true,
+                                        accessControls
                                     };
                                 }
                                 return participant;
@@ -110,24 +128,7 @@ export default function GeneralSocketEvent(socket: Socket | any, io: Socket, use
                                 avatar: user.gravatarUrl,
                                 socketid: socket.id,
                                 inClass: true,
-                                accessControls: {
-                                    editors: {
-                                        read: true,
-                                        write: room.owner === socket.user,
-                                        upload: room.owner === socket.user,
-                                        administrative: room.owner === socket.user // includes inviting to collaborate
-                                    },
-                                    conversation: {
-                                        read: true,
-                                        write: true,
-                                        administrative: room.owner === socket.user // includes deleting another users message
-                                    },
-                                    videoConference: {
-                                        read: true,
-                                        write: true,
-                                        administrative: room.owner === socket.user // includes muting mics, removing and adding users
-                                    }
-                                },
+                                accessControls,
                                 hasRoomAccess: true,
                                 lastTimeEntry: data.entryTime,
                                 isowner: room.owner === socket.user,
