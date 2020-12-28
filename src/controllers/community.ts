@@ -26,7 +26,7 @@ const ENVIRONMENT = process.env.NODE_ENV;
 const prod = ENVIRONMENT === "production";
 
 const serverHost = prod ? "https://code-marka.herokuapp.com" : "http://localhost:2001";
-const clientHost = prod ? "https://codemarka.dev" : "http://localhost:3000";
+const clientHost = prod ? "https://codemarka.co" : "http://localhost:3000";
 
 
 export const uploadCommunityLogo = ( req: Request,res: Response ): object => {
@@ -274,10 +274,10 @@ export const communityCreationFinal = (req: Request, res: Response, next: NextFu
                                             The link is valid for 14 days, after that you will have to start the registration process from the beginning.
                                             <b>We assume this is your community's official email , we would communicate with you via this medium if need be.<b/>
                                             </p>
-                                            If you did not request sign up to codemarka, you can safely ignore this email or visit <a href="https://codemarka.dev/?ref=mail">codemarka</a> to find out more about
+                                            If you did not request sign up to codemarka, you can safely ignore this email or visit <a href="https://codemarka.co/?ref=mail">codemarka</a> to find out more about
                                             what we have to offer, it might interest you.
                                             <p>
-                                        If you have any questions about the service, feel free to contact us anytime at support@codemarka.dev.
+                                        If you have any questions about the service, feel free to contact us anytime at support@codemarka.co.
                                             </p>
                                             <p>
                         Thanks for joining Codemarka Pro!
@@ -289,11 +289,11 @@ export const communityCreationFinal = (req: Request, res: Response, next: NextFu
                         The Codemarka Team
                         </p>
                         </p>
-                        https://codemarka.dev
+                        https://codemarka.co
                         </p>
                         </div>
                                             `;
-                                                sendMail(emailTemplate,"Complete Your Account set-up","codemarka@codemarka.dev",newCommunityAccount.email).then((sent: any) => {
+                                                sendMail(emailTemplate,"Complete Your Account set-up","codemarka@codemarka.co",newCommunityAccount.email).then((sent: any) => {
                                                     return apiResponse.successResponse(res,"Done");
                                                 }).catch((err: Error) => {
                                                     return apiResponse.successResponse(res,"Whoops! Something went wrong.");
@@ -423,7 +423,7 @@ Happy Learning,
 The Codemarka Team
 </p>
 </p>
-https://codemarka.dev
+https://codemarka.co
 </p>
                     </div>
 
@@ -433,7 +433,7 @@ https://codemarka.dev
 
                     user.save((err,doc) => {
                         if(doc){
-                            sendMail(emailTemplate,"Welcome To Codemarka Pro","Community@codemarka.dev",user.email).then((sent: any) => {
+                            sendMail(emailTemplate,"Welcome To Codemarka Pro","Community@codemarka.co",user.email).then((sent: any) => {
                                 return res.redirect(clientHost+"/auth/signin/?ref=mail&s=t");
                             }).catch((err: Error) => {
                                 return res.redirect(clientHost+"/auth/signin/?ref=mail&s=f");

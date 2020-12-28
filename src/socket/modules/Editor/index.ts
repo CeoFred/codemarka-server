@@ -82,7 +82,7 @@ export default function webrtcSocketFactory(socket: Socket | any, io: Socket): v
                                         emailTemplate = result;
                                         const message = {
                                             to: email,
-                                            from: { email: "no-reply@codemarka.dev", name: "codemarka" },
+                                            from: { email: "no-reply@codemarka.co", name: "codemarka" },
                                             subject: "Invitation To Collaborate On Codemarka",
                                             html: emailTemplate
                                         };

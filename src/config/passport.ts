@@ -133,7 +133,7 @@ function(accessToken, refreshToken, profile: any, done) {
                 codemarka community. Having confirmed your account, you can now create or hosts classroom sessions right
                 from your homepage, all the best!
                 </p>
-                <p><a href='https://codemarka.dev/auth/signin?ref=confirm'>Login</a></p>
+                <p><a href='https://codemarka.co/auth/signin?ref=confirm'>Login</a></p>
                 </div>
                 `;
 
@@ -282,7 +282,7 @@ function(accessToken, refreshToken, profile, done) {
                 codemarka community. Having confirmed your account, you can now create or hosts classroom sessions right
                 from your homepage, all the best!
                 </p>
-                <p><a href='https://codemarka.dev/auth/signin?ref=confirm'>Login</a></p>
+                <p><a href='https://codemarka.co/auth/signin?ref=confirm'>Login</a></p>
                 </div>
                 `;
 
