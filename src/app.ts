@@ -71,21 +71,24 @@ app.use(session({
 app.set("host", process.env.OPENSHIFT_NODEJS_IP || "0.0.0.0");
 
 app.use(methodOverride());
-// app.use(cors({credentials: true, origin: ["http://localhost:8080","http://localhost:3000","https://codemarka.co","https://sandbox.codemarka.co","https://staging.codemarka.co"]}));
+
+const corsConfig =  {credentials: true, origin: ["http://localhost:8080","https://www.codemarka.co","http://localhost:3000","https://codemarka.co","https://sandbox.codemarka.co","https://staging.codemarka.co"]};
 
 app.use(lusca.xframe("SAMEORIGIN"));
 app.disable("x-powered-by");
 
 app.use(lusca.xssProtection(true));
 // routes as middlewares
-app.use("/api/v1/auth", auth);
-app.use("/api/v1/classroom", classroom);
-app.use("/api/v1/community" ,community);
-app.use("/api/v1/user", user);
+app.use("/api/v1/auth",cors(corsConfig) ,auth);
+app.use("/api/v1/classroom",cors(corsConfig), classroom);
+app.use("/api/v1/community" ,cors(corsConfig),community);
+app.use("/api/v1/user",cors(corsConfig), user);
 app.use("/api/v1/slack", slack);
+
 app.get("/mail", function (req, res) {
     return res.render("mail/collaborationInvitation");
 });
+
 app.get("/api/v1", (req, res) => {
     res.json({ message: "Looking for something??" });
 });
