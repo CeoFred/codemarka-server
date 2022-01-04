@@ -10,7 +10,7 @@ export default (server: express.Application) => {
 
     
     const io = require("socket.io")(server, chat);
-    const clients: any[] = [];
+    const clients: object[] = [];
     const usersonline: any = {} ;
 
     io.on("connection", function (socket: any) {

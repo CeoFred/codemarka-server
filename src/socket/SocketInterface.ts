@@ -64,7 +64,7 @@ export interface NewMessageInterface {
     thread: any;
 }
 export interface JoinObj {
-    userId: string;
+    userkid: string;
     classroom_id: string;
     username: string;
     cdata: ClassroomDocument;

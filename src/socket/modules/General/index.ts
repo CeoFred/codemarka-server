@@ -66,15 +66,16 @@ export default function GeneralSocketEvent(socket: Socket | any, io: Socket, use
 
     // event when someone joins a class
     socket.on("join", (data: JoinObj): void => {
-        socket.user = data.userId;
+        socket.user = data.userkid;
         socket.room = data.classroom_id;
         socket.username = data.username;
         socket.classinfo = data.cdata;
 
         socket.userModel;
         // find user and update
-        User.findOne({ kid: data.userId }).then(user => {
+        User.findOne({ kid: data.userkid }).then(user => {
             function proceedTojoinUser(user: UserDocument): void{
+
                 // check if user is already in classm, filter and push new user object
                 Classroom.findById(data.classroom_id, (err, room) => {
                     if (err) throw err;
@@ -84,8 +85,9 @@ export default function GeneralSocketEvent(socket: Socket | any, io: Socket, use
                         let participants = room.participants;
 
                         const hasJoinedBefore = participants.find(participant => {
-                            return String(participant.kid) === String(data.userId);
+                            return String(participant.kid) === String(data.userkid);
                         });
+
                         const accessControls = {
                             editors: {
                                 read: true,
@@ -106,7 +108,7 @@ export default function GeneralSocketEvent(socket: Socket | any, io: Socket, use
                         };
                         if(hasJoinedBefore){
                             participants = participants.map(participant => {
-                                if(participant.kid === data.userId){
+                                if(participant.kid === data.userkid){
                                     return {
                                         ...participant,
                                         inClass: true,
@@ -121,6 +123,7 @@ export default function GeneralSocketEvent(socket: Socket | any, io: Socket, use
                                 return participant;
                             });
                         } else {
+
                             const participantData = {
                                 id: String(user._id),
                                 username: user.username,
@@ -160,16 +163,16 @@ export default function GeneralSocketEvent(socket: Socket | any, io: Socket, use
                         socket.join(`preview--${room.kid}`);
 
                         socket.join(data.classroom_id, () => {
-                                        
+                            
                             usersonline[socket.id].room = data.classroom_id;
                             usersonline[socket.id].inRoom = true;
-                            usersonline[socket.id].kid = data.userId;
+                            usersonline[socket.id].kid = data.userkid;
 
                             socket.to(data.classroom_id).emit("someoneJoined",
                                 {
                                     by: "server",
-                                    msg: data.userId + " joined",
-                                    for: data.userId,
+                                    msg: data.userkid + " joined",
+                                    for: data.userkid,
                                     name: data.username.toLowerCase(),
                                     type: "sJoin",
                                     msgId: uuidv4(),
@@ -210,6 +213,7 @@ export default function GeneralSocketEvent(socket: Socket | any, io: Socket, use
                                         content: jsContent,
                                         externalCDN: jsExternalCDN
                                     };
+                                    console.log(js,cs,ht);
                                     socket.emit("class_files", cs, ht, js);
 
                                 }
@@ -309,11 +313,12 @@ export default function GeneralSocketEvent(socket: Socket | any, io: Socket, use
                 });
 
             }
+
             if (user) {
                 proceedTojoinUser(user);
             }
         }).catch(err => {
-            socket.emit("error");
+            socket.emit("codemarka_error", err);
         });
     });
 
