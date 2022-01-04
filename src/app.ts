@@ -72,7 +72,7 @@ app.set("host", process.env.OPENSHIFT_NODEJS_IP || "0.0.0.0");
 
 app.use(methodOverride());
 
-const corsConfig =  {credentials: true, origin: ["http://localhost:8080","https://www.codemarka.co","http://localhost:3000","https://codemarka.co","https://sandbox.codemarka.co","https://staging.codemarka.co"]};
+const corsConfig =  {credentials: true, origin: ["http://localhost:8080","https://www.codemarka.co","http://localhost:3000","https://codemarka.codemon.me"]};
 
 app.use(lusca.xframe("SAMEORIGIN"));
 app.disable("x-powered-by");
