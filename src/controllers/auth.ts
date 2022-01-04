@@ -92,7 +92,7 @@ export const verifyOauthFinalStepsToken = async (req: Request, res: Response) =>
  */
 export const handleSlackAuth = async (req: Request, res: Response) => {
     const {code} = req.query;
-    const host = process.env.NODE_ENV == "production" ? "https://api.secure.codemarka.co" : "http://localhost:2001";
+    const host = process.env.NODE_ENV == "production" ? "https://codemarka.herokuapp.com" : "http://localhost:2001";
 
     var fullUrl = `${host}/api/v1/auth/user/slack/oauth/external` + (req.query.rdir && req.query.rdir.length > 0 ? "?rdir="+req.query.rdir : "");
     // 
@@ -121,11 +121,11 @@ export const handleSlackAuth = async (req: Request, res: Response) => {
                 User.findOne({slackid: userData.data.user.id}).then(u_ => {
                     if(u_){
                         const payload = u_.toAuthJSON();
-                        let redirect = `${req.hostname === "localhost" ? "http://localhost:3000/" : "https://codemarka.co/"}auth/user/oauth/success/${payload.token}/${u_.kid}`;
+                        let redirect = `${req.hostname === "localhost" ? "http://localhost:3000/" : "codemarka.codemon.me"}auth/user/oauth/success/${payload.token}/${u_.kid}`;
 
                         const setupComplete  = u_.tokens.find(t => t.type === "auth_setup");
 
-                        redirect = setupComplete ? `${req.hostname === "localhost" ? "http://localhost:3000/" : "https://codemarka.co/"}auth/account/user/finalSteps/${setupComplete.token}/${u_.kid}` : redirect;
+                        redirect = setupComplete ? `${req.hostname === "localhost" ? "http://localhost:3000/" : "codemarka.codemon.me"}auth/account/user/finalSteps/${setupComplete.token}/${u_.kid}` : redirect;
                         // 
                         return res.status(200).redirect(redirect);
                     } else {
@@ -144,7 +144,7 @@ export const handleSlackAuth = async (req: Request, res: Response) => {
 
                         user.save((saveerr, slackuser) => {
                             if(!saveerr && slackuser){
-                                const redirect = `${req.hostname === "localhost" ? "http://localhost:3000/" : "https://codemarka.co/"}auth/account/user/finalSteps/${auth_setup_token}/${slackuser.kid}`;
+                                const redirect = `${req.hostname === "localhost" ? "http://localhost:3000/" : "codemarka.codemon.me"}auth/account/user/finalSteps/${auth_setup_token}/${slackuser.kid}`;
                                 return res.status(201).redirect(redirect);
                             } else {
                                 
@@ -216,7 +216,7 @@ export const accountRecovery = (req: Request, res: Response, next: NextFunction)
                     let trial = 0;
                     let maxTrial = 2;
                     let sent = false;
-                    const PasswordResetLink = `${req.hostname === "localhost" ? "http://localhost:3000" : "https://codemarka.co"}/auth/user/account/password/reset/${token}/${user}`;
+                    const PasswordResetLink = `${req.hostname === "localhost" ? "http://localhost:3000" : "https://codemarka.codemon.me"}/auth/user/account/password/reset/${token}/${user}`;
                     
                     const sendPasswordResetMail = (email: string) => {
 
@@ -578,7 +578,7 @@ export const postSignup = (req: Request, res: Response, next: NextFunction) => {
                             let trial = 0;
                             let maxTrial = 2;
                             let sent = false;
-                            const vLink = `${req.hostname === "localhost" ? "http://localhost:2001/" : "https://api.secure.codemarka.co/"}api/v1/auth/account/user/verify/${verificationToken}/${user._id}`;
+                            const vLink = `${req.hostname === "localhost" ? "http://localhost:2001/" : "https://codemarka.herokuapp.com/"}api/v1/auth/account/user/verify/${verificationToken}/${user._id}`;
                             
                             const sendMailToNewUser = (email: string) => {
             
@@ -599,7 +599,7 @@ export const postSignup = (req: Request, res: Response, next: NextFunction) => {
                                 <p>
                                 The link is valid for 14 days, after that you will have to start the registration process from the beginning.
                                 </p>
-                                If you did not request sign up to codemarka, you can safely ignore this email or visit <a href="https://codemarka.co/?ref=mail">codemarka</a> to find out more about
+                                If you did not request sign up to codemarka, you can safely ignore this email or visit <a href="codemarka.codemon.me?ref=mail">codemarka</a> to find out more about
                                 what we have to offer, it might interest you.
                                 <p>
                             If you have any questions about the service, feel free to contact us anytime at support@codemarka.co.
@@ -753,7 +753,7 @@ export const emailVerification = (req: Request, res: Response, next: NextFunctio
                     </p>
 
                     <br/>
-                    <p><a href='https://codemarka.co/auth/signin?ref=confirm'>Login</a></p>
+                    <p><a href='codemarka.codemon.meauth/signin?ref=confirm'>Login</a></p>
                     </div>
 
                     `;
@@ -781,13 +781,13 @@ export const emailVerification = (req: Request, res: Response, next: NextFunctio
                                 
                                         // BASE
                                         sent = true;
-                                        return res.redirect("https://codemarka.co/account/confirmed/true/?sent=true");
+                                        return res.redirect("codemarka.codemon.meaccount/confirmed/true/?sent=true");
                                     }
                                 
                                 });
                             } catch (e) {
                                 next(e);
-                                return res.redirect("https://codemarka.co/account/confirmed/true/?sent=false");
+                                return res.redirect("codemarka.codemon.meaccount/confirmed/true/?sent=false");
 
                             }
                        
@@ -795,24 +795,24 @@ export const emailVerification = (req: Request, res: Response, next: NextFunctio
                         // TERMINATION
                             
                             sent = false;
-                            return res.redirect("https://codemarka.co/account/confirmed/true/?sent=false");
+                            return res.redirect("codemarka.codemon.meaccount/confirmed/true/?sent=false");
                         }
                     
 
                     };
                     sendWelcomeEmailToUser(user.email);
                 } else {
-                    return res.redirect(`${req.hostname === "localhost" ? "http://localhost:3000" : "https://codemarka.co"}/account/confirmed/false/?sent=false&info=0`);
+                    return res.redirect(`${req.hostname === "localhost" ? "http://localhost:3000" : "https://codemarka.codemon.me"}/account/confirmed/false/?sent=false&info=0`);
 
                 }
             });
         } catch (error) {
 
-            return res.redirect(`${req.hostname === "localhost" ? "http://localhost:3000" : "https://codemarka.co"}/account/confirmed/false/?sent=false&info=0`);
+            return res.redirect(`${req.hostname === "localhost" ? "http://localhost:3000" : "https://codemarka.codemon.me"}/account/confirmed/false/?sent=false&info=0`);
 
         }
     } else {
-        return res.redirect("https://codemarka.co/pages/error/?email_ver=false&info=0");
+        return res.redirect("codemarka.codemon.mepages/error/?email_ver=false&info=0");
 
 
     }

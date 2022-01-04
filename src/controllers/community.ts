@@ -25,8 +25,8 @@ cloudi.config({
 const ENVIRONMENT = process.env.NODE_ENV;
 const prod = ENVIRONMENT === "production";
 
-const serverHost = prod ? "https://code-marka.herokuapp.com" : "http://localhost:2001";
-const clientHost = prod ? "https://codemarka.co" : "http://localhost:3000";
+const serverHost = prod ? "https://codemarka.herokuapp.com" : "http://localhost:2001";
+const clientHost = prod ? "https://codemarka.codemon.me" : "http://localhost:3000";
 
 
 export const uploadCommunityLogo = ( req: Request,res: Response ): object => {
@@ -274,7 +274,7 @@ export const communityCreationFinal = (req: Request, res: Response, next: NextFu
                                             The link is valid for 14 days, after that you will have to start the registration process from the beginning.
                                             <b>We assume this is your community's official email , we would communicate with you via this medium if need be.<b/>
                                             </p>
-                                            If you did not request sign up to codemarka, you can safely ignore this email or visit <a href="https://codemarka.co/?ref=mail">codemarka</a> to find out more about
+                                            If you did not request sign up to codemarka, you can safely ignore this email or visit <a href="codemarka.codemon.me?ref=mail">codemarka</a> to find out more about
                                             what we have to offer, it might interest you.
                                             <p>
                                         If you have any questions about the service, feel free to contact us anytime at support@codemarka.co.
@@ -289,7 +289,7 @@ export const communityCreationFinal = (req: Request, res: Response, next: NextFu
                         The Codemarka Team
                         </p>
                         </p>
-                        https://codemarka.co
+                        https://codemarka.codemon.me
                         </p>
                         </div>
                                             `;
@@ -423,7 +423,7 @@ Happy Learning,
 The Codemarka Team
 </p>
 </p>
-https://codemarka.co
+https://codemarka.codemon.me
 </p>
                     </div>
 

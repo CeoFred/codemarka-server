@@ -19,7 +19,7 @@ const LocalStrategy = require("passport-local").Strategy;
 export const ENVIRONMENT = process.env.NODE_ENV;
 const prod = ENVIRONMENT === "production";
 
-const host = prod ? "https://code-marka.herokuapp.com" : "http://localhost:2001";
+const host = prod ? "https://codemarka.herokuapp.com" : "http://localhost:2001";
 
 
 passport.use(new LocalStrategy({
@@ -133,7 +133,7 @@ function(accessToken, refreshToken, profile: any, done) {
                 codemarka community. Having confirmed your account, you can now create or hosts classroom sessions right
                 from your homepage, all the best!
                 </p>
-                <p><a href='https://codemarka.co/auth/signin?ref=confirm'>Login</a></p>
+                <p><a href='codemarka.codemon.meauth/signin?ref=confirm'>Login</a></p>
                 </div>
                 `;
 
@@ -282,7 +282,7 @@ function(accessToken, refreshToken, profile, done) {
                 codemarka community. Having confirmed your account, you can now create or hosts classroom sessions right
                 from your homepage, all the best!
                 </p>
-                <p><a href='https://codemarka.co/auth/signin?ref=confirm'>Login</a></p>
+                <p><a href='codemarka.codemon.meauth/signin?ref=confirm'>Login</a></p>
                 </div>
                 `;
 

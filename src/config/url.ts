@@ -1,7 +1,7 @@
 const ENVIRONMENT = process.env.NODE_ENV;
 const prod = ENVIRONMENT === "production";
 
-const host = prod ? "https://codemarka.co" : "http://localhost:3000";
+const host = prod ? "https://codemarka.codemon.me" : "http://localhost:3000";
 
 
 export const GOOGLE_AUTH_SUCCESS_CLIENT =  `${host}/auth/user/oauth/success`;

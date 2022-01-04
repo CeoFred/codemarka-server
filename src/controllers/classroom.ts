@@ -892,7 +892,7 @@ export const fecthClassByUrlAlias = (
                 return apiResponse.successResponseWithData(
                     res,
                     "Success",
-                    `https://codemarka.co/c/classroom/${data.classroomKid}`
+                    `codemarka.codemon.mec/classroom/${data.classroomKid}`
                 );
             } else {
                 return apiResponse.ErrorResponse(res, "URL not found");

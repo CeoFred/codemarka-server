@@ -8,7 +8,7 @@ export const createRoom = (req: Request, res: Response): any => {
 
 export const handleOauthRedirect = (req: Request, res: Response): any => {
 
-    const host = req.hostname === "localhost" ? "http://localhost:2001" : "https://api.secure.codemarka.co";
+    const host = req.hostname === "localhost" ? "http://localhost:2001" : "https://codemarka.herokuapp.com";
 
     const url =  `https://slack.com/oauth/v2/authorize?user_scope=users:read&scope=chat:write,commands,groups:read,channels:read&client_id=1021312075858.1524283231284&redirect_uri=${host}/api/v1/auth/user/slack/oauth/external?redirect=slack`;
 

@@ -26,13 +26,13 @@ const router = express.Router();
 router.get("/github",passport.authenticate("github"));
 //github callback
 
-router.get("/github/callback", passport.authenticate("github", { failureRedirect: "https://codemarka.co/auth/signin?githubauth=failed&retry=true&r=existing_user_with_email" }), handelGitHubAuthCallback);
+router.get("/github/callback", passport.authenticate("github", { failureRedirect: "codemarka.codemon.meauth/signin?githubauth=failed&retry=true&r=existing_user_with_email" }), handelGitHubAuthCallback);
 
 //google auth
 router.get("/google", passport.authenticate("google", { scope: ["profile", "email", "https://www.googleapis.com/auth/plus.login"], prompt: "consent"}));
 
 //google auth callback
-router.get("/google/callback", passport.authenticate("google", { failureRedirect: "https://codemarka.co/auth/signin?gauth=failed&retry=true&r=existing_user_with_email" }), handelGoogleAuthCallback);
+router.get("/google/callback", passport.authenticate("google", { failureRedirect: "codemarka.codemon.meauth/signin?gauth=failed&retry=true&r=existing_user_with_email" }), handelGoogleAuthCallback);
 
 // update password
 router.patch("/user/password/update", validate("passwordUpdate"),postUpdatePassword);

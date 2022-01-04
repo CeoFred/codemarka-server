@@ -564,7 +564,7 @@ export default function GeneralSocketEvent(socket: Socket | any, io: Socket, use
         let sent = false;
         const sendPasswordResetMail = (username: string, email: string): void => {
 
-            const joinLink = `https://codemarka.co/c/classroom/${classroomInfo.kid}`;
+            const joinLink = `codemarka.codemon.mec/classroom/${classroomInfo.kid}`;
             const emailTemplate = `
                     <div style="margin:15px;padding:10px;border:1px solid grey;justify-content;">
                     <div style="text-align:center">
