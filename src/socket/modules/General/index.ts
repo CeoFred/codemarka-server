@@ -53,7 +53,7 @@ export default function GeneralSocketEvent(socket: Socket | any, io: Socket, use
                         { upsert: true },
                         function (err, doc: object) {
                             if (err) {
-                                console.log(err);
+                                
                             } else if (doc) {
                                 socket.emit("gravatar_image_upload_complete",result.secure_url);
                             }
@@ -213,7 +213,7 @@ export default function GeneralSocketEvent(socket: Socket | any, io: Socket, use
                                         content: jsContent,
                                         externalCDN: jsExternalCDN
                                     };
-                                    console.log(js,cs,ht);
+                                    
                                     socket.emit("class_files", cs, ht, js);
 
                                 }
@@ -231,23 +231,23 @@ export default function GeneralSocketEvent(socket: Socket | any, io: Socket, use
                                 const isOwner = room.owner === socket.user;
 
                                 if(classroomIsTakingAttendance){
-                                    // console.log("classroom is taking attedance");
+                                    // 
                                     // check if user has taken attendance b4
 
                                     if(isOwner){
                                         socket.emit("attendance_list",attendanceList);
                                     }
                                     if(userHasTakenAttedance){
-                                        // console.log("user has attendance taken");
+                                        // 
                                                     
                                         const usersAttendance = attendanceList.filter(att => att.kid === socket.user);
-                                        // console.log("users attendance", usersAttendance);
+                                        // 
 
                                         const numberOfUserEntries = usersAttendance.length;
                                         const lastEntry = numberOfUserEntries <= 1 ? 1 : numberOfUserEntries - 1;
 
                                         if(numberOfUserEntries === 1){
-                                            // console.log("only one entry for current user");
+                                            // 
                                             // check if attendance is complete
                                             const { firstName, lastName, email, gender, kid, username } = usersAttendance[0];
                                             if(!(firstName && lastName && email && gender && kid && username)){
@@ -255,14 +255,14 @@ export default function GeneralSocketEvent(socket: Socket | any, io: Socket, use
                                                 setTimeout(() => socket.emit("collect_attendance", usersAttendance[0]),30000);
                                             } else {
                                                 //complete data
-                                                console.log("user has completed attendance data");
+                                                
                                                 socket.emit("has_attendance_recorded", usersAttendance[0]);
                                             }
 
                                         }
                                         else if(numberOfUserEntries > 1) {
                                             //resolve all atttendance and use the last entry
-                                            console.log("more than one entry,resolving..");
+                                            
                                             const lastEntryData = usersAttendance[lastEntry];
                                             const attendance = attendanceList.filter(att => att.kid !== socket.user);
                                             attendance.push(lastEntryData);
@@ -270,19 +270,19 @@ export default function GeneralSocketEvent(socket: Socket | any, io: Socket, use
                                             hasClassAttendance.list = attendance;
                                             hasClassAttendance.save((err,up) => {
                                                 if(!up && err){
-                                                    console.log(err);
+                                                    
                                                 }
                                             });
                                         }
                                     } else {
-                                        // console.log("User has not taken attendance");
+                                        // 
                                         if(!isOwner){
                                                         
                                             const userAttedance = {kid: socket.user, username: data.username, email: user.email };
                                             hasClassAttendance.list.push(userAttedance);
                                             hasClassAttendance.save((err,up) => {
                                                 if(!up && err){
-                                                    console.log(err);
+                                                    
                                                 }});
                                             setTimeout(() => socket.emit("collect_attendance", null),30000);
                                         }
@@ -293,17 +293,17 @@ export default function GeneralSocketEvent(socket: Socket | any, io: Socket, use
                                         hasClassAttendance.list.push(userAttedance);
                                         hasClassAttendance.save((err,up) => {
                                             if(!up && err){
-                                                console.log(err);
+                                                
                                             }
                                         });
                                     }
 
                                 }
                             } else {
-                                console.log("No attendance document found for ", room.kid);
+                                
                             }
                         }).catch((err) => {
-                            console.log(err);
+                            
                         });
                               
 
@@ -331,7 +331,7 @@ export default function GeneralSocketEvent(socket: Socket | any, io: Socket, use
 
                 const list = attendance.list;
                 const hasTakenAttendance = list.some(user => user.kid === socket.user);
-                // console.log(data);
+                // 
                 if (hasTakenAttendance){
                     // old Record, update.
                     attendance.list = list.map(user => {
@@ -347,7 +347,7 @@ export default function GeneralSocketEvent(socket: Socket | any, io: Socket, use
                 }
                 attendance.save((err, recorded) => {
                     if (recorded) {
-                        // console.log(recorded);
+                        // 
                         socket.emit("attendance_recorded", recorded.list.filter(u => u.kid === socket.user)[0]);
                         io.in(socket.room).emit("new_attendance",recorded.list);
                     }
@@ -371,11 +371,11 @@ export default function GeneralSocketEvent(socket: Socket | any, io: Socket, use
                     try {
                         fs.mkdirSync(classroomDir,{ recursive: true });               
                     } catch (error) {
-                        console.log(error);
+                        
                     }
                 } else {
                     const files = fs.readdirSync(classroomDir,{withFileTypes:true});
-                    // console.log(files);
+                    // 
                     files.forEach(element => {
                         let ext = element.name.split(".")[1];
                         if(ext === "csv"){
@@ -437,7 +437,7 @@ export default function GeneralSocketEvent(socket: Socket | any, io: Socket, use
         Classroom.findById(classroom, (err, room) => {
                 
             if(err) {
-                console.log(err);
+                
                 return socket.emit("blocking_failed", user);
             }
 
@@ -475,7 +475,7 @@ export default function GeneralSocketEvent(socket: Socket | any, io: Socket, use
         try {
             Classroom.findById(socket.room, (err, res) => {
                 if (err) {
-                    console.log(err);
+                    
                 };
 
                 if (res && res !== null) {
@@ -527,8 +527,8 @@ export default function GeneralSocketEvent(socket: Socket | any, io: Socket, use
         const classroom = socket.room;
 
         Classroom.findById(classroom, (err, res) => {
-            if (err) console.log(err);
-            let ratings = res.ratings;
+            if (err) 
+                var ratings = res.ratings;
             let foundRating = ratings.filter(rating => {
                 return String(socket.user) === String(rating.user);
             });
@@ -544,9 +544,9 @@ export default function GeneralSocketEvent(socket: Socket | any, io: Socket, use
                 },
                 { new: true },
                 (err, doc) => {
-                    if (err) console.log(err);
+                    if (err) 
                   
-                    socket.emit("star_rating_added", socket.user);
+                        socket.emit("star_rating_added", socket.user);
                 }
                 );
             }
@@ -599,13 +599,13 @@ export default function GeneralSocketEvent(socket: Socket | any, io: Socket, use
                         if(err){
                             // RECURSION
                             trial++;
-                            console.log("retrying..",trial);
+                            
                             sent = false;
                             sendPasswordResetMail(username,email);
                         } else {
                                 
                             // BASE
-                            console.log("sent mail to",email);
+                            
                             sent = true;
                             io.in(socket.room).emit("invite_sent");
 
@@ -613,7 +613,7 @@ export default function GeneralSocketEvent(socket: Socket | any, io: Socket, use
                                 
                     });
                 } catch (e) {
-                    console.log(e);
+                    
                     io.in(socket.room).emit("error");
                      
                 }
@@ -671,8 +671,8 @@ export default function GeneralSocketEvent(socket: Socket | any, io: Socket, use
         },
         { new: true },
         (err, doc) => {
-            if (err) console.log(err);
-            io.in(classroom).emit("pinned_message_added", doc.pinnedMessages);
+            if (err) 
+                io.in(classroom).emit("pinned_message_added", doc.pinnedMessages);
         }
         );
     });
@@ -698,7 +698,7 @@ export default function GeneralSocketEvent(socket: Socket | any, io: Socket, use
             if (err) socket.emit("errUpdating", err);
             if(doc) {
                 io.in(socket.room).emit("newClassInformation", doc);
-                console.log("classroom_Information Updated Successfully!");
+                
             }
                 
         });

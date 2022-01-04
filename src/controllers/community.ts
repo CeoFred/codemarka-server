@@ -256,7 +256,7 @@ export const communityCreationFinal = (req: Request, res: Response, next: NextFu
                         
                                             else if (newCommunityAccount){                            
                                                 const vLink = `${serverHost}/api/v1/community/account/verify/${verificationToken}/${newCommunityAccount.kid}`;
-                                                console.log(vLink);
+                                                
                                                 const emailTemplate = `
                                         <div style="padding:20px;">
                                         <div style="width:100%;background-color: #273444!important;padding:30px;text-align:center;margin-bottom:30px">   
@@ -575,7 +575,7 @@ export const getCommunity = (req: Request, res: Response): void => {
 export const joinCommunity = (req: Request, res: Response): void => {
     const { kid } = req.params;
     const {action, user} = req.body;
-    // console.log(req);
+    // 
     Community.findOne({kid},(err,communityM: CommunityDocument) => {
         if (communityM.members.length > 0){
             if(action && action === "leave"){

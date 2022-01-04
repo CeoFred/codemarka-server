@@ -8,7 +8,7 @@ export const ENVIRONMENT = process.env.NODE_ENV;
 const prod = ENVIRONMENT === "production" || ENVIRONMENT === "staging"; // Anything else is treated as 'dev'
 export const MONGODB_URI = prod ? process.env["MONGODB_URI"] : process.env["MONGODB_URI_LOCAL"];
 
-// console.log(`.env.${process.env.NODE_ENV}`);
+// 
 
 if (!MONGODB_URI) {
     if (prod) {
@@ -27,11 +27,11 @@ mongoose.set("useNewUrlParser", true);
 mongoose.set("useUnifiedTopology", true);
 mongoose.connect( mongoUrl , { useNewUrlParser: true,useUnifiedTopology:true} ).then(
     () => { 
-        console.log("Connected to mongo");
-
+        
+        logger.info(chalk.green("MongoDB connection successful."));
     },
-).catch(err => {
-    console.log("MongoDB connection error. Please make sure MongoDB is running. " + err);
+).catch(() => {
+    console.error("Could Not Connect to MongoDB");
     // process.exit();
 });
 const db = mongoose.connection;
@@ -39,7 +39,7 @@ const db = mongoose.connection;
 db.on("error", (err) => {
     // debug(`MongoDB connection error ${config.database.url} \nPlease make sure MongoDB is running.`);
     console.error(err);
-    console.log("%s MongoDB connection error. Please make sure MongoDB is running.", chalk.red("✗"));
+  
     process.exit();
 });
 

@@ -8,7 +8,7 @@ export default function webrtcSocketFactory(socket: any, io: Socket): void{
     });
 
     socket.on("rtc_ready_state",(room: string) => {
-        console.log(room);
+        
         room && Classroom.findOne({kid: room},(error, roomFound) => {
             if(roomFound){
                 socket.emit("rtc_setup_users", roomFound.participants);
@@ -22,7 +22,7 @@ export default function webrtcSocketFactory(socket: any, io: Socket): void{
 
         usersToCall.length && usersToCall.forEach((user: any) => {
             // beep users
-            console.log("beeping user ",user);
+            
             io.to(user.socketid).emit("rtc_beep",{ from: socket.id, beepstrength });
             socket.emit("beep_delivery",user);
         });
@@ -39,7 +39,7 @@ export default function webrtcSocketFactory(socket: any, io: Socket): void{
 
         
     socket.on("wave_to_user_webrtc", (data: UserWEBRTC) => {
-        // console.log(data);
+        // 
         io.to(data.socketid).emit("wave_to_user_webrtc_", data);
     });
 

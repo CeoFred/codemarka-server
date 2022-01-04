@@ -70,7 +70,7 @@ export const verifyOauthFinalStepsToken = async (req: Request, res: Response) =>
     const { token: token_, userkid } =  req.params;
     !token_ || !userkid && ErrorResponse(res,"Failed");
 
-    console.log(token_, userkid);
+    
     token_ && userkid && User.findOne({kid: userkid}).then((user) => {
         
         const { tokens } =  user && user;
@@ -95,7 +95,7 @@ export const handleSlackAuth = async (req: Request, res: Response) => {
     const host = process.env.NODE_ENV == "production" ? "https://api.secure.codemarka.co" : "http://localhost:2001";
 
     var fullUrl = `${host}/api/v1/auth/user/slack/oauth/external` + (req.query.rdir && req.query.rdir.length > 0 ? "?rdir="+req.query.rdir : "");
-    // console.log(req.query, fullUrl);
+    // 
 
     const data = {
         code,
@@ -108,14 +108,14 @@ export const handleSlackAuth = async (req: Request, res: Response) => {
         
         axios.post("https://slack.com/api/oauth.v2.access",qs.stringify(data),headers).then(data_ => {
             const { authed_user } = data_.data;
-            // console.log(data_.data, authed_user);
+            // 
 
             const { id, access_token } =  authed_user;
             // eslint-disable-next-line quotes
             const getSlackUser =  `https://slack.com/api/users.info?token=${access_token}&user=${id}&include_locale=true`;
             id && access_token && axios.get(getSlackUser,headers).then(userData => {
                 
-                // console.log(userData.data);
+                // 
                 // save user and redirect back to codemarka
 
                 User.findOne({slackid: userData.data.user.id}).then(u_ => {
@@ -126,7 +126,7 @@ export const handleSlackAuth = async (req: Request, res: Response) => {
                         const setupComplete  = u_.tokens.find(t => t.type === "auth_setup");
 
                         redirect = setupComplete ? `${req.hostname === "localhost" ? "http://localhost:3000/" : "https://codemarka.co/"}auth/account/user/finalSteps/${setupComplete.token}/${u_.kid}` : redirect;
-                        // console.log("old user");
+                        // 
                         return res.status(200).redirect(redirect);
                     } else {
                         const user =  new User();
@@ -147,28 +147,28 @@ export const handleSlackAuth = async (req: Request, res: Response) => {
                                 const redirect = `${req.hostname === "localhost" ? "http://localhost:3000/" : "https://codemarka.co/"}auth/account/user/finalSteps/${auth_setup_token}/${slackuser.kid}`;
                                 return res.status(201).redirect(redirect);
                             } else {
-                                console.log(saveerr);
+                                
                                 return ErrorResponse(res,"Action Failed");
                             }
                         });
                     }
                 }).catch(err => {
-                    // console.log(err);
+                    // 
                     return ErrorResponse(res,"Action Failed");
                 });
 
             }).catch(err => {
-                console.log(err);
+                
                 return ErrorResponse(res,"Action Failed");
             });
 
         }).catch(err => { 
-            console.log(err);
+            
             return ErrorResponse(res,"Action Failed");
         });
         
     } catch (error) {
-        console.log(error);
+        
         return ErrorResponse(res,"Action Failed");
         
     }
@@ -217,7 +217,7 @@ export const accountRecovery = (req: Request, res: Response, next: NextFunction)
                     let maxTrial = 2;
                     let sent = false;
                     const PasswordResetLink = `${req.hostname === "localhost" ? "http://localhost:3000" : "https://codemarka.co"}/auth/user/account/password/reset/${token}/${user}`;
-                    console.log(PasswordResetLink);
+                    
                     const sendPasswordResetMail = (email: string) => {
 
                         const trimedEmail = email.trim();
@@ -274,13 +274,13 @@ export const accountRecovery = (req: Request, res: Response, next: NextFunction)
                                     if(err){
                                     // RECURSION
                                         trial++;
-                                        console.log("retrying..",trial);
+                                        
                                         sent = false;
                                         sendPasswordResetMail(trimedEmail);
                                     } else {
                                 
                                         // BASE
-                                        console.log("sent mail to",trimedEmail);
+                                        
                                         sent = true;
                                         return apiResponse.successResponse(res,"Please check your inbox.");
                                     }
@@ -293,7 +293,7 @@ export const accountRecovery = (req: Request, res: Response, next: NextFunction)
                        
                         } else {
                         // TERMINATION
-                            console.log("password reset mail exceeded trial");
+                            
                             sent = false;
                             return apiResponse.successResponse(res,"Please try again.");
                         }
@@ -395,13 +395,13 @@ export const passwordReset = (req: Request | any, res: Response) => {
                                             if(err){
                                                 // RECURSION
                                                 trial++;
-                                                console.log("retrying..",trial);
+                                                
                                   
                                                 sendMailToNewUser(trimedEmail);
                                             } else {
                                 
                                                 // BASE
-                                                console.log("sent mail to",trimedEmail);
+                                                
                                                 sent = true;
                                                 return apiResponse.successResponse(res,"Password reset successful");     
 
@@ -579,7 +579,7 @@ export const postSignup = (req: Request, res: Response, next: NextFunction) => {
                             let maxTrial = 2;
                             let sent = false;
                             const vLink = `${req.hostname === "localhost" ? "http://localhost:2001/" : "https://api.secure.codemarka.co/"}api/v1/auth/account/user/verify/${verificationToken}/${user._id}`;
-                            console.log(vLink);
+                            
                             const sendMailToNewUser = (email: string) => {
             
                                 const trimedEmail = email.trim();
@@ -638,7 +638,7 @@ export const postSignup = (req: Request, res: Response, next: NextFunction) => {
                                             if(err){
                                                 // RECURSION
                                                 trial++;
-                                                console.log("retrying..",trial);
+                                                
                                               
                                                 sendMailToNewUser(trimedEmail);
                                             } else {
@@ -774,7 +774,7 @@ export const emailVerification = (req: Request, res: Response, next: NextFunctio
                                     if(err){
                                     // RECURSION
                                         trial++;
-                                        console.log("retrying..",trial);
+                                        
                                   
                                         sendWelcomeEmailToUser(trimedEmail);
                                     } else {
@@ -793,7 +793,7 @@ export const emailVerification = (req: Request, res: Response, next: NextFunctio
                        
                         } else {
                         // TERMINATION
-                            console.log("exceeded trial");
+                            
                             sent = false;
                             return res.redirect("https://codemarka.co/account/confirmed/true/?sent=false");
                         }
@@ -826,7 +826,7 @@ export const emailVerification = (req: Request, res: Response, next: NextFunctio
 export const postUpdateProfile = (req: Request, res: Response, next: NextFunction) => {
     const errors = validationResult(req);
 
-    console.log(req.body);
+    
     if (!errors.isEmpty()) {
         // return res.status(422).json(failed(errors.array()));
         return apiResponse.ErrorResponse(res,errors.array());

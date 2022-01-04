@@ -6,18 +6,18 @@ export const findUser = function (id: string): unknown {
     let result = null;
 
     if(id && id.trim() === ""){
-        console.log("UE");
+        
         result = false;
     }
     
     const r = User.findById(id).then((user: UserDocument) => {
 
         if(user && user !== null){
-            console.log("FU");
+            
             result = user;
             return result;
         } else {
-            console.log("NU");
+            
 
             result = false;
         }
@@ -25,7 +25,7 @@ export const findUser = function (id: string): unknown {
     }).catch((err) => {
         result = false;
     });
-    console.log(r);
+    
     return r;
 
   

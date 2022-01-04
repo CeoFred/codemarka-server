@@ -205,7 +205,7 @@ const comparePassword: comparePasswordFunction = function (candidatePassword, cb
 const updateAfterLogin = function(ip: any,token: object): void {
     this.lastLoggedInIp = ip;
     const geoCord = geo.lookup(ip);
-    console.log(ip);
+    
     this.geoDetails = geoCord;
     let tokens = this.tokens;
     tokens.push(token);

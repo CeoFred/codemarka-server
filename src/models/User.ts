@@ -182,7 +182,7 @@ userSchema.pre("save", function save(next: any) {
     const user = this as UserDocument;
     // if (user.isModified("password")) { return next(); }
     // user.password = bcrypt.hashSync(user.password, 10);
-    // console.log("pass modified",user.password);
+    // 
     // next();
     
     // check if password is present and is modified.

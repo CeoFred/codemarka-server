@@ -409,14 +409,14 @@ export const createClassRoom = (
                         });
                 })
                 .catch((err: Error) => {
-                    console.log(err);
+                    
                     return apiResponse.ErrorResponse(
                         res,
                         "Whoops! Something went wrong while trying to save classroom data to model"
                     );
                 });
         }
-        console.log(accountid);
+        
         User.findOne({ kid: accountid })
             .then((respo: any) => {
                 if (respo) {
@@ -460,7 +460,7 @@ export const downloadAttendance = (req: Request, res: Response): void => {
     "/" +
     csvName +
     ".csv";
-    console.log(filePath);
+    
     ClassroomAttendance.findOne({ classroomkid, csvName }, (err, cr) => {
         if (!err && cr) {
             if (fs.existsSync(filePath)) {
@@ -469,7 +469,7 @@ export const downloadAttendance = (req: Request, res: Response): void => {
                     if (!err && savedAtt) {
                         return res.download(filePath, (err) => {
                             if (err) {
-                                console.log(err);
+                                
                             }
                         });
                     }
@@ -823,7 +823,7 @@ export const getTrending = (req: Request, res: Response): object => {
                 let  promisesToResolve: AnyArray = [] ;
                 // map users to classroom
                 neededClassroomData.forEach(singleClassroom => {
-                    // console.log(singleClassroom.name, singleClassroom.owner)
+                    // 
                     const classroomOwner = singleClassroom.owner;
                     if(!classroomOwner) apiResponse.ErrorResponse(res, "Failed to Load Session Moderator");
                     promisesToResolve.push(User.findOne({kid: classroomOwner}));
@@ -857,7 +857,7 @@ export const getTrending = (req: Request, res: Response): object => {
                     return apiResponse.successResponseWithData(res,"Done", finalStructure.filter(dst => dst !== null));
             
                 }).catch(e => {
-                    console.log(e);
+                    
                     return apiResponse.ErrorResponse(res, e);
 
                 });

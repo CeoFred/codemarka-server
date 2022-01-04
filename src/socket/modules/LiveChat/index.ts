@@ -43,7 +43,7 @@ export default function webrtcSocketFactory(socket: any, io: Socket): void{
                 { upsert: true },
                 function (err, doc: object) {
                     if (err) {
-                        console.log(err);
+                        
                     } else if (doc) {
                         //do stuff
                         io.in(socket.room).emit("nM",
@@ -63,7 +63,7 @@ export default function webrtcSocketFactory(socket: any, io: Socket): void{
                     if(err){
 
                     } else if(!acc){
-                        console.log("user that sent message is not registered");
+                        
                     } else {
                         return sendSocketMessage(acc);
                     }
@@ -122,7 +122,7 @@ export default function webrtcSocketFactory(socket: any, io: Socket): void{
                             { upsert: true },
                             function (err, doc: object) {
                                 if (err) {
-                                    console.log(err);
+                                    
                                 } else if (doc) {
                                     //do stuff
                                     io.in(socket.room).emit("new_image_message",
@@ -144,7 +144,7 @@ export default function webrtcSocketFactory(socket: any, io: Socket): void{
     });
 
     socket.on("edit_message",(data: NewThreadMessage) => {
-        // console.log(data);
+        // 
         Classroom.findOne({kid: data.room}).then((classroom: ClassroomDocument) => {
             if(classroom && classroom.messages){
                 const messageFoundAndActive: any[]  = classroom.messages.find((message: NewMessageInterface) => message.msgId === data.messageId && !message.isDeleted);
@@ -193,7 +193,7 @@ export default function webrtcSocketFactory(socket: any, io: Socket): void{
                                                     { upsert: true },
                                                     function (err, doc: object) {
                                                         if (err) {
-                                                            console.log(err);
+                                                            
                                                         } else if (doc) {
                                                             //do stuff
                                                             io.in(socket.room).emit("new_image_message",
@@ -220,7 +220,7 @@ export default function webrtcSocketFactory(socket: any, io: Socket): void{
 
                     classroom.markModified("messages");
                     classroom.save((err, room) => {
-                        // console.log(err);
+                        // 
                         if(err) socket.emit("edit_message_error","Failed to edit message");
                         const messageForEditing: any[]  = room.messages.filter((message: NewMessageInterface) => message.msgId === data.messageId && !message.isDeleted);
 
@@ -231,7 +231,7 @@ export default function webrtcSocketFactory(socket: any, io: Socket): void{
                 }
             }
         }).catch((err) => {
-            // console.log(err);
+            // 
             socket.emit("edit_message_error","Failed to find room");
         });
     });
@@ -250,10 +250,10 @@ export default function webrtcSocketFactory(socket: any, io: Socket): void{
                 return message;
             });
 
-            // console.log(classroom.messages);
+            // 
             classroom.markModified("messages");
             classroom.save((err, room) => {
-                console.log(err);
+                
                 if(err) socket.emit("delete_message_error","Failed to delete message");
                 const messageForThread: any[]  = room.messages.filter((message: NewMessageInterface) => message.msgId === data.messageId);
 
@@ -261,7 +261,7 @@ export default function webrtcSocketFactory(socket: any, io: Socket): void{
             });
 
         }).catch((err) => {
-            console.log(err);
+            
             socket.emit("edit_message_error","Failed to find room");
         });
     });
@@ -308,10 +308,10 @@ export default function webrtcSocketFactory(socket: any, io: Socket): void{
                     return message;
                 });
 
-                // console.log(classroom.messages);
+                // 
                 classroom.markModified("messages");
                 classroom.save((err, room) => {
-                    console.log(err);
+                    
                     if(err) socket.emit("thread_error","Failed to add Thread");
                     const message: any[]  = room.messages.filter((message: NewMessageInterface) => message.msgId === messageId && !message.isDeleted);
                     io.in(socket.room).emit("new_message_reaction",message[0]);
@@ -322,7 +322,7 @@ export default function webrtcSocketFactory(socket: any, io: Socket): void{
           
 
         }).catch((err) => {
-            console.log(err);
+            
             socket.emit("thread_error","Failed to find room");
         });
     });
@@ -349,10 +349,10 @@ export default function webrtcSocketFactory(socket: any, io: Socket): void{
                 return message;
             });
 
-            // console.log(classroom.messages);
+            // 
             classroom.markModified("messages");
             classroom.save((err, room) => {
-                console.log(err);
+                
                 if(err) socket.emit("thread_error","Failed to add Thread");
                 const messageForThread: any[]  = room.messages.filter((message: NewMessageInterface) => message.msgId === data.messageId && !message.isDeleted);
 
@@ -360,7 +360,7 @@ export default function webrtcSocketFactory(socket: any, io: Socket): void{
             });
 
         }).catch((err) => {
-            console.log(err);
+            
             socket.emit("thread_error","Failed to find room");
         });
     });

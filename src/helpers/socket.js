@@ -25,7 +25,7 @@
 //         var uid;
 //         var classroom_id;
   
-//         console.log(" Recieved a new connection from " + request.origin + ". with connection id " + connectionID);
+//         
 //         // You can rewrite this part of the code to accept only the requests from allowed origin
 //         const connection = request.accept(null, request.origin);
 //         clients[connectionID] = connection;
@@ -55,13 +55,13 @@
 //             if (message.type === "utf8") {
   
 //                 let dataFromClient = JSON.parse(message.utf8Data);
-//                 console.log(dataFromClient);
+//                 
 //                 if (dataFromClient.type === "classroom_message") {
 
 //                     // push new activity
   
 //                     userActivities.push(`${dataFromClient.user_id} sent a new message`);
-//                     console.log("new Message from " + dataFromClient.user_id);
+//                     
   
 //                     // new classroom message object
 //                     const newClassRoomMessage = {
@@ -110,7 +110,7 @@
   
 //                     users.push({ user: uid, classroom: classroom_id, con_id: connectionID });
                 
-//                     console.log(`${uid} joined ${classroom_id}`);
+//                     
   
                 
 //                     //send old messages to new client
@@ -150,7 +150,7 @@
   
 //         connection.on("close", function (connection) {
   
-//             console.log(uid + " disconnected.");
+//             
 //             userActivities.push(`${uid} left the classroom`);
 //             const json = { type: "user_left", value: uid };
 //             const newu = users.filter((user) => {

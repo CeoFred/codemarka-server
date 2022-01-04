@@ -2,7 +2,7 @@ import logger from "./logger";
 import dotenv from "dotenv";
 import fs from "fs";
 
-// console.log(process.env);
+// 
 // if (fs.existsSync(".env")) {
 //     logger.debug("Using .env file to supply config environment variables");
 //     dotenv.config({ path:".env" });
@@ -14,7 +14,7 @@ import fs from "fs";
 // const prod = ENVIRONMENT === "production"; // Anything else is treated as 'dev'
 // export const MONGODB_URI = prod ? process.env["MONGODB_URI"] : process.env["MONGODB_URI_LOCAL"];
 
-// // console.log(`.env.${process.env.NODE_ENV}`);
+// // 
 
 // if (!MONGODB_URI) {
 //     if (prod) {

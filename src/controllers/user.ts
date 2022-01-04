@@ -11,7 +11,7 @@ export const getUserWithEmailOrUsername = (req: Request, res: Response): void =>
 
     User.find({ $or:[ {"username": { $regex:regex} }, {"email": { $regex: regex } } ], },{kid: true, username: true,gravatarUrl: true,_id:false} ,(err, user: UserDocument[]) => {
         if(err){
-            console.log(err);
+            
             return successResponse(res,[]);
         }
         if(user){
@@ -160,7 +160,7 @@ export const specialUpdate = (req: Request, res: Response): void => {
             .then(resolved => {
                 return successResponseWithData(res,"done",resolved);
             }).catch(err => {
-                console.log(err);
+                
                 return ErrorResponse(res, err);
             });
     });
@@ -168,7 +168,7 @@ export const specialUpdate = (req: Request, res: Response): void => {
     // Classroom.find({}).then(rooms => {
     //     let promises: any[] = [];
     //     rooms.forEach(room => {
-    //         // console.log(room);
+    //         // 
     //         const messages =  room.messages;
     //         const newStructure=  messages.map((message: any) => {
                
@@ -204,7 +204,7 @@ export const specialUpdate = (req: Request, res: Response): void => {
     //         .then(resolved => {
     //             return successResponseWithData(res,"done",resolved);
     //         }).catch(err => {
-    //             console.log(err);
+    //             
     //             return ErrorResponse(res, err);
     //         });
     // });
